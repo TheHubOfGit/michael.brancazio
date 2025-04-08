@@ -52,9 +52,11 @@
         }
         
         .container {
-            max-width: 1440px;
-            margin: 0; /* Removed auto margin to left-align */
-            padding: 0 72px; /* Added horizontal padding */
+            /* max-width: 1440px; Removed */
+            margin: 0;
+            /* padding-left: 72px; Removed */
+            width: 100%; /* Make container full width */
+            min-height: 100vh; /* Make container full height */
             display: flex;
             flex-direction: column;
             /* align-items: center; Removed */
@@ -74,7 +76,7 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
-            padding: 0; /* Removed horizontal padding, now handled by container */
+            padding-left: 72px; /* Re-apply left padding */
             width: 600px; /* Decreased width */
             overflow: auto;
             z-index: 1;
@@ -84,7 +86,7 @@
             display: flex;
             flex-direction: column;
             gap: 24px;
-            padding: 32px 0;
+            padding: 32px 0 32px 72px; /* Added left padding */
             height: 100vh;
             overflow-y: auto; /* Enable vertical scrolling */
             width: calc(100% - 600px); /* Adjusted for new fixed column width */
@@ -161,6 +163,7 @@
             height: 8px;
             border-radius: 50%;
             background-color: #34D399;
+            animation: pulse 3s infinite cubic-bezier(0.66, 0, 0, 1); /* Slowed down pulse animation */
         }
         
         .profile-description {
@@ -274,7 +277,7 @@
             display: flex;
             flex-direction: column;
             gap: 16px;
-            max-width: 550px; /* Increased max-width further */
+            max-width: 500px; /* Match profile-card max-width */
         }
         
         .link-row {
@@ -448,6 +451,17 @@
             
             .footer {
                 position: relative;
+            }
+        }
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.7); /* #34D399 with alpha */
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(52, 211, 153, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(52, 211, 153, 0);
             }
         }
     </style>
@@ -854,7 +868,7 @@
         </div>
         
         <footer class="footer">
-            <p>© 2023 Michael Brancazio | Portfolio Template</p>
+            <p>© 2025 Michael Brancazio | michael.brancazio@gmail.com</p>
         </footer>
     </div>
 </body>
