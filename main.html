@@ -1328,34 +1328,26 @@
             const originalSrc = 'images/headshot.jpeg'; // Assuming this is the default
             const styledSrc = 'images/styled.png';
             const shockedSrc = 'images/shocked.png';
-            let isStyled = false; // Track which image is currently shown (after initial click)
-            let isSwapping = false; // Prevent rapid clicks during swap
+            let isShocked = false; // Track if shocked image is shown
+            let shockTimeout; // To store the timeout ID
 
             if (profilePic) {
-                profilePic.style.cursor = 'pointer'; // Indicate it's clickable
+                profilePic.style.cursor = 'pointer'; // Indicate it's interactive
 
-                profilePic.addEventListener('click', () => {
-                    if (isSwapping) return; // Ignore clicks during swap
+                profilePic.addEventListener('dblclick', () => {
+                    // Clear any existing timeout to prevent reverting too early if double-clicked again quickly
+                    clearTimeout(shockTimeout);
 
-                    isSwapping = true;
                     profilePic.src = shockedSrc; // Show shocked image
-                    if (avatarDiv) avatarDiv.classList.add('shocked-zoom'); // Zoom avatar
+                    profilePic.style.objectPosition = 'center 20%'; // Adjust image position within the frame (shifted down)
+                    isShocked = true;
 
-                    setTimeout(() => {
-                        // After 0.2 seconds, toggle between original/styled
-                        if (isStyled) {
-                            profilePic.src = originalSrc;
-                            if (avatarDiv) avatarDiv.classList.remove('shocked-zoom'); // Remove zoom
-                            // profilePic.classList.remove('zoomed-out'); // Removed zoom toggle
-                            isStyled = false;
-                        } else {
-                            profilePic.src = styledSrc;
-                            if (avatarDiv) avatarDiv.classList.remove('shocked-zoom'); // Remove zoom
-                            // profilePic.classList.add('zoomed-out'); // Removed zoom toggle
-                            isStyled = true;
-                        }
-                        isSwapping = false; // Allow clicks again
-                    }, 100); // 200 milliseconds = 0.2 seconds
+                    // Set a timeout to revert back to the original image
+                    shockTimeout = setTimeout(() => {
+                        profilePic.src = originalSrc;
+                        profilePic.style.objectPosition = 'center center'; // Reset image position
+                        isShocked = false;
+                    }, 200); // Revert after 200 milliseconds (0.2 seconds)
                 });
             } else {
                 console.error("Profile picture element not found!");
