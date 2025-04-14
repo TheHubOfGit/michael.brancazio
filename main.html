@@ -92,6 +92,7 @@
             height: 100vh;
             overflow-y: auto; /* Enable vertical scrolling */
             width: calc(100% - 600px); /* Adjusted for new fixed column width */
+            align-items: flex-start; /* Prevent section containers from stretching */
         }
         
         .horizontal-scroll-container {
@@ -238,7 +239,7 @@
             display: flex;
             flex-direction: column;
             min-height: 180px;
-            height: 100%;
+            /* height: 100%; Let align-items: stretch handle height */
             min-width: 320px;
             width: 320px;
             flex-shrink: 0;
@@ -798,7 +799,8 @@
             width: 80%; /* Adjust width as needed for the column */
             max-width: 400px; /* Max width within the column */
             height: 4px;
-            background-color: rgba(234, 234, 234, 0.5);
+            /* Make background track fade like the progress line */
+            background: linear-gradient(to right, rgba(234, 234, 234, 0.5) 90%, transparent 100%);
             border-radius: 5px;
             margin: 100px 0 20px 0; /* Increased top margin */
         }
@@ -930,10 +932,75 @@
         }
         /* End Timeline Animation Styles */
 
+        /* Allow specific scroll containers to auto-adjust height */
+        #education-skills-section .horizontal-scroll-container,
+        #related-projects-section .horizontal-scroll-container {
+            height: auto;
+            align-items: stretch; /* Revert to default stretch */
+        }
+
+        /* Sticky Mobile Header Styles */
+        #sticky-mobile-header {
+            display: none; /* Hidden by default */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background-color: var(--card-bg); /* Use card background for consistency */
+            backdrop-filter: blur(10px); /* Increased blur for more frosting */
+            -webkit-backdrop-filter: blur(10px); /* Increased blur for more frosting */
+            padding: 8px 16px;
+            z-index: 999; /* Below modal but above most content */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Adjusted shadow for raised effect */
+            border-radius: 0 0 12px 12px; /* Rounded bottom corners */
+            align-items: center;
+            gap: 12px;
+            transition: opacity 0.3s ease-in-out; /* Add transition for smoother appearance */
+            opacity: 0; /* Start transparent for transition */
+        }
+
+        #sticky-mobile-header.visible {
+            display: flex; /* Show when visible class is added */
+            opacity: 1; /* Fade in */
+        }
+
+        #sticky-mobile-header .avatar-sticky {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            overflow: hidden;
+        }
+
+        #sticky-mobile-header .avatar-sticky img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        #sticky-mobile-header .name-sticky {
+            font-weight: 600;
+            font-size: 15px;
+            color: var(--text-color);
+        }
+
+        @media (min-width: 769px) {
+             #sticky-mobile-header {
+                 display: none !important; /* Ensure it's always hidden on larger screens */
+             }
+        }
+        /* End Sticky Mobile Header Styles */
+
     </style>
 </head>
 
 <body>
+    <!-- Sticky Mobile Header -->
+    <div id="sticky-mobile-header">
+        <div class="avatar-sticky"><img src="images/headshot.jpeg" alt="Michael Brancazio headshot"></div>
+        <div class="name-sticky">Michael Brancazio</div>
+    </div>
+    <!-- End Sticky Mobile Header -->
+
     <!-- Filter Box -->
     <div id="filter-box">
         <!-- Keywords will be added here by JS, or manually if preferred -->
@@ -1259,7 +1326,7 @@
                 </div>
                 
                 <!-- Education & Skills Section -->
-                <div>
+                <div id="education-skills-section">
                     <div class="section-label">Education & Skills</div>
                     <div class="horizontal-scroll-container">
                         <div class="card">
@@ -1385,7 +1452,7 @@
                                     <svg class="cert-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
                                     </svg>
-                                    <div>
+                                    <div id="related-projects-section">
                                         <div class="cert-title">Future Healthcare Leaders</div>
                                         <div class="cert-issuer">Hofstra University</div>
                                     </div>
@@ -1815,6 +1882,58 @@
             }
         });
     </script>
+
+    <!-- Sticky Header Scroll Logic -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const header = document.getElementById('sticky-mobile-header');
+            const profileCard = document.querySelector('.profile-card'); // The first card
+
+            if (!header || !profileCard) {
+                console.error('Sticky header or profile card element not found.');
+                return;
+            }
+
+            let profileCardBottom = 0;
+
+            function calculateProfileCardBottom() {
+                 // Recalculate on resize or load as layout might change
+                 const rect = profileCard.getBoundingClientRect();
+                 // Use pageYOffset for consistent calculation regardless of parent scrolling context
+                 profileCardBottom = rect.bottom + window.pageYOffset;
+            }
+
+            function checkHeaderVisibility() {
+                // Only run logic on mobile screens
+                if (window.innerWidth <= 768) {
+                    if (window.scrollY > profileCardBottom) {
+                        header.classList.add('visible');
+                    } else {
+                        header.classList.remove('visible');
+                    }
+                } else {
+                    // Ensure header is hidden on larger screens
+                    header.classList.remove('visible');
+                }
+            }
+
+            // Initial calculation
+            calculateProfileCardBottom();
+
+            // Check visibility on scroll
+            window.addEventListener('scroll', checkHeaderVisibility, { passive: true });
+
+            // Recalculate and check visibility on resize
+            window.addEventListener('resize', () => {
+                calculateProfileCardBottom();
+                checkHeaderVisibility();
+            }, { passive: true });
+
+            // Initial check in case the page loads already scrolled down on mobile
+             checkHeaderVisibility();
+        });
+    </script>
+    <!-- End Sticky Header Scroll Logic -->
 
     <!-- Trigger deployment -->
 </body>
