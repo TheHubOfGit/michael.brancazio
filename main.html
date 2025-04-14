@@ -246,8 +246,12 @@
             transition: transform 0.2s ease-in-out;
         }
         
-        .card:hover {
+        .card:hover, .card.hover-effect { /* Apply effect on hover or when class is added */
             transform: translateY(-5px);
+        }
+        .card { /* Add transition to the base card style */
+            /* ... existing styles ... */
+            transition: transform 0.2s ease-in-out;
         }
         
         .card-wide {
@@ -590,6 +594,11 @@
             .footer {
                 position: relative;
             }
+
+            #filter-box,
+            .timeline-container {
+                display: none !important; /* Hide filter and timeline on small screens */
+            }
         }
 
         /* Cursor Halo Styles */
@@ -772,6 +781,144 @@
         .highlight-ai { background-color: #00BCD4; }
         .highlight-visualization { background-color: #607D8B; }
 
+        /* Timeline Animation Styles */
+        .timeline-container {
+            position: relative;
+            width: 80%; /* Adjust width as needed for the column */
+            max-width: 400px; /* Max width within the column */
+            height: 4px;
+            background-color: rgba(234, 234, 234, 0.5);
+            border-radius: 5px;
+            margin: 100px 0 20px 0; /* Increased top margin */
+        }
+        
+        .progress-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 0;
+            background-color: #aaaaaa;
+            border-radius: 5px;
+            transition: width 1.25s ease-in-out;
+        }
+        
+        .progress-line.fade-end {
+            background: linear-gradient(to right, #aaaaaa 90%, transparent 100%);
+        }
+        
+        .dot {
+            position: absolute;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: #333;
+            z-index: 2;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+        }
+        
+        .dot.start {
+            left: 0%;
+            background-color: #555;
+            opacity: 0.8;
+        }
+        
+        .dot.green {
+            left: 7%;
+            background-color: rgba(76, 175, 80, 0.8);
+            opacity: 0;
+            transition: opacity 0.75s ease;
+        }
+        
+        .dot.red {
+            left: 15%;
+            background-color: rgba(244, 67, 54, 0.8);
+            opacity: 0;
+            transition: opacity 0.75s ease;
+        }
+        
+        .dot.blue {
+            left: 34%;
+            background-color: rgba(33, 150, 243, 0.8);
+            opacity: 0;
+            transition: opacity 0.75s ease;
+        }
+        
+        .dot.red-small1 {
+            left: 40%;
+            background-color: rgba(244, 67, 54, 0.8);
+            opacity: 0;
+            transition: opacity 0.75s ease;
+            width: 8px;
+            height: 8px;
+        }
+        
+        .dot.red2 {
+            left: 50%;
+            background-color: rgba(244, 67, 54, 0.8);
+            opacity: 0;
+            transition: opacity 0.75s ease;
+        }
+        
+        .dot.red-small2 {
+            left: 87%;
+            background-color: rgba(244, 67, 54, 0.8);
+            opacity: 0;
+            transition: opacity 0.75s ease;
+            width: 8px;
+            height: 8px;
+        }
+        
+        .label {
+            /* display: none; /* Keep labels hidden for now */
+            /* New styles for hover label */
+            visibility: hidden;
+            opacity: 0;
+            position: absolute;
+            top: 100%; /* Position below the dot */
+            left: 50%; /* Center horizontally */
+            transform: translateX(-50%) translateY(5px); /* Center and slight offset down */
+            background-color: var(--card-bg); /* Use card background */
+            backdrop-filter: blur(2px); /* Slight blur */
+            -webkit-backdrop-filter: blur(2px);
+            color: var(--text-color);
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 11px; /* Smaller font */
+            font-weight: 500;
+            white-space: nowrap; /* Prevent wrapping */
+            z-index: 3; /* Ensure label is above progress line */
+            transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
+            margin-top: 8px; /* Space between dot and label */
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            pointer-events: none; /* Don't interfere with dot hover */
+            text-align: center;
+        }
+        .dot:hover .label {
+            visibility: visible;
+            opacity: 1;
+            transform: translateX(-50%) translateY(0); /* Move into final position */
+        }
+        
+        .pulse {
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.3);
+            }
+            50% {
+                box-shadow: 0 0 0 5px rgba(0, 0, 0, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
+            }
+        }
+        /* End Timeline Animation Styles */
+
     </style>
 </head>
 
@@ -845,6 +992,33 @@
                         </a>
                     </div>
                 </div>
+
+                <!-- Timeline Animation HTML -->
+                <div class="timeline-container">
+                    <div class="progress-line" id="progress"></div>
+                    <div class="dot start pulse" id="start-dot">
+                        <div class="label">MHA Degree</div>
+                    </div>
+                    <div class="dot green" id="green-dot" data-job-target="icl"> <!-- Added target -->
+                        <div class="label">Administrative Manager<br>ICL, Brooklyn NY</div>
+                    </div>
+                    <div class="dot red" id="red-dot" data-job-target="rca"> <!-- Added target -->
+                        <div class="label">Revenue Cycle Analyst<br>NewYork–Presbyterian</div>
+                    </div>
+                    <div class="dot blue" id="blue-dot" data-job-target="iqvia"> <!-- Added target -->
+                        <div class="label">Data Analyst / Consultant<br>IQVIA, Boston MA</div>
+                    </div>
+                    <div class="dot red-small1" id="red-small1-dot" data-job-target="srca"> <!-- Added target -->
+                        <div class="label">Senior Revenue Cycle Analyst<br>NewYork–Presbyterian</div>
+                    </div>
+                    <div class="dot red2" id="red2-dot" data-job-target="bid"> <!-- Added target -->
+                        <div class="label">BI Developer, Data Strategy<br>NewYork–Presbyterian</div>
+                    </div>
+                    <div class="dot red-small2" id="red-small2-dot" data-job-target="eng"> <!-- Added target -->
+                        <div class="label">Engineer / Data Literacy Assoc.<br>NewYork–Presbyterian</div>
+                    </div>
+                </div>
+                <!-- End Timeline Animation HTML -->
             </div>
             
             <div class="scrollable-content">
@@ -860,7 +1034,7 @@
                                         <div class="role-dot"></div>
                                         <div class="role-line"></div>
                                     </div>
-                                    <div class="role-details">
+                                    <div class="role-details" data-job-target="eng"> <!-- Corrected target for Engineer -->
                                         <div class="experience-header">
                                             <div class="experience-title">Engineer / Data Literacy Associate</div>
                                             <div class="experience-date">Jan 2025 - Present</div>
@@ -890,7 +1064,7 @@
                                         <div class="role-dot"></div>
                                         <!-- No line for the last item -->
                                     </div>
-                                    <div class="role-details">
+                                    <div class="role-details" data-job-target="bid"> <!-- Added target for BI Dev -->
                                         <div class="experience-header">
                                             <div class="experience-title">Business Intelligence Developer, Data Strategy</div>
                                             <div class="experience-date">Apr 2022 - Jan 2025</div>
@@ -916,7 +1090,7 @@
                             </div>
                         </div>
                         
-                        <div class="card card-large">
+                        <div class="card card-large" data-job-target="iqvia"> <!-- Added target for IQVIA -->
                             <div class="experience-card">
                                 <div class="experience-header">
                                     <div class="experience-title">Data Analyst / Consultant</div>
@@ -953,7 +1127,7 @@
                                         <div class="role-dot"></div>
                                         <div class="role-line"></div>
                                     </div>
-                                    <div class="role-details">
+                                    <div class="role-details" data-job-target="srca"> <!-- Added target for Sr RCA -->
                                         <div class="experience-header">
                                             <div class="experience-title">Senior Revenue Cycle Analyst</div>
                                             <div class="experience-date">May 2021 - Apr 2022</div>
@@ -974,7 +1148,7 @@
                                         <div class="role-dot"></div>
                                         <!-- No line for the last item -->
                                     </div>
-                                    <div class="role-details">
+                                    <div class="role-details" data-job-target="rca"> <!-- Added target for RCA -->
                                         <div class="experience-header">
                                             <div class="experience-title">Revenue Cycle Analyst</div>
                                             <div class="experience-date">Jul 2019 - May 2021</div>
@@ -993,7 +1167,7 @@
                             </div>
                         </div>
                         
-                        <div class="card card-wide"> <!-- Added card-wide class -->
+                        <div class="card card-wide" data-job-target="icl"> <!-- Added target for ICL -->
                             <div class="experience-card">
                                 <div class="experience-header">
                                     <div class="experience-title">Administrative Manager</div>
@@ -1492,7 +1666,131 @@
             if (clearButton) {
                 clearButton.addEventListener('click', removeHighlights);
             }
-        });
+
+           // Timeline Animation Logic
+           const progress = document.getElementById('progress');
+           const startDot = document.getElementById('start-dot');
+           const greenDot = document.getElementById('green-dot');
+           const redDot = document.getElementById('red-dot');
+           const blueDot = document.getElementById('blue-dot');
+           const redSmall1Dot = document.getElementById('red-small1-dot');
+           const red2Dot = document.getElementById('red2-dot');
+           const redSmall2Dot = document.getElementById('red-small2-dot');
+           
+           // Start the animation sequence after a delay
+           setTimeout(startTimelineAnimation, 1500); // Delay start slightly more
+           
+           function startTimelineAnimation() {
+               if (!progress || !startDot || !greenDot || !redDot || !blueDot || !redSmall1Dot || !red2Dot || !redSmall2Dot) {
+                   console.error("One or more timeline elements not found!");
+                   return; // Exit if elements are missing
+               }
+               // Progress to green dot
+               progress.style.width = '7%';
+               setTimeout(() => {
+                   greenDot.style.opacity = '1';
+                   greenDot.classList.add('pulse');
+                   startDot.classList.remove('pulse');
+                   
+                   // Wait at green dot
+                   setTimeout(() => {
+                       greenDot.classList.remove('pulse');
+                       
+                       // Progress to first red dot
+                       progress.style.width = '15%';
+                       setTimeout(() => {
+                           redDot.style.opacity = '1';
+                           redDot.classList.add('pulse');
+                           
+                           // Progress to blue dot
+                           setTimeout(() => {
+                               redDot.classList.remove('pulse');
+                               progress.style.width = '34%';
+                               setTimeout(() => {
+                                   blueDot.style.opacity = '1';
+                                   blueDot.classList.add('pulse');
+                                   
+                                   // Progress to small red dot 1
+                                   setTimeout(() => {
+                                       blueDot.classList.remove('pulse');
+                                       progress.style.width = '40%';
+                                       setTimeout(() => {
+                                           redSmall1Dot.style.opacity = '1';
+                                           
+                                           // Progress to second red dot
+                                           setTimeout(() => {
+                                               progress.style.width = '50%';
+                                               setTimeout(() => {
+                                                   red2Dot.style.opacity = '1';
+                                                   red2Dot.classList.add('pulse');
+                                                   
+                                                   // Progress to small red dot 2
+                                                   setTimeout(() => {
+                                                       red2Dot.classList.remove('pulse');
+                                                       progress.style.width = '87%';
+                                                       setTimeout(() => {
+                                                           redSmall2Dot.style.opacity = '1';
+                                                           
+                                                           // Progress to end with fade
+                                                           setTimeout(() => {
+                                                               progress.classList.add('fade-end');
+                                                               progress.style.width = '100%';
+                                                           }, 1000);
+                                                       }, 750);
+                                                   }, 1500);
+                                               }, 1250);
+                                           }, 1000);
+                                       }, 750);
+                                   }, 1500);
+                               }, 1250);
+                           }, 1500);
+                       }, 1250);
+                   }, 1500); // Half the original wait time
+               }, 1250);
+          }
+          // End Timeline Animation Logic
+
+          // Timeline Dot Hover to Card Effect Logic
+          const timelineDots = document.querySelectorAll('.timeline-container .dot[data-job-target]');
+
+          timelineDots.forEach(dot => {
+              dot.addEventListener('mouseenter', () => {
+                  const targetId = dot.getAttribute('data-job-target');
+                  // Find the target card: Adjust selector based on where data-job-target was added
+                  // It was added to role-details for roles within the same card, and to the card itself for others.
+                  let targetCard = document.querySelector(`.card[data-job-target="${targetId}"]`);
+                  if (!targetCard) {
+                       // If not found on card, check within role-details divs
+                       const targetDetail = document.querySelector(`.role-details[data-job-target="${targetId}"]`);
+                       if (targetDetail) {
+                           targetCard = targetDetail.closest('.card'); // Find the parent card
+                       }
+                  }
+
+                  if (targetCard) {
+                      targetCard.classList.add('hover-effect');
+                      // Optional: Scroll the card into view if needed
+                      // targetCard.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
+                  }
+              });
+
+              dot.addEventListener('mouseleave', () => {
+                  const targetId = dot.getAttribute('data-job-target');
+                   let targetCard = document.querySelector(`.card[data-job-target="${targetId}"]`);
+                   if (!targetCard) {
+                       const targetDetail = document.querySelector(`.role-details[data-job-target="${targetId}"]`);
+                       if (targetDetail) {
+                           targetCard = targetDetail.closest('.card');
+                       }
+                   }
+                  if (targetCard) {
+                      targetCard.classList.remove('hover-effect');
+                  }
+              });
+          });
+          // End Timeline Dot Hover Logic
+           // End Timeline Animation Logic
+       });
     </script>
 
     <script>
