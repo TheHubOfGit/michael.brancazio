@@ -1,0 +1,1520 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <title>Michael Brancazio | Data & Analytics Professional</title>
+    <meta name="description" content="Michael Brancazio is a data professional with expertise in business intelligence, data analysis, and healthcare analytics.">
+    <link rel="icon" href="https://framerusercontent.com/images/ENkVxBCQ6Tnxb3xKHvZyByF85E.png">
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Michael Brancazio | Portfolio">
+    <meta property="og:description" content="Healthcare data professional specializing in business intelligence, data analysis, and analytics.">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
+    <style>
+        :root {
+            --bg-color: rgb(255, 255, 255);
+            --card-bg: rgba(255, 255, 255, 0.6); /* Increased transparency for glass effect */
+            --text-color: rgb(39, 39, 42);
+            --text-secondary: rgb(128, 128, 128);
+            --border-color: rgba(0, 0, 0, 0.06);
+            --accent-blue: #3771c8;
+            --accent-teal: #4682B4;
+            --font-primary: "Figtree", sans-serif;
+        }
+        
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-color: rgb(10, 10, 11);
+                --card-bg: rgba(18, 18, 18, 0.6); /* Increased transparency for glass effect */
+                --text-color: rgb(255, 255, 255);
+                --text-secondary: rgb(161, 161, 170);
+                --border-color: rgba(255, 255, 255, 0.06);
+            }
+        }
+        
+        body {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            background-color: var(--bg-color);
+            font-family: var(--font-primary);
+            color: var(--text-color);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            overflow-x: hidden;
+        }
+        
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+        
+        .container {
+            /* max-width: 1440px; Removed */
+            margin: 0;
+            /* padding-left: 72px; Removed */
+            width: 100%; /* Make container full width */
+            min-height: 100vh; /* Make container full height */
+            display: flex;
+            flex-direction: column;
+            /* align-items: center; Removed */
+        }
+        
+        .section {
+            width: 100%;
+            min-height: 100vh;
+            display: flex;
+            position: relative;
+        }
+        
+        .fixed-column {
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding-left: 72px; /* Re-apply left padding */
+            width: 600px; /* Decreased width */
+            overflow: auto;
+            z-index: 1;
+        }
+        
+        .scrollable-content {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            padding: 32px 0 32px 72px; /* Added left padding */
+            height: 100vh;
+            overflow-y: auto; /* Enable vertical scrolling */
+            width: calc(100% - 600px); /* Adjusted for new fixed column width */
+        }
+        
+        .horizontal-scroll-container {
+            display: flex;
+            flex-direction: row;
+            gap: 16px;
+            padding: 10px 16px 0 16px; /* Added 10px top padding */
+            overflow-x: auto;
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+            width: 100%;
+            height: 520px;
+        }
+        
+        .horizontal-scroll-container::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .profile-card {
+            background-color: var(--card-bg);
+            backdrop-filter: blur(4px); /* Add blur effect */
+            -webkit-backdrop-filter: blur(4px); /* Safari support */
+            border-radius: 20px;
+            box-shadow: inset 0px 0px 0px 1px var(--border-color), 0px 2px 4px 0px rgba(0, 0, 0, 0.04);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            height: auto;
+            width: 100%;
+            max-width: 500px; /* Increased max-width further */
+        }
+        
+        .profile-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .avatar {
+            width: 48px; /* Keep size */
+            height: 48px; /* Keep size */
+            border-radius: 50%; /* Keep shape */
+            overflow: hidden; /* Ensure image stays within rounded bounds */
+            transition: transform 0.5s ease-in-out; /* Slowed down transition for scaling */
+        }
+
+        .avatar.shocked-zoom {
+            transform: scale(1.2); /* Zoom effect */
+        }
+        
+        .profile-info {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .profile-name {
+            font-weight: 600;
+            font-size: 16px;
+        }
+        
+        .profile-status {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+        
+        .status-indicator {
+            position: relative;
+            width: 8px;
+            height: 8px;
+        }
+
+        .status-dot {
+            position: absolute; /* Position within the indicator */
+            top: 0;
+            left: 0;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #34D399;
+            /* Removed pulse animation */
+        }
+
+        .status-ping {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 8px; /* Keep size for positioning */
+            height: 8px; /* Keep size for positioning */
+            border-radius: 50%;
+            /* Removed border */
+            /* Add box-shadow for the glow effect */
+            box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.7); /* Initial state: 0 spread, visible */
+            transform: translate(-50%, -50%);
+            animation: sonar 2.5s infinite ease-out; /* Increased duration */
+            opacity: 1; /* Let animation handle opacity */
+        }
+
+        @keyframes sonar {
+          0% {
+            /* Start with no spread, initial opacity */
+            box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.7);
+            opacity: 0.7;
+          }
+          70% {
+            /* Expand shadow spread, start fading */
+            box-shadow: 0 0 0 10px rgba(52, 211, 153, 0); /* Reduced spread, fade color alpha */
+            opacity: 0;
+          }
+          100% {
+            /* Ensure fully faded */
+            box-shadow: 0 0 0 10px rgba(52, 211, 153, 0); /* Reduced spread */
+            opacity: 0;
+          }
+        }
+        .profile-description {
+            font-size: 18px;
+            line-height: 1.5;
+        }
+        
+        .location-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            font-size: 14px;
+        }
+        
+        .location {
+            font-weight: 500;
+        }
+        
+        .timezone {
+            color: var(--text-secondary);
+        }
+        
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 20px;
+            box-shadow: inset 0px 0px 0px 1px var(--border-color), 0px 2px 4px 0px rgba(0, 0, 0, 0.04);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            min-height: 180px;
+            height: 100%;
+            min-width: 320px;
+            width: 320px;
+            flex-shrink: 0;
+            overflow-y: auto;
+            transition: transform 0.2s ease-in-out;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .card-wide {
+            min-width: 520px;
+            width: 520px;
+        }
+        
+        .card-large {
+            min-width: 520px;
+            width: 520px;
+        }
+        
+        .card-section-title {
+            font-weight: 700;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 16px;
+            color: var(--accent-blue);
+        }
+        
+        .card-title {
+            font-weight: 600;
+            font-size: 20px;
+            margin-bottom: 16px;
+        }
+        
+        .experience-card {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .experience-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        
+        .experience-title {
+            font-weight: 700;
+            font-size: 18px;
+        }
+        
+        .experience-date {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+        
+        .experience-company {
+            font-weight: 500;
+            font-size: 16px;
+        }
+        
+        .experience-description {
+            margin-top: 4px; /* Reduced space above description */
+        }
+        
+        .experience-description ul {
+            padding-left: 18px;
+            margin: 8px 0;
+        }
+        
+        .experience-description li {
+            margin-bottom: 8px;
+            line-height: 1.5;
+            font-size: 14px;
+        }
+        
+        .links-container {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            max-width: 500px; /* Match profile-card max-width */
+        }
+        
+        .link-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        
+        .link-card {
+            background-color: var(--card-bg); /* Use variable with alpha */
+            backdrop-filter: blur(4px); /* Add blur effect */
+            -webkit-backdrop-filter: blur(4px); /* Safari support */
+            border-radius: 24px;
+            box-shadow: inset 0px 0px 0px 1px var(--border-color), 0px 2px 4px 0px rgba(0, 0, 0, 0.04);
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            width: 183px;
+            height: 98px;
+            text-decoration: none;
+            color: var(--text-color);
+            transition: transform 0.2s ease-in-out;
+        }
+        
+        .link-card:hover {
+            transform: translateY(-3px);
+        }
+        
+        .link-icon {
+            width: 24px;
+            height: 24px;
+        }
+        
+        .link-email {
+            /* Inherits .link-card styles including background and backdrop */
+            width: 100%;
+            max-width: 100%;
+            border-radius: 20px; /* Overrides .link-card radius */
+            height: 64px;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            padding: 12px 16px;
+            gap: 12px;
+        }
+        .link-text {
+            flex: 1;
+        }
+        
+        .skills-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 16px;
+            position: relative; /* Needed for absolute positioning of sibling tooltip */
+        }
+        
+        .skill-tag {
+            background-color: rgba(55, 113, 200, 0.1);
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--accent-blue);
+            transition: background-color 0.2s ease-in-out; /* Add transition */
+            position: relative; /* Needed for tooltip positioning */
+        }
+
+        .skill-tag:hover {
+            background-color: rgba(55, 113, 200, 0.2); /* Darken background on hover */
+        }
+
+        /* Sibling Tooltip Styles */
+        .python-tooltip { /* Renamed class */
+            visibility: hidden; /* Hidden by default */
+            opacity: 0;
+            position: absolute;
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            z-index: 10; /* Ensure it's above sibling elements */
+            /* Position relative to .skills-list container */
+            top: -10px; /* Adjust as needed */
+            left: 70px; /* Adjust based on Python tag position */
+            /* transform: translateX(-50%); Removed for now */
+            white-space: nowrap;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            pointer-events: none; /* Prevent tooltip from interfering */
+            transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
+            text-align: left; /* Ensure text inside is left-aligned */
+            line-height: 1.4; /* Adjust line spacing */
+        }
+
+        /* Show tooltip on Python tag hover */
+        #python-skill-tag:hover + .python-tooltip { /* Use ID and sibling selector */
+            visibility: visible;
+            opacity: 1;
+        }
+        
+        .certifications-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 12px;
+            /* position: relative; Removed - moved to .skill-tag */
+        }
+        
+        .cert-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .cert-icon {
+            width: 20px;
+            height: 20px;
+            color: var(--accent-blue);
+        }
+        
+        .cert-title {
+            font-weight: 500;
+            font-size: 14px;
+        }
+        
+        .cert-issuer {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        .section-label {
+            font-weight: 600;
+            font-size: 18px;
+            margin-bottom: 16px;
+            padding-left: 16px;
+        }
+        
+        .footer {
+            padding: 10px 16px; /* Adjusted top/bottom padding */
+            text-align: center;
+            font-size: 14px;
+            color: var(--text-secondary);
+            width: 100%;
+            position: fixed;
+            bottom: 0;
+            background-color: var(--bg-color);
+            z-index: 10;
+        }
+        /* Role Progression Styles */
+        .role-progression {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .role-item {
+            display: flex;
+            position: relative; /* Needed for absolute positioning of the line */
+            margin-bottom: 16px; /* Space between roles */
+        }
+
+        .role-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .role-connector {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-right: 16px; /* Space between connector and details */
+            flex-shrink: 0;
+        }
+
+        .role-dot {
+            width: 10px;
+            height: 10px;
+            background-color: var(--text-secondary);
+            border-radius: 50%;
+            z-index: 1; /* Ensure dot is above the line */
+        }
+
+        .role-line {
+            width: 2px;
+            background-color: var(--text-secondary);
+            flex-grow: 1; /* Make line fill the space */
+            margin-top: 4px; /* Space between dot and line start */
+        }
+        
+        /* Hide the line for the last role item */
+        .role-item:last-child .role-line {
+            display: none;
+        }
+
+        .role-details {
+            display: flex;
+            flex-direction: column;
+            padding-top: 0; /* Align top of details with top of dot */
+        }
+        /* Add space below role details, except for the last role */
+        .role-item:not(:last-child) .role-details {
+            padding-bottom: 24px;
+        }
+        
+        
+        @media (max-width: 1024px) {
+            .fixed-column {
+                padding: 0 48px;
+                width: 400px; /* Decreased width for medium screens */
+            }
+            
+            .scrollable-content {
+                width: calc(100% - 400px); /* Adjusted for medium screens */
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .section {
+                flex-direction: column;
+                min-height: auto;
+            }
+            
+            .fixed-column {
+                position: relative;
+                height: auto;
+                width: 100%;
+                padding: 96px 24px 48px;
+            }
+            
+            .scrollable-content {
+                width: 100%;
+                height: auto;
+                overflow: visible;
+            }
+            
+            .horizontal-scroll-container {
+                height: auto;
+                padding: 16px;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .card {
+                min-width: 100%;
+                width: 100%;
+            }
+            
+            .card-wide, .card-large {
+                min-width: 100%;
+                width: 100%;
+            }
+            
+            .profile-card {
+                max-width: 100%;
+            }
+            
+            .links-container {
+                max-width: 100%;
+            }
+            
+            .link-card {
+                width: calc(50% - 8px);
+            }
+            
+            .footer {
+                position: relative;
+            }
+        }
+
+        /* Cursor Halo Styles */
+        .cursor-halo {
+    position: fixed;
+    width: 300px; /* Very large size */
+    height: 300px; /* Very large size */
+    border-radius: 50%;
+    background: radial-gradient(
+        circle,
+        rgba(255, 255, 255, 0.06) 0%,
+        rgba(255, 255, 255, 0.05) 10%,
+        rgba(255, 255, 255, 0.04) 20%,
+        rgba(255, 255, 255, 0.03) 30%,
+        rgba(255, 255, 255, 0.02) 40%,
+        rgba(255, 255, 255, 0.015) 50%,
+        rgba(255, 255, 255, 0.01) 60%,
+        rgba(255, 255, 255, 0.005) 75%,
+        rgba(255, 255, 255, 0.001) 90%,
+        rgba(255, 255, 255, 0) 100%
+    );
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    transition: transform 0.1s ease-out, opacity 0.3s ease-out;
+    z-index: -1;
+    opacity: 0;
+    left: 0;
+    top: 0;
+}
+
+        /* Opacity is now controlled by JavaScript */
+        /* Removed @keyframes pulse */
+
+        /* Removed Sibling Tooltip Styles */
+        /* Modal Styles */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1000; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgba(0,0,0,0.6); /* Black w/ opacity */
+        }
+
+        .modal-content {
+            background-color: var(--bg-color);
+            margin: 5% auto; /* 5% from the top and centered */
+            padding: 0; /* Remove padding for iframe */
+            border: 1px solid var(--border-color);
+            width: 70%; /* Changed default width */
+            height: 85%; /* Adjust height */
+            position: relative;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2),0 6px 20px 0 rgba(0,0,0,0.19);
+        }
+        /* Removed .modal-narrow rule */
+        
+        .modal-content iframe {
+             width: 100%;
+             height: 100%;
+             border-radius: 10px; /* Match parent border-radius */
+        }
+
+        .close-button {
+            color: #aaa;
+            position: absolute;
+            top: 10px;
+            right: 25px;
+            font-size: 35px;
+            font-weight: bold;
+            z-index: 1001; /* Above iframe */
+        }
+
+        .close-button:hover,
+        .close-button:focus {
+            color: var(--text-color);
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        /* Project Link Style */
+        .project-link {
+            cursor: pointer;
+            text-decoration: underline;
+            color: var(--accent-blue);
+        }
+        .project-link:hover {
+            opacity: 0.8;
+        }
+
+        /* Removed "What have you done?" styles */
+
+        /* Filter Box Styles */
+        #filter-box {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background-color: var(--card-bg);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            border-radius: 10px;
+            padding: 10px 15px;
+            box-shadow: inset 0px 0px 0px 1px var(--border-color), 0px 2px 4px 0px rgba(0, 0, 0, 0.04);
+            z-index: 1001; /* Above modal close button */
+            opacity: 0; /* Start fully transparent */
+            filter: grayscale(1); /* Start greyscale */
+            transition: opacity 0.3s ease-in-out, filter 0.3s ease-in-out; /* Add filter to transition */
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            max-width: 350px; /* Adjust as needed */
+        }
+
+        #filter-box.visible {
+            opacity: 0.5; /* Visible but semi-transparent */
+            filter: grayscale(1); /* Visible but greyscale */
+        }
+
+        #filter-box.visible:hover {
+            opacity: 1; /* Full opacity on hover */
+            filter: grayscale(0); /* Full color on hover */
+        }
+
+        /* Keep filter box fully visible and colored when a filter is active */
+        #filter-box.visible.filter-active {
+            opacity: 1;
+            filter: grayscale(0);
+        }
+
+        .filter-keyword {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            color: white; /* Ensure text is readable */
+            transition: transform 0.1s ease-in-out;
+        }
+
+        .filter-keyword:hover {
+            transform: scale(1.05);
+        }
+
+        #clear-filter-btn {
+            position: fixed;
+            top: 20px; /* Align with filter box */
+            left: 380px; /* Position next to filter box (adjust based on filter-box max-width) */
+            padding: 5px 10px;
+            background-color: #dc3545; /* Red color */
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            z-index: 1001;
+            display: none; /* Hidden by default */
+        }
+
+        /* Highlight Styles (Define colors) */
+        .highlight { /* Base highlight style */
+            padding: 0.1em 0; /* Minimal vertical padding */
+            margin: -0.1em 0; /* Counteract padding */
+            border-radius: 3px;
+            color: white !important; /* Ensure highlighted text is readable */
+            box-decoration-break: clone; /* Handle line breaks */
+            -webkit-box-decoration-break: clone; /* Safari */
+        }
+        .highlight-python { background-color: #306998; }
+        .highlight-sql { background-color: #E38C00; }
+        .highlight-tableau { background-color: #E97627; }
+        .highlight-powerbi { background-color: #F2C811; color: #333 !important; } /* Darker text for yellow */
+        .highlight-machinelearning { background-color: #4CAF50; }
+        .highlight-datascience { background-color: #2196F3; }
+        .highlight-analytics { background-color: #9C27B0; }
+        .highlight-healthcare { background-color: #FF5722; }
+        .highlight-ai { background-color: #00BCD4; }
+        .highlight-visualization { background-color: #607D8B; }
+
+    </style>
+</head>
+
+<body>
+    <!-- Filter Box -->
+    <div id="filter-box">
+        <!-- Keywords will be added here by JS, or manually if preferred -->
+        <button class="filter-keyword" data-keyword="Python" style="background-color: #306998;">Python</button>
+        <button class="filter-keyword" data-keyword="SQL" style="background-color: #E38C00;">SQL</button>
+        <button class="filter-keyword" data-keyword="Tableau" style="background-color: #E97627;">Tableau</button>
+        <button class="filter-keyword" data-keyword="Power BI" data-highlight-term="PowerBI" style="background-color: #F2C811; color: #333;">Power BI</button>
+        <button class="filter-keyword" data-keyword="Machine Learning" data-highlight-term="MachineLearning" style="background-color: #4CAF50;">Machine Learning</button>
+        <button class="filter-keyword" data-keyword="Data Science" data-highlight-term="DataScience" style="background-color: #2196F3;">Data Science</button>
+        <button class="filter-keyword" data-keyword="Analytics" style="background-color: #9C27B0;">Analytics</button>
+        <button class="filter-keyword" data-keyword="Healthcare" style="background-color: #FF5722;">Healthcare</button>
+        <button class="filter-keyword" data-keyword="AI" style="background-color: #00BCD4;">AI</button>
+        <button class="filter-keyword" data-keyword="Visualization" style="background-color: #607D8B;">Visualization</button>
+    </div>
+    <button id="clear-filter-btn">Clear Filter</button>
+
+    <div class="container">
+        <div class="section">
+            <div class="fixed-column">
+                <div class="profile-card">
+                    <div class="profile-header">
+                        <div class="avatar"><img id="profile-picture" src="images/headshot.jpeg" alt="Michael Brancazio headshot" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%; transition: transform 0.3s ease-in-out;" draggable="false"></div>
+                        <div class="profile-info">
+                            <div class="profile-name">Michael Brancazio</div>
+                            <div class="profile-status">
+                                <div class="status-indicator">
+                                    <div class="status-dot"></div>
+                                    <div class="status-ping"></div>
+                                </div>
+                                <span>Available for opportunities</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="profile-description">
+                        I build data solutions in healthcare, turning complex information into clear insights and predictive models. I enjoy working with Python, SQL, and visualization tools like Tableau/Power BI, and I'm passionate about leveraging AI and teaching others how to use data effectively.
+                    </div>
+                    
+                    <div class="location-info">
+                        <div class="location">New York, NY, USA 🇺🇸</div>
+                        <div class="timezone">UTC/GMT -5 hours</div>
+                    </div>
+                </div>
+                
+                <div class="links-container" style="margin-top: 16px;">
+                    <a href="mailto:michael.brancazio@gmail.com" class="link-card link-email">
+                        <svg class="link-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                            <polyline points="22,6 12,13 2,6"></polyline>
+                        </svg>
+                        <span class="link-text">michael.brancazio@gmail.com</span>
+                    </a>
+                    
+                    <div class="link-row">
+                        <a href="https://www.linkedin.com/in/michael-brancazio" target="_blank" class="link-card">
+                            <svg class="link-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M20.5 2h-17A1.5 1.5 0 002 3.5v17A1.5 1.5 0 003.5 22h17a1.5 1.5 0 001.5-1.5v-17A1.5 1.5 0 0020.5 2zM8 19H5v-9h3zM6.5 8.25A1.75 1.75 0 118.3 6.5a1.78 1.78 0 01-1.8 1.75zM19 19h-3v-4.74c0-1.42-.6-1.93-1.38-1.93A1.74 1.74 0 0013 14.19a.66.66 0 000 .14V19h-3v-9h2.9v1.3a3.11 3.11 0 012.7-1.4c1.55 0 3.36.86 3.36 3.66z"></path>
+                            </svg>
+                            <span>LinkedIn</span>
+                        </a>
+                        
+                        <a href="tel:5163751739" class="link-card">
+                            <svg class="link-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"></path>
+                            </svg>
+                            <span>(516) 375-1739</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="scrollable-content">
+                <!-- Current Experience Section -->
+                <div>
+                    <div class="section-label">Current Experience</div>
+                    <div class="horizontal-scroll-container">
+                        <div class="card card-large">
+                            <div class="role-progression">
+                                <!-- Data Scientist Role -->
+                                <div class="role-item">
+                                    <div class="role-connector">
+                                        <div class="role-dot"></div>
+                                        <div class="role-line"></div>
+                                    </div>
+                                    <div class="role-details">
+                                        <div class="experience-header">
+                                            <div class="experience-title">Engineer / Data Literacy Associate</div>
+                                            <div class="experience-date">Jan 2025 - Present</div>
+                                        </div>
+                                        <div class="experience-company" style="margin-top: 4px;">NewYork–Presbyterian Hospital</div>
+                                        <div class="experience-description" style="margin-top: 8px;">
+                                            <ul>
+                                                <li>Develop and implement a machine learning predictive model in Python to predict healthcare reimbursement likelihood, enhancing vendor referral efficiency and data-driven decision-making within NYP’s Revenue Cycle Department</li>
+                                                <li>Projected to reduce unnecessary vendor referrals by 30%, increase reimbursement rates on referred cases by 15%, and potentially save ~$500,000 annually through optimized vendor agreements and reduced operational costs</li>
+                                                <li>Engineer in-house LLMs leveraging RAG framework and vector-based retrieval to assist front-end users in navigating proprietary data models, data definitions, and dashboards</li>
+                                                <li>Create a full-stack web resource (HTML, CSS, Javascript) that aggregates all Access-to-Care department data, integrating a custom chatbot trained on department-specific documentation and data models</li>
+                                                <li>Scale tool & model across multiple teams and departments, facilitating broader organizational adoption and enhancing enterprise-wide efficiency</li>
+                                                <li>Worked in agile sprints to rapidly develop, test, and deploy chatbot models with data literacy programs</li>
+                                                <li>Fine-tune open-source models (Gemma & Llama) on proprietary data</li>
+                                                <li>Transition of Tableau dashboards to Microsoft PowerBI, including visualization overhaul as well as translation of calculations to DAX format</li>
+                                                <li>Champion a data-driven culture by deploying organization-wide data literacy and AI upskilling programs, focusing on predictive analytics, machine learning, and data visualization</li>
+                                                <li>Partner with Clinical and IT teams to identify high-impact use cases for artificial intelligence, including natural language processing (NLP), deep learning, and computer vision applications</li>
+                                                <li>Lead training workshops and curate digital resources to empower staff in leveraging big data, advanced analytics, and AI tools for data-informed decisions</li>
+                                                <li>Serve as a strategic advisor on AI/ML innovations and emerging technologies such as augmented intelligence and automated data workflows, providing leadership insights for scalable AI solutions</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- BI Developer Role -->
+                                <div class="role-item">
+                                    <div class="role-connector">
+                                        <div class="role-dot"></div>
+                                        <!-- No line for the last item -->
+                                    </div>
+                                    <div class="role-details">
+                                        <div class="experience-header">
+                                            <div class="experience-title">Business Intelligence Developer, Data Strategy</div>
+                                            <div class="experience-date">Apr 2022 - Jan 2025</div>
+                                        </div>
+                                        <div class="experience-company" style="margin-top: 4px;">NewYork–Presbyterian Hospital</div>
+                                        <div class="experience-description" style="margin-top: 8px;">
+                                            <ul>
+                                                <li>Rollout in-house data warehousing initiative, ‘JupiterGOLD’, along with manage proper data governance policy</li>
+                                                <li>Establish standard practices and templates for all reporting tables</li>
+                                                <li>Build in-query error reporting with QA checks delivered via email to database administrators</li>
+                                                <li>Create checklist for table creation, production server requirements, and data mart/data source standards</li>
+                                                <li>Designed snowflake schema architecture within JupiterGOLD data warehouse to normalize complex Epic Clarity hierarchies, enabling efficient cross-domain analysis of clinical and operational data</li>
+                                                <li>Redesign and maintain backend SQL code for enterprise-wide Palliative Care dashboard, comprising of both clinical and non-clinical data</li>
+                                                <li>Utilize Epic Clarity data model for custom reporting on various enterprise initiatives (i.e., Opioid guideline monitoring, Parkinson’s patient registry, Press Ganey score assessment)</li>
+                                                <li>Collaborate on the creation of a shared resource guide & formal documentation for all in-house data projects, scripts, and dashboards</li>
+                                                <li>Communicate with organizational stakeholders on business case for each report</li>
+                                                <li>Ensure proper QA/QC procedures are formalized and checked</li>
+                                                <li>Establish a working list of FAQs and other communication documents via SharePoint (white papers, etc)</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card card-large">
+                            <div class="experience-card">
+                                <div class="experience-header">
+                                    <div class="experience-title">Data Analyst / Consultant</div>
+                                    <div class="experience-date">Jan 2021 - Present</div>
+                                </div>
+                                <div class="experience-company">IQVIA, Boston MA (Remote)</div>
+                                <div class="experience-description">
+                                    <ul>
+                                        <li>Perform descriptive and diagnostic analytics highlighting historical trends and KPIs for pharmaceutical business reviews</li>
+                                        <li>Present year-end as well as quarterly business reviews to high-profile clients (Pfizer, Novartis, AbbVie, etc.)</li>
+                                        <li>Build and manage close relationships with clients providing them with customized analytics, reports, and presentations</li>
+                                        <li>Employ Microsoft PowerBI for the automation of reports and building of dashboards for clients</li>
+                                        <li>Build machine learning forecasting models tailored to each product, brand, and client; utilize Prophet and Plotly</li>
+                                        <li>Manage and lead 3 analysts; head Machine Learning & Forecasting initiative within PAAS</li>
+                                        <li>Automate Accumulator and Maximizer Solutions with SPROCs (Stored Procedures), reducing concurrent server load and manual analyst querying by 90%</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Can add more current experience cards here -->
+                    </div>
+                </div>
+                
+                <!-- Previous Experience Section -->
+                <div>
+                    <div class="section-label">Previous Experience</div>
+                    <div class="horizontal-scroll-container">
+                        <div class="card card-wide">
+                            <div class="role-progression">
+                                <!-- Senior Role -->
+                                <div class="role-item">
+                                    <div class="role-connector">
+                                        <div class="role-dot"></div>
+                                        <div class="role-line"></div>
+                                    </div>
+                                    <div class="role-details">
+                                        <div class="experience-header">
+                                            <div class="experience-title">Senior Revenue Cycle Analyst</div>
+                                            <div class="experience-date">May 2021 - Apr 2022</div>
+                                        </div>
+                                        <div class="experience-company" style="margin-top: 4px;">NewYork–Presbyterian Hospital</div>
+                                        <div class="experience-description" style="margin-top: 8px;">
+                                            <ul>
+                                                <li>Automate financial reports and analysis of monthly finances for 9 hospitals using Tableau dashboards</li>
+                                                <li>Collaborate with enterprise data warehouse, data governance, and business teams on data quality issues</li>
+                                                <li>Organize complex data modeling, data manipulation, and visualizations for numerous revenue cycle projects</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Analyst Role -->
+                                <div class="role-item">
+                                    <div class="role-connector">
+                                        <div class="role-dot"></div>
+                                        <!-- No line for the last item -->
+                                    </div>
+                                    <div class="role-details">
+                                        <div class="experience-header">
+                                            <div class="experience-title">Revenue Cycle Analyst</div>
+                                            <div class="experience-date">Jul 2019 - May 2021</div>
+                                        </div>
+                                        <div class="experience-company" style="margin-top: 4px;">NewYork–Presbyterian Hospital</div>
+                                        <div class="experience-description" style="margin-top: 8px;">
+                                            <ul>
+                                                <li>Lead transition of monthly financial report generation from Excel into Python</li>
+                                                <li>Utilize Pandas, NumPy, and PETL to create and generate cleaner data pipelines and reports</li>
+                                                <li>Calculate key financial performance metrics (KPIs), including NCR, RAO, and TPRR</li>
+                                                <li>Convert a 3-day manual process into a 30-minute automated process, reducing time by greater than 90%</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card card-wide"> <!-- Added card-wide class -->
+                            <div class="experience-card">
+                                <div class="experience-header">
+                                    <div class="experience-title">Administrative Manager</div>
+                                    <div class="experience-date">Oct 2018 - Jul 2019</div>
+                                </div>
+                                <div class="experience-company">ICL, Brooklyn NY</div>
+                                <div class="experience-description">
+                                    <ul>
+                                        <li>Help open new East New York Hub; participate in crucial initial processes and structuring of operations</li>
+                                        <li>Manage healthcare facility of 200+ staff housing clinics and offices, as well as oversee day-to-day operations</li>
+                                        <li>Lead daily conferences to collaborate on issues & goals; communicate regularly with executive team on company vision</li>
+                                        <li>Create, maintain, and interpret analytical building reports from the BMS (Building Management System)</li>
+                                        <li>Create, design, and implement Temperature Reporting System (TRS) backend and UI & Intrasite Homepage for both the tracking and analysis of staff moral as well as improving communication and systematic information flow</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Consulting Experience Section -->
+                <div>
+                    <div class="section-label">Consulting Experience</div>
+                    <div class="horizontal-scroll-container">
+                        <div class="card">
+                            <div class="experience-card">
+                                <div class="experience-header">
+                                    <div class="experience-title">Analytics Consultant</div>
+                                    <div class="experience-date">Nov 2022 - Jun 2023</div>
+                                </div>
+                                <div class="experience-company">Beezwax Datatools Inc.</div>
+                                <div class="experience-description">
+                                    <ul>
+                                        <li>Work closely with clients to create tailored analytic solutions to improve business processes</li>
+                                        <li>Help clients understand their business better by identifying trends in the data</li>
+                                        <li>Tailor analytics, dashboards, and visualizations to personalize business solutions</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="experience-card">
+                                <div class="experience-header">
+                                    <div class="experience-title">Tableau Developer</div>
+                                    <div class="experience-date">Jun 2022 - Dec 2022</div>
+                                </div>
+                                <div class="experience-company">Temple University (Contract)</div>
+                                <div class="experience-description">
+                                    <ul>
+                                        <li>Construct university dashboards for university president and provosts</li>
+                                        <li>Design multi-page views for financial, academic/educational, athletic performance, and comparative trends</li>
+                                        <li>Calculate and derive custom KPIs for university operations</li>
+                                        <li>Assist with Integrated Postsecondary Education Data System (IPEDS) data submission</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="experience-card">
+                                <div class="experience-header">
+                                    <div class="experience-title">Consultant</div>
+                                    <div class="experience-date">Mar 2021 - Present</div>
+                                </div>
+                                <div class="experience-company">maginative, Boston MA</div>
+                                <div class="experience-description">
+                                    <ul>
+                                        <li>Create survey response dashboard for The American International School of Muscat</li>
+                                        <li>Develop Google Analytics custom dashboard for Relay Graduate School of Education</li>
+                                        <li>Perform data audit for Raven360, including analyzing existing data tools</li>
+                                        <li>Propose structural data governance toolset for enhanced data capture</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Education & Skills Section -->
+                <div>
+                    <div class="section-label">Education & Skills</div>
+                    <div class="horizontal-scroll-container">
+                        <div class="card">
+                            <div class="card-section-title">Education</div>
+                            
+                            <div class="experience-card">
+                                <div class="experience-title">Master of Health Administration (MHA)</div>
+                                <div class="experience-date">May 2018</div>
+                                <div class="experience-company">Hofstra University</div>
+                            </div>
+                            
+                            <div class="experience-card" style="margin-top: 16px;">
+                                <div class="experience-title">Bachelor of Science in Health Science (BS)</div>
+                                <div class="experience-date">May 2016</div>
+                                <div class="experience-company">Hofstra University</div>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-section-title">Technical Skills</div>
+                            
+                            <div class="skills-list">
+                                <div class="skill-tag">SQL</div>
+                                <div class="skill-tag" id="python-skill-tag">Python</div>
+                                <span class="tooltip-text python-tooltip"> <!-- Moved tooltip outside, added specific class -->
+                                    <strong>Key Packages:</strong><br>
+                                    Pandas, NumPy<br>
+                                    Scikit-learn<br>
+                                    TensorFlow, PyTorch<br>
+                                    Matplotlib, Seaborn, Plotly
+                                </span>
+                                <div class="skill-tag">Tableau</div>
+                                <div class="skill-tag">Power BI</div>
+                                <div class="skill-tag">Data Science</div>
+                                <div class="skill-tag">Business Intelligence</div>
+                                <div class="skill-tag">Machine Learning</div>
+                                <div class="skill-tag">Data Governance</div>
+                                <div class="skill-tag">Epic EHR</div>
+                                <div class="skill-tag">Excel</div>
+                                <div class="skill-tag">R</div>
+                            </div>
+                        </div>
+                        
+                        <div class="card"> <!-- Removed card-wide class -->
+                            <div class="card-section-title">Certifications</div>
+                            
+                            <div class="certifications-list">
+                                <div class="cert-item">
+                                    <svg class="cert-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+                                    </svg>
+                                    <div>
+                                        <div class="cert-title">Tableau Certified Data Analyst</div>
+                                        <div class="cert-issuer">Tableau</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="cert-item">
+                                    <svg class="cert-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M18 3a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3H6a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3V6a3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3h12a3 3 0 0 0 3-3 3 3 0 0 0-3-3z"></path>
+                                    </svg>
+                                    <div>
+                                        <div class="cert-title">Microsoft Office Specialist (MOS)</div>
+                                        <div class="cert-issuer">Excel 2016 & Advanced Excel 2016</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="cert-item">
+                                    <svg class="cert-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M12 8l6-3-6-3v18l6-3-6-3"></path>
+                                        <path d="M4 5h2"></path>
+                                        <path d="M6 12H4"></path>
+                                        <path d="M4 19h2"></path>
+                                    </svg>
+                                    <div>
+                                        <div class="cert-title">Machine Learning by Stanford University</div>
+                                        <div class="cert-issuer">Coursera</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="cert-item">
+                                    <svg class="cert-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="16 18 22 12 16 6"></polyline>
+                                        <polyline points="8 6 2 12 8 18"></polyline>
+                                    </svg>
+                                    <div>
+                                        <div class="cert-title">Python & SQL (Advanced)</div>
+                                        <div class="cert-issuer">HackerRank</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Professional Memberships Card Moved Here -->
+                        <div class="card">
+                            <div class="card-section-title">Professional Memberships</div>
+                            
+                            <div class="certifications-list">
+                                <div class="cert-item">
+                                    <svg class="cert-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                        <circle cx="9" cy="7" r="4"></circle>
+                                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                                    </svg>
+                                    <div>
+                                        <div class="cert-title">Upsilon Phi Delta Honor Society</div>
+                                        <div class="cert-issuer">Association of University Programs in Health Administration</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="cert-item">
+                                    <svg class="cert-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                                        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                                    </svg>
+                                    <div>
+                                        <div class="cert-title">Healthcare Leaders of New York (HLNY)</div>
+                                        <div class="cert-issuer">Chapter of The American College of Healthcare Executives</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="cert-item">
+                                    <svg class="cert-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                                    </svg>
+                                    <div>
+                                        <div class="cert-title">Future Healthcare Leaders</div>
+                                        <div class="cert-issuer">Hofstra University</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- New Related Projects Section -->
+                <div>
+                    <div class="section-label">Related Projects</div>
+                    <div class="horizontal-scroll-container">
+                        <!-- Project 1 Card -->
+                        <div class="card">
+                            <div class="experience-card">
+                                <div class="experience-title">Healthcare Analytics Dashboard</div>
+                                <div class="experience-description">
+                                    <p>Objective: Visualize key patient outcome and resource metrics. Concept: Tableau dashboards integrating clinical/operational data.</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Project 2 Card -->
+                        <div class="card">
+                            <div class="experience-card">
+                                <div class="experience-title">Predictive Modeling for Patient Flow</div>
+                                <div class="experience-description">
+                                    <p>Objective: Optimize hospital staffing via admission prediction. Concept: Python ML models using patient flow data.</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Project 3 Card (Simulator) -->
+                        <div class="card">
+                            <div class="experience-card">
+                                <div class="experience-title project-link" data-modal-target="simulator-modal">3D Ball Simulator</div>
+                                <div class="experience-description">
+                                    <p>Objective: Demonstrate 3D physics principles. Concept: Three.js simulation with gravity, collision, and user interaction.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Project 4 Card (FlowField) -->
+                         <div class="card">
+                            <div class="experience-card">
+                                <div id="flowfield-project" class="experience-title project-link" data-modal-target="flowfield-modal">FlowField (Particle Simulation)</div>
+                                <div class="experience-description">
+                                    <p>Objective: Visualize particle movement under forces. Concept: Canvas API simulation with interactive force fields.</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Project 5 Card (NYC Monte Carlo) -->
+                        <div class="card">
+                            <div class="experience-card">
+                                <div class="experience-title project-link" data-modal-target="nyc-montecarlo-modal">Manhattan Monte Carlo: Simulating Optimal Walking Routes</div>
+                                <div class="experience-description">
+                                    <p>Objective: Find optimal walking routes considering traffic lights. Concept: Monte Carlo simulation comparing fixed vs. adaptive paths.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer class="footer">
+            <p>© 2023 Michael Brancazio | <a href="#" style="color: inherit;">Click here to see the developer behind this dashboard</a></p>
+        </footer>
+    </div>
+    <!-- Modal Structure -->
+    <div id="simulator-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <iframe src="3d-ball-simulator.html" width="100%" height="100%" frameborder="0"></iframe>
+        </div>
+    </div>
+    <!-- Modal JavaScript -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Get all elements that trigger modals
+            const modalTriggers = document.querySelectorAll('.project-link[data-modal-target]');
+            
+            modalTriggers.forEach(trigger => {
+                trigger.addEventListener('click', () => {
+                    const modalId = trigger.getAttribute('data-modal-target');
+                    const modal = document.getElementById(modalId);
+                    if (modal) {
+                        modal.style.display = "block";
+                        // Attempt to focus the iframe inside the modal
+                        const iframe = modal.querySelector('iframe');
+                        if (iframe) {
+                            iframe.focus();
+                        }
+                    }
+                });
+            });
+
+            // Get all close buttons
+            const closeButtons = document.querySelectorAll('.close-button');
+            
+            closeButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const modal = button.closest('.modal');
+                    if (modal) {
+                        modal.style.display = "none";
+                    }
+                });
+            });
+
+            // Close modal if user clicks outside of the modal content
+            window.addEventListener('click', (event) => {
+                if (event.target.classList.contains('modal')) {
+                    event.target.style.display = "none";
+                }
+            });
+        });
+    </script>
+    <!-- Image Swap JavaScript -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const profilePic = document.getElementById('profile-picture');
+            const avatarDiv = profilePic.closest('.avatar'); // Get the parent avatar div
+            const originalSrc = 'images/headshot.jpeg'; // Assuming this is the default
+            const styledSrc = 'images/styled.png';
+            const shockedSrc = 'images/shocked.png';
+            let isStyled = false; // Track which image is currently shown (after initial click)
+            let isSwapping = false; // Prevent rapid clicks during swap
+
+            if (profilePic) {
+                profilePic.style.cursor = 'pointer'; // Indicate it's clickable
+
+                profilePic.addEventListener('click', () => {
+                    if (isSwapping) return; // Ignore clicks during swap
+
+                    isSwapping = true;
+                    profilePic.src = shockedSrc; // Show shocked image
+                    if (avatarDiv) avatarDiv.classList.add('shocked-zoom'); // Zoom avatar
+
+                    setTimeout(() => {
+                        // After 0.2 seconds, toggle between original/styled
+                        if (isStyled) {
+                            profilePic.src = originalSrc;
+                            if (avatarDiv) avatarDiv.classList.remove('shocked-zoom'); // Remove zoom
+                            // profilePic.classList.remove('zoomed-out'); // Removed zoom toggle
+                            isStyled = false;
+                        } else {
+                            profilePic.src = styledSrc;
+                            if (avatarDiv) avatarDiv.classList.remove('shocked-zoom'); // Remove zoom
+                            // profilePic.classList.add('zoomed-out'); // Removed zoom toggle
+                            isStyled = true;
+                        }
+                        isSwapping = false; // Allow clicks again
+                    }, 100); // 200 milliseconds = 0.2 seconds
+                });
+            } else {
+                console.error("Profile picture element not found!");
+            }
+        });
+
+        // Wait for the DOM to be fully loaded before running halo logic
+        document.addEventListener('DOMContentLoaded', () => {
+            // Cursor Halo Logic
+            const halo = document.querySelector('.cursor-halo');
+            let haloInitialized = false; // Flag to track first mouse move
+
+            if (halo) {
+                halo.style.opacity = '0'; // Ensure it starts hidden via JS too
+
+                document.addEventListener('mousemove', (e) => {
+                    // Use requestAnimationFrame for smoother animation
+                    requestAnimationFrame(() => {
+                        halo.style.left = `${e.clientX}px`;
+                        halo.style.top = `${e.clientY}px`;
+
+                        // Make visible only on the first move
+                        if (!haloInitialized) {
+                            halo.style.opacity = '1';
+                            haloInitialized = true;
+                        }
+                    });
+                });
+
+                // Hide halo when mouse leaves the window body
+                document.body.addEventListener('mouseleave', () => {
+                    if (haloInitialized) { // Only hide if it was ever shown
+                       halo.style.opacity = '0';
+                    }
+                });
+
+                // Show halo when mouse re-enters the window body
+                document.body.addEventListener('mouseenter', () => {
+                    if (haloInitialized) { // Only show if it was already initialized
+                       halo.style.opacity = '1';
+                    }
+                });
+
+            } else {
+                console.error("Cursor halo element not found!");
+            }
+        });
+    </script>
+    <!-- "What have you done?" section removed -->
+    <!-- NYC Walking Sim Modal Structure -->
+    <div id="flowfield-modal" class="modal"> <!-- Removed specific class -->
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <iframe src="flowfield-simulation.html" width="100%" height="100%" frameborder="0"></iframe>
+        </div>
+    </div>
+    
+    <!-- NYC Monte Carlo Modal Structure -->
+    <div id="nyc-montecarlo-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <iframe src="nyc-montecarlo.html" width="100%" height="100%" frameborder="0"></iframe>
+        </div>
+    </div>
+    <!-- Removed tooltip JavaScript -->
+    <div class="cursor-halo"></div> <!-- Halo element -->
+
+    <script>
+        // Filter Box & Highlighting Logic
+        document.addEventListener('DOMContentLoaded', () => {
+            const filterBox = document.getElementById('filter-box');
+            const clearButton = document.getElementById('clear-filter-btn');
+            const keywordButtons = document.querySelectorAll('.filter-keyword');
+            // Define the areas where text should be highlighted
+            const contentAreas = document.querySelectorAll('.profile-description, .experience-description p, .experience-description li, .experience-title, .experience-company, .cert-title, .skill-tag');
+            let originalContent = new Map(); // Store original innerHTML of content areas
+
+            // Store original content before any highlighting
+            contentAreas.forEach((area, index) => {
+                originalContent.set(area, area.innerHTML);
+            });
+
+            // 1. Fade in filter box
+            setTimeout(() => {
+                if (filterBox) {
+                    filterBox.classList.add('visible');
+                }
+            }, 1000); // 1 second delay
+
+            // Function to remove existing highlights
+            function removeHighlights() {
+                contentAreas.forEach(area => {
+                    if (originalContent.has(area)) {
+                        area.innerHTML = originalContent.get(area);
+                    }
+                });
+                if (clearButton) clearButton.style.display = 'none';
+                if (filterBox) filterBox.classList.remove('filter-active'); // Remove active class
+            }
+
+            // Function to add highlights
+            function addHighlight(keyword, highlightTerm) {
+                removeHighlights(); // Clear previous highlights first
+                const highlightClass = `highlight highlight-${highlightTerm.toLowerCase().replace(/\s+/g, '')}`;
+                let regex;
+                // Use a specific regex for "AI" to match whole word or start of word, outside tags
+                if (keyword.toUpperCase() === 'AI') {
+                    // \b matches word boundary. Matches "AI", "AI.", "AI/ML", but not "train"
+                    // (?<!<[^>]*) negative lookbehind to ensure not inside a tag opening
+                    // (?![^<]*>) negative lookahead to ensure not inside a tag closing
+                    regex = new RegExp(`(?<!<[^>]*)\\b${keyword}\\b(?![^<]*>)`, 'gi');
+                } else {
+                    // Original regex for other keywords (ensuring not inside tags)
+                    regex = new RegExp(`(?<!<[^>]*)${keyword}(?![^<]*>)`, 'gi');
+                }
+
+                contentAreas.forEach(area => {
+                    const originalHTML = originalContent.get(area);
+                    if (originalHTML) {
+                        const newHTML = originalHTML.replace(regex, match => `<span class="${highlightClass}">${match}</span>`);
+                        if (newHTML !== originalHTML) {
+                            area.innerHTML = newHTML;
+                        }
+                    }
+                });
+
+                if (clearButton) clearButton.style.display = 'block'; // Show clear button
+                if (filterBox) filterBox.classList.add('filter-active'); // Add active class
+            }
+
+            // 2. Add event listeners to keyword buttons
+            keywordButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const keyword = button.getAttribute('data-keyword');
+                    // Use data-highlight-term if available (for multi-word terms needing a single CSS class), otherwise use the keyword itself
+                    const highlightTerm = button.getAttribute('data-highlight-term') || keyword;
+                    addHighlight(keyword, highlightTerm);
+                });
+            });
+
+            // 3. Add event listener to clear button
+            if (clearButton) {
+                clearButton.addEventListener('click', removeHighlights);
+            }
+        });
+    </script>
+
+    <script>
+        // Disable right-click on profile picture
+        document.addEventListener('DOMContentLoaded', () => {
+            const profilePic = document.getElementById('profile-picture');
+            if (profilePic) {
+                profilePic.addEventListener('contextmenu', (event) => {
+                    event.preventDefault();
+                });
+            }
+        });
+    </script>
+
+    <!-- Trigger deployment -->
+</body>
+</html>
