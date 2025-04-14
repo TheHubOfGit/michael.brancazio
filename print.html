@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Terminal-Style Typing Animation</title>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+      background-color: transparent;
+    }
+    
+    .terminal {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    
+    .terminal-content {
+      position: relative;
+      width: 80%;
+      max-width: 600px;
+      height: 300px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      overflow: hidden;
+    }
+    
+    .line {
+      font-family: monospace;
+      color: #4ade80; /* green-400 */
+      width: 100%;
+      text-align: center;
+      margin: 5px 0;
+      line-height: 1.5;
+      transform: translateY(0);
+      transition: transform 0.5s ease-out;
+    }
+    
+    .command {
+      font-size: 28px;
+    }
+    
+    .output {
+      font-size: 22px;
+    }
+    
+    .cursor {
+      display: inline-block;
+      width: 0.6em;
+      height: 1em;
+      background-color: #4ade80;
+      animation: blink 0.5s infinite;
+      vertical-align: middle;
+      margin-left: 2px;
+    }
+    
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="terminal">
+    <div class="terminal-content" id="terminal-content">
+      <!-- Lines will be added here -->
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const terminalContent = document.getElementById('terminal-content');
+      const fullText = "print(portfolio)";
+      
+      const portfolioItems = [
+        "Data Science",
+        "Dashboards",
+        "UI",
+        "LLMs",
+        "Python",
+        "Machine Learning",
+        "AI",
+        "Engineering",
+        "Business Intelligence",
+        "Tableau",
+        "D3.js",
+        "SQL",
+        "HTML & CSS",
+        "JS",
+        "Cloud Computing",
+        "AI Strategy"
+      ];
+      
+      // Create the command line
+      const commandLine = document.createElement('div');
+      commandLine.className = 'line command';
+      terminalContent.appendChild(commandLine);
+      
+      // Add cursor to command line
+      const cursor = document.createElement('span');
+      cursor.className = 'cursor';
+      commandLine.appendChild(cursor);
+      
+      let charIndex = 0;
+      let currentText = '';
+      
+      // Type out "print(portfolio)"
+      function typeCommand() {
+        if (charIndex < fullText.length) {
+          currentText += fullText.charAt(charIndex);
+          // Remove cursor, update text, add cursor again
+          cursor.remove();
+          commandLine.textContent = currentText;
+          commandLine.appendChild(cursor);
+          
+          charIndex++;
+          setTimeout(typeCommand, 300);
+        } else {
+          // Command is complete, remove cursor
+          cursor.remove();
+          
+          // Wait before showing output
+          setTimeout(showOutput, 800);
+        }
+      }
+      
+      // Start showing portfolio items
+      function showOutput() {
+        // Add each portfolio item with typing animation
+        addPortfolioItems(0);
+      }
+      
+      // Add portfolio items one by one
+      function addPortfolioItems(index) {
+        if (index < portfolioItems.length) {
+          // Create a new line for this item
+          const itemLine = document.createElement('div');
+          itemLine.className = 'line output';
+          terminalContent.appendChild(itemLine);
+          
+          // Add cursor to this line
+          const itemCursor = document.createElement('span');
+          itemCursor.className = 'cursor';
+          itemLine.appendChild(itemCursor);
+          
+          // Move all previous lines up
+          moveLines();
+          
+          // Type out this item
+          typeItem(itemLine, itemCursor, portfolioItems[index], 0, index);
+        }
+      }
+      
+      // Type out a portfolio item
+      function typeItem(line, cursor, text, charIdx, itemIndex) {
+        if (charIdx < text.length) {
+          let currentItemText = text.substring(0, charIdx + 1);
+          
+          // Remove cursor, update text, add cursor again
+          cursor.remove();
+          line.textContent = currentItemText;
+          line.appendChild(cursor);
+          
+          charIdx++;
+          setTimeout(() => typeItem(line, cursor, text, charIdx, itemIndex), 300);
+        } else {
+          // Item is complete, remove cursor
+          cursor.remove();
+          
+          // Check if this was the last item
+          if (itemIndex === portfolioItems.length - 1) {
+            // Send message to parent that animation is finished
+            window.parent.postMessage('animationFinished', '*');
+          } else {
+            // Wait before showing next item
+            setTimeout(() => addPortfolioItems(itemIndex + 1), 800);
+          }
+        }
+      }
+      
+      // Move all lines up
+      function moveLines() {
+        const lines = document.querySelectorAll('.line');
+        const lineHeight = 40; // Approximate height of a line
+        
+        lines.forEach((line, index) => {
+          const offset = (lines.length - 1 - index) * lineHeight;
+          line.style.transform = `translateY(-${offset}px)`;
+        });
+      }
+      
+      function startAnimation() {
+        // Start typing the command after a short delay
+        setTimeout(typeCommand, 500);
+      }
+
+      // Listen for a message from the parent window to start the animation
+      window.addEventListener('message', function(event) {
+        // Optional: Check event.origin for security
+        // if (event.origin !== 'YOUR_EXPECTED_ORIGIN') return;
+
+        if (event.data === 'startAnimation') {
+          startAnimation();
+        }
+      });
+    });
+  </script>
+</body>
+</html>
