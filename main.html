@@ -553,31 +553,37 @@
                 position: relative;
                 height: auto;
                 width: 100%;
-                padding: 96px 24px 48px;
+                padding: 48px 24px 48px; /* Reduced top padding */
             }
             
             .scrollable-content {
                 width: 100%;
                 height: auto;
                 overflow: visible;
+                padding: 32px 24px; /* Adjust padding for mobile */
             }
             
             .horizontal-scroll-container {
                 height: auto;
-                padding: 16px;
+                padding: 16px 0; /* Remove horizontal padding */
                 flex-wrap: wrap;
                 justify-content: center;
             }
             
             .card {
-                min-width: 100%;
-                width: 100%;
+                /* Allow centering, prevent overflow, and allow shrinking */
+                max-width: 100%;
+                width: auto; /* Override fixed base width */
+                min-width: 0; /* Override fixed base min-width */
+                /* Keep original width overrides commented out */
+                /* min-width: 100%; */
+                /* width: 100%; */
             }
             
-            .card-wide, .card-large {
+            /* .card-wide, .card-large {
                 min-width: 100%;
                 width: 100%;
-            }
+            } */
             
             .profile-card {
                 max-width: 100%;
@@ -589,6 +595,11 @@
             
             .link-card {
                 width: calc(50% - 8px);
+            }
+    
+            .link-email {
+                height: 98px; /* Match other link cards */
+                width: 100%; /* Ensure full width on mobile */
             }
             
             .footer {
@@ -994,7 +1005,7 @@
                 </div>
 
                 <!-- Timeline Animation HTML -->
-                <div class="timeline-container">
+                <div class="timeline-container" style="left: 50px;">
                     <div class="progress-line" id="progress"></div>
                     <div class="dot start pulse" id="start-dot">
                         <div class="label">MHA Degree</div>
