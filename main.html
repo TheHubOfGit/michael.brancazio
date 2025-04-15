@@ -14,7 +14,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    
+
     <style>
         :root {
             --bg-color: rgb(255, 255, 255);
@@ -27,16 +27,34 @@
             --font-primary: "Figtree", sans-serif;
         }
         
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --bg-color: rgb(10, 10, 11);
-                --card-bg: rgba(18, 18, 18, 0.6); /* Increased transparency for glass effect */
-                --text-color: rgb(255, 255, 255);
-                --text-secondary: rgb(161, 161, 170);
-                --border-color: rgba(255, 255, 255, 0.06);
-            }
+        /* Dark Mode Styles - Applied via body class */
+        body.dark-mode {
+            --bg-color: rgb(10, 10, 11);
+            --card-bg: rgba(18, 18, 18, 0.6); /* Increased transparency for glass effect */
+            --text-color: rgb(255, 255, 255);
+            --text-secondary: rgb(161, 161, 170);
+            --border-color: rgba(255, 255, 255, 0.06);
         }
-        
+
+        /* Chain Container Styles */
+        #chain-container {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            width: 80px;  /* Adjust size as needed */
+            height: 100vh; /* Make container full height */
+            z-index: 9999; /* Increased z-index significantly */
+            display: block; /* Explicitly set display */
+            cursor: grab; /* Indicate interactivity */
+            /* background-color: rgba(255, 0, 0, 0.1); Removed temporary background */
+        }
+        #chain-container canvas {
+             display: block;
+             width: 100%;
+             height: 100%;
+        }
+
+
         body {
             margin: 0;
             padding: 0;
@@ -47,6 +65,7 @@
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
             overflow-x: hidden;
+            transition: background-color 0.3s ease, color 0.3s ease; /* Smooth theme transition */
         }
         
         *, *::before, *::after {
@@ -989,6 +1008,39 @@
              }
         }
         /* End Sticky Mobile Header Styles */
+ 
+        /* Dark Mode Toggle Class */
+        body.dark-mode {
+            --bg-color: rgb(10, 10, 11);
+            --card-bg: rgba(18, 18, 18, 0.6);
+            --text-color: rgb(255, 255, 255);
+            --text-secondary: rgb(161, 161, 170);
+            --border-color: rgba(255, 255, 255, 0.06);
+        }
+ 
+        /* Chain Toggle Container Styles */
+        #chain-toggle-container {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            width: 80px; /* Small width */
+            height: 150px; /* Small height */
+            z-index: 1002; /* Above filter box, modal close */
+            /* background-color: rgba(100, 100, 100, 0.1); Optional: for debugging */
+            border-radius: 5px;
+            overflow: hidden; /* Ensure canvas stays within bounds */
+            cursor: grab; /* Indicate interactivity */
+        }
+ 
+        #chain-toggle-container:active {
+            cursor: grabbing;
+        }
+ 
+        #chain-toggle-container canvas {
+            display: block; /* Remove extra space below canvas */
+            /* Ensure canvas background is transparent */
+            background-color: transparent !important;
+        }
 
     </style>
 </head>
@@ -1515,6 +1567,15 @@
                                 </div>
                             </div>
                         </div>
+                        <!-- Static Stock Dashboard Card -->
+                        <div class="card">
+                            <div class="experience-card">
+                                <div class="experience-title project-link" data-modal-target="static-dashboard-modal">Static Stock Dashboard</div>
+                                <div class="experience-description">
+                                    <p>Objective: Display stock metrics using static data. Concept: HTML/CSS/JS dashboard with embedded sample data.</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1662,6 +1723,14 @@
         <div class="modal-content">
             <span class="close-button">&times;</span>
             <iframe src="nyc-montecarlo.html" width="100%" height="100%" frameborder="0"></iframe>
+        </div>
+    </div>
+
+    <!-- Static Stock Dashboard Modal Structure -->
+    <div id="static-dashboard-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <iframe src="Stock Dashboard/static_dashboard.html" width="100%" height="100%" frameborder="0"></iframe>
         </div>
     </div>
     <!-- Removed tooltip JavaScript -->
@@ -1935,6 +2004,274 @@
     </script>
     <!-- End Sticky Header Scroll Logic -->
 
+    <!-- Load Matter.js just before the script that uses it -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+    <!-- Chain Dark Mode Toggle Script -->
+    <script>
+        // Wrap in DOMContentLoaded to ensure elements exist before script runs
+        document.addEventListener('DOMContentLoaded', () => {
+
+            const body = document.body;
+            const chainContainer = document.getElementById('chain-container');
+
+            if (!chainContainer || typeof Matter === 'undefined') {
+                console.error("Chain container or Matter.js not found!");
+                return; // Put the return back to stop execution on error
+            }
+
+            // --- Matter.js Setup ---
+            const Engine = Matter.Engine;
+            const Render = Matter.Render;
+            const Runner = Matter.Runner;
+            const Composites = Matter.Composites;
+            const Constraint = Matter.Constraint;
+            const MouseConstraint = Matter.MouseConstraint;
+            const Mouse = Matter.Mouse;
+            const Composite = Matter.Composite;
+            const Bodies = Matter.Bodies;
+            const Events = Matter.Events;
+
+            const engine = Engine.create({ enableSleeping: true, positionIterations: 10 });
+            const world = engine.world;
+            engine.gravity.y = 1.8; // Slightly less gravity for a lighter feel
+
+            // Get container dimensions
+            let containerWidth = chainContainer.offsetWidth;
+            let containerHeight = chainContainer.offsetHeight;
+
+            const render = Render.create({
+                element: chainContainer, // Render inside the container
+                engine: engine,
+                options: {
+                    width: containerWidth,
+                    height: containerHeight,
+                    wireframes: false,
+                    background: 'transparent', // Make background transparent
+                    pixelRatio: window.devicePixelRatio || 1 // Adjust for high DPI screens
+                }
+            });
+
+            Render.run(render);
+            const runner = Runner.create();
+            Runner.run(runner, engine);
+
+            // --- Chain Creation (Adapted) ---
+            const group = Matter.Body.nextGroup(true);
+            const segmentLength = 15; // Shorter segments for smaller container
+            const segmentRadius = 5;  // Smaller radius
+            const numSegments = 8;    // Fewer segments
+            const stiffness = 0.7;
+            const damping = 0.1;
+            let chainStartX = containerWidth / 2;
+            const chainStartY = -10; // Start slightly above the container
+
+            // Define colors based on theme
+            let segmentFill = 'rgba(170, 170, 170, 0.8)'; // Default light mode
+            let segmentStroke = 'rgba(200, 200, 200, 0.9)';
+            let constraintStroke = 'rgba(102, 102, 102, 0.7)';
+            let chain = null; // Declare chain variable
+
+            function updateChainColors() {
+                const isDarkMode = body.classList.contains('dark-mode');
+                segmentFill = isDarkMode ? 'rgba(100, 100, 100, 0.8)' : 'rgba(170, 170, 170, 0.8)';
+                segmentStroke = isDarkMode ? 'rgba(150, 150, 150, 0.9)' : 'rgba(200, 200, 200, 0.9)';
+                constraintStroke = isDarkMode ? 'rgba(150, 150, 150, 0.7)' : 'rgba(102, 102, 102, 0.7)';
+
+                if (chain && chain.bodies) {
+                    chain.bodies.forEach(body => {
+                        body.render.fillStyle = segmentFill;
+                        body.render.strokeStyle = segmentStroke;
+                    });
+                }
+                 if (chain && chain.constraints) {
+                    chain.constraints.forEach(constraint => {
+                        if (constraint.render) constraint.render.strokeStyle = constraintStroke;
+                    });
+                 }
+                 // Also update the anchor constraint if it exists and has render properties
+                 const anchorConstraint = world.constraints.find(c => c.label === 'AnchorConstraint');
+                 if (anchorConstraint && anchorConstraint.render) {
+                     // Anchor constraint might not need color change, but included for completeness
+                 }
+            }
+
+            function createChain() {
+                 // Clear existing chain if any
+                if (chain) {
+                    Composite.remove(world, chain);
+                    // Also remove the anchor constraint specifically if it exists
+                    const anchorConstraint = world.constraints.find(c => c.label === 'AnchorConstraint');
+                    if (anchorConstraint) Composite.remove(world, anchorConstraint);
+                }
+
+                chainStartX = containerWidth / 2; // Recalculate start X
+
+                chain = Composites.stack(chainStartX, chainStartY, numSegments, 1, 5, 5, function(x, y) {
+                    return Bodies.circle(x, y, segmentRadius, {
+                        collisionFilter: { group: group },
+                        frictionAir: 0.05,
+                        slop: 0.1,
+                        render: {
+                            fillStyle: segmentFill,
+                            strokeStyle: segmentStroke,
+                            lineWidth: 1
+                        }
+                    });
+                });
+
+                Composites.chain(chain, 0.5, 0, -0.5, 0, {
+                    stiffness: stiffness,
+                    length: segmentLength * 0.8, // Slightly shorter constraint length
+                    damping: damping,
+                    render: {
+                        type: 'line',
+                        strokeStyle: constraintStroke,
+                        lineWidth: 1
+                    }
+                });
+
+                const firstSegment = chain.bodies[0];
+                const anchor = { x: chainStartX, y: 5 };
+                const anchorConstraint = Constraint.create({
+                    label: 'AnchorConstraint', // Add label for easier finding
+                    pointA: anchor,
+                    bodyB: firstSegment,
+                    pointB: { x: 0, y: -segmentRadius }, // Connect to top edge of first segment
+                    stiffness: 0.9, // Stiffer anchor
+                    length: 5, // Allow a tiny bit of slack
+                     render: { visible: false } // Hide anchor constraint line
+                });
+
+                Composite.add(world, [chain, anchorConstraint]);
+                updateChainColors(); // Apply correct colors immediately
+            }
+
+
+            // --- Interaction & Dark Mode Toggle ---
+            const mouse = Mouse.create(render.canvas);
+            const mouseConstraint = MouseConstraint.create(engine, {
+                mouse: mouse,
+                constraint: {
+                    stiffness: 0.1,
+                    render: { visible: false }
+                }
+            });
+
+            Composite.add(world, mouseConstraint);
+            render.mouse = mouse;
+
+            let draggedChainBody = null;
+            let startPullX = 0; // Store initial X for pull limit
+            let startPullY = 0; // Store initial Y for pull limit
+            const maxPullDistance = 150; // Maximum pixels to pull from start point
+            const pullThreshold = maxPullDistance * 0.7; // Set threshold relative to max pull (e.g., 70%)
+            let themeToggledThisDrag = false;
+            let initialBodyClasses = body.className; // Store initial classes
+
+            // Apply saved theme on load & set initial colors
+            const currentTheme = localStorage.getItem('theme');
+            if (currentTheme === 'dark') {
+                body.classList.add('dark-mode');
+            } else {
+                 body.classList.remove('dark-mode'); // Ensure light mode if not dark
+            }
+            // Don't call updateChainColors here, wait for createChain
+
+            Events.on(mouseConstraint, 'startdrag', (event) => {
+                if (chain.bodies.includes(event.body)) {
+                    draggedChainBody = event.body;
+                    startPullX = mouse.position.x; // Record start X
+                    startPullY = mouse.position.y; // Record start Y
+                    themeToggledThisDrag = false; // Reset toggle flag
+                    chainContainer.style.cursor = 'grabbing'; // Change cursor
+                }
+            });
+
+            Events.on(mouseConstraint, 'enddrag', (event) => {
+                if (draggedChainBody && event.body === draggedChainBody) {
+                    draggedChainBody = null;
+                    chainContainer.style.cursor = 'grab'; // Restore cursor
+                }
+            });
+
+            Events.on(engine, 'beforeUpdate', () => {
+                if (draggedChainBody) {
+                    const currentPullVerticalDistance = mouse.position.y - startPullY;
+
+                    // --- Theme Toggle Logic (Check First) ---
+                    if (!themeToggledThisDrag && currentPullVerticalDistance > pullThreshold) {
+                        body.classList.toggle('dark-mode');
+                        updateChainColors(); // Update colors immediately after toggle
+                        localStorage.setItem('theme', body.classList.contains('dark-mode') ? 'dark' : 'light');
+                        themeToggledThisDrag = true; // Prevent multiple toggles per drag
+
+                        // Optional: Vibrate on toggle
+                        if (navigator.vibrate) {
+                            navigator.vibrate(50); // Short vibration
+                        }
+                    }
+
+                    // --- Max Pull Distance Logic (Check Second) ---
+                    // Check if still dragging (might have been released by toggle logic implicitly, though unlikely here)
+                    if (draggedChainBody) {
+                        const deltaX = mouse.position.x - startPullX;
+                        const deltaY = mouse.position.y - startPullY;
+                        const currentDistance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+                        if (currentDistance > maxPullDistance) {
+                            // Release the drag
+                            mouse.button = -1; // Simulate mouse up for Matter.js internal state
+                            draggedChainBody = null; // Stop processing this drag
+                            chainContainer.style.cursor = 'grab'; // Restore cursor
+
+                            // Optional: Vibrate on release
+                            if (navigator.vibrate) {
+                                 navigator.vibrate(20); // Short vibration for feedback
+                            }
+                            // No return needed here, just stop processing the drag state
+                        }
+                    }
+                }
+            });
+
+             // --- Fit to container & Handle Resize ---
+            function fitRendererToContainer() {
+                containerWidth = chainContainer.offsetWidth;
+                containerHeight = chainContainer.offsetHeight;
+
+                render.options.width = containerWidth;
+                render.options.height = containerHeight;
+                render.canvas.width = containerWidth * (window.devicePixelRatio || 1);
+                render.canvas.height = containerHeight * (window.devicePixelRatio || 1);
+                 render.canvas.style.width = containerWidth + 'px';
+                 render.canvas.style.height = containerHeight + 'px';
+
+                Render.lookAt(render, {
+                    min: { x: 0, y: 0 },
+                    max: { x: containerWidth, y: containerHeight }
+                });
+
+                 // Recreate the chain to reposition it correctly
+                 createChain();
+            }
+
+            // Initial setup
+            fitRendererToContainer(); // Call initially to set up size and create chain
+
+            // Debounced resize handler
+            let resizeTimeout;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(fitRendererToContainer, 150); // Adjust debounce time as needed
+            }, { passive: true });
+
+        }); // End of DOMContentLoaded wrapper
+    </script>
+    <!-- End Chain Dark Mode Toggle Script -->
+
     <!-- Trigger deployment -->
+    <!-- Chain Container HTML -->
+    <div id="chain-container"></div>
+    <!-- End Chain Container HTML -->
 </body>
 </html>
