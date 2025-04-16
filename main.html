@@ -107,11 +107,11 @@
             display: flex;
             flex-direction: column;
             gap: 24px;
-            padding: 32px 0 32px 72px; /* Added left padding */
-            height: 100vh;
-            overflow-y: auto; /* Enable vertical scrolling */
+            padding: 32px 0 70px 72px; /* Increased bottom padding for footer */
+            /* height: 100vh; */ /* Removed to allow natural height */
+            overflow: visible;
             width: calc(100% - 600px); /* Adjusted for new fixed column width */
-            align-items: flex-start; /* Prevent section containers from stretching */
+            /* align-items: flex-start; /* Prevent section containers from stretching */ /* Removed */
         }
         
         .horizontal-scroll-container {
@@ -425,6 +425,8 @@
             opacity: 0;
             position: absolute;
             background-color: var(--card-bg);
+            backdrop-filter: blur(4px); /* Add blur effect */
+            -webkit-backdrop-filter: blur(4px); /* Safari support */
             color: var(--text-color);
             border: 1px solid var(--border-color);
             padding: 8px 12px;
@@ -723,6 +725,11 @@
             opacity: 0.8;
         }
 
+        /* Remove underline from Fun Projects links */
+        #fun-projects-section .project-link {
+            text-decoration: none;
+        }
+
         /* Removed "What have you done?" styles */
 
         /* Filter Box Styles */
@@ -953,9 +960,14 @@
 
         /* Allow specific scroll containers to auto-adjust height */
         #education-skills-section .horizontal-scroll-container,
+        #fun-projects-section .horizontal-scroll-container,
+        #consulting-experience-section .horizontal-scroll-container { /* Added Consulting */
+            height: auto;
+            align-items: stretch; /* Apply stretch behavior */
+        }
         #related-projects-section .horizontal-scroll-container {
             height: auto;
-            align-items: stretch; /* Revert to default stretch */
+            align-items: flex-start; /* Align items to top, allow natural height */
         }
 
         /* Sticky Mobile Header Styles */
@@ -1051,8 +1063,10 @@
       (function() {
         try {
           const theme = localStorage.getItem('theme');
-          // Apply dark mode if saved in localStorage OR if no preference saved and system prefers dark
-          if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+          // Apply theme based on localStorage, defaulting to dark mode if no preference is saved.
+          if (theme === 'light') {
+            // Do nothing, light mode is the default via CSS
+          } else { // Apply dark mode if theme is 'dark' or if no theme is set (null/undefined)
             // Check if body exists before adding class, although it should at this point
             if (document.body) {
                 document.body.classList.add('dark-mode');
@@ -1061,7 +1075,6 @@
                 document.documentElement.classList.add('dark-mode');
             }
           }
-          // Light mode is the default based on CSS, no class needed initially.
         } catch (e) {
           // Avoid breaking page load if localStorage or matchMedia fails
           console.error('Error applying initial theme:', e);
@@ -1341,7 +1354,7 @@
                 </div>
                 
                 <!-- Consulting Experience Section -->
-                <div>
+                <div id="consulting-experience-section">
                     <div class="section-label">Consulting Experience</div>
                     <div class="horizontal-scroll-container">
                         <div class="card">
@@ -1537,7 +1550,7 @@
                 </div>
                 
                 <!-- New Related Projects Section -->
-                <div>
+                <div id="related-projects-section">
                     <div class="section-label">Related Projects</div>
                     <div class="horizontal-scroll-container">
                         <!-- Project 1 Card -->
@@ -1560,12 +1573,22 @@
                             </div>
                         </div>
                         
+                        <!-- Cards moved to Fun Projects section -->
+                    </div>
+                </div>
+
+                <!-- Fun Projects Section -->
+                <div id="fun-projects-section">
+                    <div class="section-label">Fun Projects</div>
+                    <div class="horizontal-scroll-container">
                         <!-- Project 3 Card (Simulator) -->
                         <div class="card">
                             <div class="experience-card">
                                 <div class="experience-title project-link" data-modal-target="simulator-modal">3D Ball Simulator</div>
                                 <div class="experience-description">
-                                    <p>Objective: Demonstrate 3D physics principles. Concept: Three.js simulation with gravity, collision, and user interaction.</p>
+                                    <p><strong>What:</strong> An interactive web simulation with 3D balls; complete with gravity, colisions, and explosions.</p>
+                                    <p><strong>How:</strong> Using a Three.js simulation that incorporates gravity, collision detection, and user interaction (both for mouse and touch).</p>
+                                    <p><strong>Why:</strong> Because it's fun. And to put some Three.js into practice.</p>
                                 </div>
                             </div>
                         </div>
@@ -1575,7 +1598,9 @@
                             <div class="experience-card">
                                 <div id="flowfield-project" class="experience-title project-link" data-modal-target="flowfield-modal">FlowField (Particle Simulation)</div>
                                 <div class="experience-description">
-                                    <p>Objective: Visualize particle movement under forces. Concept: Canvas API simulation with interactive force fields.</p>
+                                    <p><strong>What:</strong> A visual simulation displaying numerous small particles moving across the screen, their paths influenced by underlying, interactive force fields.</p>
+                                    <p><strong>How:</strong> Implementing an HTML5 Canvas API simulation featuring interactive force fields that affect particle movement.</p>
+                                    <p><strong>Why:</strong> To make pretty, dynamic patterns. It was a fun exercise in using the Canvas API to create interactive visuals - and turned out more fun to play with than I anticipated.</p>
                                 </div>
                             </div>
                         </div>
@@ -1585,7 +1610,9 @@
                             <div class="experience-card">
                                 <div class="experience-title project-link" data-modal-target="nyc-montecarlo-modal">Manhattan Monte Carlo: Simulating Optimal Walking Routes</div>
                                 <div class="experience-description">
-                                    <p>Objective: Find optimal walking routes considering traffic lights. Concept: Monte Carlo simulation comparing fixed vs. adaptive paths.</p>
+                                    <p><strong>What:</strong> A simulation that models walking routes on a grid (i.e., Manhattan streets) and uses probability (Monte Carlo method) to find the fastest paths, considering potential delays like traffic lights.</p>
+                                    <p><strong>How:</strong> Employing a Monte Carlo simulation method to compare the efficiency of fixed walking paths versus paths that adapt based on conditions (like traffic lights).</p>
+                                    <p><strong>Why:</strong> A real-life scenario of figuring out what the fastest, on average, method to walk to work was.</p>
                                 </div>
                             </div>
                         </div>
@@ -1594,7 +1621,9 @@
                             <div class="experience-card">
                                 <div class="experience-title project-link" data-modal-target="static-dashboard-modal">Static Stock Dashboard</div>
                                 <div class="experience-description">
-                                    <p>Objective: Display stock metrics using static data. Concept: HTML/CSS/JS dashboard with embedded sample data.</p>
+                                    <p><strong>What:</strong> A basic sample page designed as a dashboard displaying stock market indicators, using static sample data.</p>
+                                    <p><strong>How:</strong> Creating a front-end dashboard using HTML, CSS, and JavaScript, having it fed by live refreshable data feeds using YFinance (though this example is static).</p>
+                                    <p><strong>Why:</strong> The real version is a version I use to this day for my personal investing purposes.</p>
                                 </div>
                             </div>
                         </div>
@@ -1764,8 +1793,8 @@
             const filterBox = document.getElementById('filter-box');
             const clearButton = document.getElementById('clear-filter-btn');
             const keywordButtons = document.querySelectorAll('.filter-keyword');
-            // Define the areas where text should be highlighted
-            const contentAreas = document.querySelectorAll('.profile-description, .experience-description p, .experience-description li, .experience-title, .experience-company, .cert-title, .skill-tag');
+            // Define the areas where text should be highlighted (excluding profile card)
+            const contentAreas = document.querySelectorAll('.experience-description p, .experience-description li, .experience-title, .experience-company, .cert-title, .skill-tag');
             let originalContent = new Map(); // Store original innerHTML of content areas
 
             // Store original content before any highlighting
@@ -1789,6 +1818,15 @@
                 });
                 if (clearButton) clearButton.style.display = 'none';
                 if (filterBox) filterBox.classList.remove('filter-active'); // Remove active class
+
+                // Scroll all cards back to the top
+                const allCards = document.querySelectorAll('.scrollable-content .card');
+                allCards.forEach(card => {
+                    card.scrollTo({
+                        top: 0,
+                        behavior: 'smooth'
+                    });
+                });
             }
 
             // Function to add highlights
@@ -1802,6 +1840,9 @@
                     // (?<!<[^>]*) negative lookbehind to ensure not inside a tag opening
                     // (?![^<]*>) negative lookahead to ensure not inside a tag closing
                     regex = new RegExp(`(?<!<[^>]*)\\b${keyword}\\b(?![^<]*>)`, 'gi');
+                } else if (keyword === 'Power BI') {
+                    // Specific regex for "Power BI" to match with or without space, outside tags
+                    regex = new RegExp(`(?<!<[^>]*)(Power ?BI)(?![^<]*>)`, 'gi');
                 } else {
                     // Original regex for other keywords (ensuring not inside tags)
                     regex = new RegExp(`(?<!<[^>]*)${keyword}(?![^<]*>)`, 'gi');
@@ -1810,9 +1851,13 @@
                 contentAreas.forEach(area => {
                     const originalHTML = originalContent.get(area);
                     if (originalHTML) {
-                        const newHTML = originalHTML.replace(regex, match => `<span class="${highlightClass}">${match}</span>`);
-                        if (newHTML !== originalHTML) {
-                            area.innerHTML = newHTML;
+                        // Check if the keyword exists in the original HTML (respecting the regex rules)
+                        if (regex.test(originalHTML)) {
+                            // If found, wrap the entire original content of the area
+                            area.innerHTML = `<span class="${highlightClass}">${originalHTML}</span>`;
+                        } else {
+                            // If not found, ensure it's restored to original (in case a previous filter highlighted it)
+                            area.innerHTML = originalHTML;
                         }
                     }
                 });
@@ -1828,6 +1873,28 @@
                     // Use data-highlight-term if available (for multi-word terms needing a single CSS class), otherwise use the keyword itself
                     const highlightTerm = button.getAttribute('data-highlight-term') || keyword;
                     addHighlight(keyword, highlightTerm);
+
+                    // --- Generic Filter Scroll Logic ---
+                    // After highlighting, find cards containing highlights and scroll them
+                    const allCards = document.querySelectorAll('.scrollable-content .card');
+                    allCards.forEach(card => {
+                        // Find the first highlighted element *within this specific card*
+                        const firstHighlightInCard = card.querySelector('.highlight');
+                        if (firstHighlightInCard) {
+                            // Calculate the position of the highlight relative to the card's content area
+                            const cardStyles = window.getComputedStyle(card);
+                            const cardPaddingTop = parseInt(cardStyles.paddingTop, 10);
+                            // Calculate scroll position to bring the element near the top, accounting for padding
+                            const targetScrollTop = firstHighlightInCard.offsetTop - cardPaddingTop;
+
+                            // Scroll the card's content area smoothly
+                            card.scrollTo({
+                                top: targetScrollTop,
+                                behavior: 'smooth'
+                            });
+                        }
+                    });
+                    // --- End Generic Filter Scroll Logic ---
                 });
             });
 
@@ -2088,15 +2155,15 @@
             const chainStartY = -10; // Start slightly above the container
 
             // Define colors based on theme
-            let segmentFill = 'rgba(170, 170, 170, 0.8)'; // Default light mode
-            let segmentStroke = 'rgba(200, 200, 200, 0.9)';
+            let segmentFill = 'rgb(170, 170, 170)'; // Default light mode (Opaque)
+            let segmentStroke = 'rgb(200, 200, 200)'; // Opaque
             let constraintStroke = 'rgba(102, 102, 102, 0.7)';
             let chain = null; // Declare chain variable
 
             function updateChainColors() {
                 const isDarkMode = body.classList.contains('dark-mode');
-                segmentFill = isDarkMode ? 'rgba(100, 100, 100, 0.8)' : 'rgba(170, 170, 170, 0.8)';
-                segmentStroke = isDarkMode ? 'rgba(150, 150, 150, 0.9)' : 'rgba(200, 200, 200, 0.9)';
+                segmentFill = isDarkMode ? 'rgb(100, 100, 100)' : 'rgb(170, 170, 170)'; // Opaque
+                segmentStroke = isDarkMode ? 'rgb(150, 150, 150)' : 'rgb(200, 200, 200)'; // Opaque
                 constraintStroke = isDarkMode ? 'rgba(150, 150, 150, 0.7)' : 'rgba(102, 102, 102, 0.7)';
 
                 if (chain && chain.bodies) {
@@ -2192,10 +2259,10 @@
 
             // Apply saved theme on load & set initial colors
             const currentTheme = localStorage.getItem('theme');
-            if (currentTheme === 'dark') {
-                body.classList.add('dark-mode');
+            if (currentTheme === 'light') {
+                 body.classList.remove('dark-mode'); // Explicitly light mode
             } else {
-                 body.classList.remove('dark-mode'); // Ensure light mode if not dark
+                 body.classList.add('dark-mode'); // Default to dark if 'dark' or null/undefined
             }
             // Don't call updateChainColors here, wait for createChain
 
@@ -2336,5 +2403,56 @@
     <!-- Chain Container HTML -->
     <div id="chain-container"></div>
     <!-- End Chain Container HTML -->
+
+    <!-- Haptic Feedback on Mobile Scroll Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Check if the Vibration API is supported
+            if (!('vibrate' in navigator)) {
+                console.log("Vibration API not supported on this browser.");
+                return;
+            }
+
+            const cards = document.querySelectorAll('.card');
+            const vibratedCards = new Set(); // Keep track of cards that have triggered vibration
+
+            let lastScrollY = window.scrollY;
+
+            window.addEventListener('scroll', () => {
+                // Only run on mobile screens
+                if (window.innerWidth <= 768) {
+                    const viewportCenter = window.innerHeight / 2;
+                    const currentScrollY = window.scrollY;
+                    const scrollingDown = currentScrollY > lastScrollY;
+
+                    cards.forEach((card, index) => {
+                        const rect = card.getBoundingClientRect();
+
+                        // Trigger vibration when scrolling down and card top passes viewport center
+                        // Also ensure card is still somewhat visible (bottom > 0)
+                        if (scrollingDown && rect.top < viewportCenter && rect.bottom < window.innerHeight && rect.bottom > 0 && !vibratedCards.has(index)) {
+                            navigator.vibrate(1); // 1ms vibration
+                            vibratedCards.add(index);
+                        }
+                        // Reset card status if it scrolls back up above the center
+                        else if (!scrollingDown && rect.top >= viewportCenter && vibratedCards.has(index)) {
+                             vibratedCards.delete(index);
+                        }
+                        // Also reset if card goes completely out of view above the top edge when scrolling up
+                        else if (!scrollingDown && rect.bottom < 0 && vibratedCards.has(index)) {
+                            vibratedCards.delete(index);
+                        }
+                    });
+
+                    lastScrollY = currentScrollY;
+                } else {
+                    // Clear the set if not on mobile view anymore
+                    vibratedCards.clear();
+                }
+            }, { passive: true }); // Use passive listener for scroll performance
+        });
+    </script>
+    <!-- End Haptic Feedback Script -->
+
 </body>
 </html>
