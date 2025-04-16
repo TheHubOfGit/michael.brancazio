@@ -2285,8 +2285,33 @@
                             const touchX = touch.clientX - canvasBounds.left;
                             const touchY = touch.clientY - canvasBounds.top;
 
-                            const deltaX = touchX - startPullX;
-                            const deltaY = touchY - startPullY;
+                            const deltaY = touchY - startPullY; // Keep deltaY calculation
+
+                            // --- Theme Toggle Logic for Touch (Check First) ---
+                            const currentTouchPullVerticalDistance = deltaY; // Use calculated deltaY
+                            if (!themeToggledThisDrag && currentTouchPullVerticalDistance > pullThreshold) {
+                                body.classList.toggle('dark-mode');
+                                updateChainColors(); // Update colors immediately after toggle
+                                localStorage.setItem('theme', body.classList.contains('dark-mode') ? 'dark' : 'light');
+                                themeToggledThisDrag = true; // Prevent multiple toggles per drag
+
+                                // --- Release drag immediately on theme toggle (Touch) ---
+                                mouse.button = -1; // Simulate mouse up
+                                draggedChainBody = null; // Stop processing this drag
+                                chainContainer.style.cursor = 'grab'; // Restore cursor
+                                // --- End release logic ---
+
+                                // Optional: Vibrate on toggle
+                                if (navigator.vibrate) {
+                                    navigator.vibrate(50); // Short vibration
+                                }
+                                // Prevent default touch behavior like scrolling AFTER theme toggle release
+                                event.preventDefault();
+                                return; // Exit touchmove handler early after theme toggle release
+                            }
+
+                            // --- Max Pull Distance Logic for Touch (Check Second) ---
+                            const deltaX = touchX - startPullX; // Calculate deltaX here if needed for distance
                             const currentDistance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
 
                              // DEBUG LOG for TouchMove
