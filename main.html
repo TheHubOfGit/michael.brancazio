@@ -2209,6 +2209,7 @@
                         mouse.button = -1; // Simulate mouse up
                         draggedChainBody = null; // Stop processing this drag
                         chainContainer.style.cursor = 'grab'; // Restore cursor
+                        mouseConstraint.body = null; // Force release in constraint
                         // --- End release logic ---
 
                         // Optional: Vibrate on toggle
@@ -2299,6 +2300,7 @@
                                 mouse.button = -1; // Simulate mouse up
                                 draggedChainBody = null; // Stop processing this drag
                                 chainContainer.style.cursor = 'grab'; // Restore cursor
+                                mouseConstraint.body = null; // Force release in constraint
                                 // --- End release logic ---
 
                                 // Optional: Vibrate on toggle
