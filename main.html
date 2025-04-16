@@ -39,8 +39,8 @@
         /* Chain Container Styles */
         #chain-container {
             position: fixed;
-            top: 10px;
-            right: 10px;
+            top: -10px;
+            right: -15px;
             width: 80px;  /* Adjust size as needed */
             height: 100vh; /* Make container full height */
             z-index: 9999; /* Increased z-index significantly */
@@ -2131,7 +2131,7 @@
                 });
 
                 const firstSegment = chain.bodies[0];
-                const anchor = { x: chainStartX, y: 5 };
+                const anchor = { x: chainStartX, y: 0 };
                 const anchorConstraint = Constraint.create({
                     label: 'AnchorConstraint', // Add label for easier finding
                     pointA: anchor,
@@ -2212,7 +2212,7 @@
                     }
 
                     // --- Max Pull Distance Logic (Check Second) ---
-                    // Check if still dragging (might have been released by toggle logic implicitly, though unlikely here)
+                    // Check if still dragging
                     if (draggedChainBody) {
                         const deltaX = mouse.position.x - startPullX;
                         const deltaY = mouse.position.y - startPullY;
@@ -2264,6 +2264,47 @@
                 clearTimeout(resizeTimeout);
                 resizeTimeout = setTimeout(fitRendererToContainer, 150); // Adjust debounce time as needed
             }, { passive: true });
+
+
+            // --- Explicit Touch Event Listener for Max Pull ---
+            // Add this listener directly to the canvas for potentially more reliable touch handling
+            if (render.canvas) {
+                render.canvas.addEventListener('touchmove', (event) => {
+                    if (draggedChainBody) {
+                        // Get the first touch point
+                        const touch = event.touches[0];
+                        if (touch) {
+                            // Calculate position relative to the canvas, similar to how mouse.position works
+                            const canvasBounds = render.canvas.getBoundingClientRect();
+                            const touchX = touch.clientX - canvasBounds.left;
+                            const touchY = touch.clientY - canvasBounds.top;
+
+                            const deltaX = touchX - startPullX;
+                            const deltaY = touchY - startPullY;
+                            const currentDistance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+                             // DEBUG LOG for TouchMove
+                             // console.log(`TouchMove Check: start=(${startPullX.toFixed(1)}, ${startPullY.toFixed(1)}), current=(${touchX.toFixed(1)}, ${touchY.toFixed(1)}), distance=${currentDistance.toFixed(1)}, max=${maxPullDistance}`);
+
+
+                            if (currentDistance > maxPullDistance) {
+                                // Release the drag (mirroring logic in beforeUpdate)
+                                mouse.button = -1;
+                                draggedChainBody = null;
+                                chainContainer.style.cursor = 'grab';
+                                if (navigator.vibrate) {
+                                     navigator.vibrate(20);
+                                }
+                                // Prevent default touch behavior like scrolling when limit is hit
+                                event.preventDefault();
+                            }
+                        }
+                    }
+                }, { passive: false }); // Use passive: false to allow preventDefault
+            } else {
+                 console.error("Render canvas not found for attaching touch listener.");
+            }
+
 
         }); // End of DOMContentLoaded wrapper
     </script>
