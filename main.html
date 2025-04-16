@@ -2205,13 +2205,19 @@
                         localStorage.setItem('theme', body.classList.contains('dark-mode') ? 'dark' : 'light');
                         themeToggledThisDrag = true; // Prevent multiple toggles per drag
 
+                        // --- Release drag immediately on theme toggle ---
+                        mouse.button = -1; // Simulate mouse up
+                        draggedChainBody = null; // Stop processing this drag
+                        chainContainer.style.cursor = 'grab'; // Restore cursor
+                        // --- End release logic ---
+
                         // Optional: Vibrate on toggle
                         if (navigator.vibrate) {
                             navigator.vibrate(50); // Short vibration
                         }
                     }
 
-                    // --- Max Pull Distance Logic (Check Second) ---
+                    // --- Max Pull Distance Logic (Check Second, only if still dragging) ---
                     // Check if still dragging
                     if (draggedChainBody) {
                         const deltaX = mouse.position.x - startPullX;
