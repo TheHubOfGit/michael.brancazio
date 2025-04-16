@@ -2428,32 +2428,19 @@
                     cards.forEach((card, index) => {
                         const rect = card.getBoundingClientRect();
 
-                        if (scrollingDown) {
-                            // --- Scrolling Down ---
-                            // Trigger vibration when card top passes viewport center going down
-                            if (rect.top < viewportCenter && rect.bottom > 0 && !vibratedCards.has(index)) {
-                                navigator.vibrate(1);
-                                vibratedCards.add(index);
-                            }
-                            // Reset if scrolling down and card bottom goes below center again (it was previously above)
-                            else if (rect.bottom >= viewportCenter && vibratedCards.has(index)) {
-                                 vibratedCards.delete(index);
-                            }
-                        } else {
-                            // --- Scrolling Up ---
-                            // Trigger vibration when card bottom passes viewport center going up
-                            if (rect.bottom < viewportCenter && rect.top < window.innerHeight && !vibratedCards.has(index)) {
-                                navigator.vibrate(1);
-                                vibratedCards.add(index);
-                            }
-                            // Reset if scrolling up and card top goes above center again (it was previously below)
-                            else if (rect.top >= viewportCenter && vibratedCards.has(index)) {
-                                 vibratedCards.delete(index);
-                            }
-                            // Also reset if card goes completely out of view above the top edge when scrolling up
-                            else if (rect.bottom < 0 && vibratedCards.has(index)) {
-                                vibratedCards.delete(index);
-                            }
+                        // Trigger vibration when scrolling down and card top passes viewport center
+                        // Also ensure card is still somewhat visible (bottom > 0)
+                        if (scrollingDown && rect.top < viewportCenter && rect.bottom < window.innerHeight && rect.bottom > 0 && !vibratedCards.has(index)) {
+                            navigator.vibrate(1); // 1ms vibration
+                            vibratedCards.add(index);
+                        }
+                        // Reset card status if it scrolls back up above the center
+                        else if (!scrollingDown && rect.top >= viewportCenter && vibratedCards.has(index)) {
+                             vibratedCards.delete(index);
+                        }
+                        // Also reset if card goes completely out of view above the top edge when scrolling up
+                        else if (!scrollingDown && rect.bottom < 0 && vibratedCards.has(index)) {
+                            vibratedCards.delete(index);
                         }
                     });
 
