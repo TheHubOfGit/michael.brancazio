@@ -36,7 +36,115 @@
             --border-color: rgba(255, 255, 255, 0.06);
         }
 
-        /* Chain Container Styles */
+/* Card modifications for independent scrolling */
+.card {
+    /* Existing styles preserved */
+    background-color: var(--card-bg);
+    border-radius: 20px;
+    box-shadow: inset 0px 0px 0px 1px var(--border-color), 0px 2px 4px 0px rgba(0, 0, 0, 0.04);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    min-height: 180px;
+    min-width: 320px;
+    width: 320px;
+    flex-shrink: 0;
+    transition: transform 0.2s ease-in-out;
+    position: relative; /* Keep this for logo badge positioning */
+    
+    /* Add these new styles */
+    max-height: 450px; /* Set maximum height for cards */
+    overflow: hidden; /* Hide overflow at card level */
+}
+
+/* Add a scrollable container class for the card content */
+.card-scrollable-content {
+    overflow-y: auto; /* Enable vertical scrolling */
+    height: 100%; /* Take full height of the card */
+    padding-right: 8px; /* Add space for scrollbar */
+    margin-right: -8px; /* Compensate for padding */
+}
+
+/* Add scrollbar styling for WebKit browsers */
+.card-scrollable-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.card-scrollable-content::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 3px;
+}
+
+.card-scrollable-content::-webkit-scrollbar-track {
+    background-color: rgba(0, 0, 0, 0.05);
+    border-radius: 3px;
+}
+
+/* For Firefox scrollbar */
+.card-scrollable-content {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.2) rgba(0, 0, 0, 0.05);
+}
+
+/* Dark mode scrollbar adjustments */
+body.dark-mode .card-scrollable-content::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+body.dark-mode .card-scrollable-content::-webkit-scrollbar-track {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+body.dark-mode .card-scrollable-content {
+    scrollbar-color: rgba(255, 255, 255, 0.2) rgba(255, 255, 255, 0.05);
+}
+
+/* Ensure logo badges remain properly positioned */
+.logo-badge {
+    /* Keep existing styles - no changes needed */
+    position: absolute;
+    top: -12px;
+    left: -15px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2), inset 0 0 0 1px rgba(0,0,0,0.1);
+    background-color: var(--card-bg);
+    z-index: 100;
+}
+
+/* Ensure card-wide and card-large retain proper dimensions */
+.card-wide {
+    min-width: 520px;
+    width: 520px;
+    max-height: 500px; /* Slightly taller for wider cards */
+}
+
+.card-large {
+    min-width: 520px;
+    width: 520px;
+    max-height: 500px; /* Slightly taller for larger cards */
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+    .card {
+        max-height: none; /* Remove max height on mobile */
+    }
+    
+    .card-wide, .card-large {
+        max-height: none; /* Remove max height on mobile */
+    }
+    
+    .card-scrollable-content {
+        overflow-y: visible; /* Disable scrolling on mobile */
+        padding-right: 0; /* Remove scrollbar space */
+        margin-right: 0; /* Reset margin */
+    }
+}
+       /* Chain Container Styles */
         #chain-container {
             position: fixed;
             top: -10px;
@@ -118,7 +226,7 @@
             display: flex;
             flex-direction: row;
             gap: 16px;
-            padding: 10px 16px 0 16px; /* Added 10px top padding */
+            padding: 20px 16px 0 16px; /* Added 10px top padding */
             overflow-x: auto;
             scroll-behavior: smooth;
             -webkit-overflow-scrolling: touch;
@@ -262,9 +370,27 @@
             min-width: 320px;
             width: 320px;
             flex-shrink: 0;
-            overflow-y: auto;
+            overflow: visible; /* Allow logo badge to overflow */
+            /* overflow-x: hidden; /* Prevent badge overflow horizontally */
             transition: transform 0.2s ease-in-out;
+            position: relative; /* Ensure card is a positioning context */
         }
+
+        /* Logo Badge Styles */
+        .logo-badge {
+            position: absolute;
+            top: -12px; /* Adjust positioning */
+            left: -15px; /* Adjust positioning */
+            width: 40px; /* Adjust size */
+            height: 40px; /* Adjust size */
+            border-radius: 50%; /* Circular crop */
+            object-fit: cover; /* Ensure image covers the area */
+            border: 2px solid rgba(255, 255, 255, 0.5); /* Simple white border */
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2), inset 0 0 0 1px rgba(0,0,0,0.1); /* Subtle shadow + inner line */
+            background-color: var(--card-bg); /* Background in case image fails */
+            z-index: 100; /* Ensure logo is above other elements */
+        }
+        /* End Logo Badge Styles */
         
         .card:hover, .card.hover-effect { /* Apply effect on hover or when class is added */
             transform: translateY(-5px);
@@ -303,6 +429,8 @@
             display: flex;
             flex-direction: column;
             gap: 8px;
+            position: relative; /* Needed for logo positioning */
+            /* padding-top: 30px; /* REMOVED - Prevent overlap with logo */
         }
         
         .experience-header {
@@ -546,11 +674,12 @@
         .role-details {
             display: flex;
             flex-direction: column;
-            padding-top: 0; /* Align top of details with top of dot */
+            /* padding-top: 30px; /* REMOVED - Adjust padding for logo */
+            position: relative; /* Needed for logo positioning */
         }
         /* Add space below role details, except for the last role */
         .role-item:not(:last-child) .role-details {
-            padding-bottom: 24px;
+            padding-bottom: 24px; /* Keep existing bottom padding */
         }
         
         
@@ -956,7 +1085,7 @@
         }
         #related-projects-section .horizontal-scroll-container {
             height: auto;
-            align-items: flex-start; /* Align items to top, allow natural height */
+            align-items: stretch; /* Align items to top, allow natural height */
         }
 
         /* Sticky Mobile Header Styles */
@@ -1181,6 +1310,7 @@
                     <div class="section-label">Current Experience</div>
                     <div class="horizontal-scroll-container">
                         <div class="card card-large">
+                            <img class="logo-badge" src="images/NYP.jpg" alt="NewYork-Presbyterian Logo">
                             <div class="role-progression">
                                 <!-- Data Scientist Role -->
                                 <div class="role-item">
@@ -1245,6 +1375,7 @@
                         </div>
                         
                         <div class="card card-large" data-job-target="iqvia"> <!-- Added target for IQVIA -->
+                            <img class="logo-badge" src="images/IQVIA.png" alt="IQVIA Logo">
                             <div class="experience-card">
                                 <div class="experience-header">
                                     <div class="experience-title">Data Analyst / Consultant</div>
@@ -1274,6 +1405,7 @@
                     <div class="section-label">Previous Experience</div>
                     <div class="horizontal-scroll-container">
                         <div class="card card-wide">
+                            <img class="logo-badge" src="images/NYP.jpg" alt="NewYork-Presbyterian Logo">
                             <div class="role-progression">
                                 <!-- Senior Role -->
                                 <div class="role-item">
@@ -1322,6 +1454,7 @@
                         </div>
                         
                         <div class="card card-wide" data-job-target="icl"> <!-- Added target for ICL -->
+                            <img class="logo-badge" src="images/ICL.png" alt="ICL Logo">
                             <div class="experience-card">
                                 <div class="experience-header">
                                     <div class="experience-title">Administrative Manager</div>
@@ -1347,6 +1480,7 @@
                     <div class="section-label">Consulting Experience</div>
                     <div class="horizontal-scroll-container">
                         <div class="card">
+                            <img class="logo-badge" src="images/Beezwax.jpeg" alt="Beezwax Logo">
                             <div class="experience-card">
                                 <div class="experience-header">
                                     <div class="experience-title">Analytics Consultant</div>
@@ -1364,6 +1498,7 @@
                         </div>
                         
                         <div class="card">
+                            <img class="logo-badge" src="images/Temple.jpeg" alt="Temple University Logo">
                             <div class="experience-card">
                                 <div class="experience-header">
                                     <div class="experience-title">Tableau Developer</div>
@@ -1382,6 +1517,7 @@
                         </div>
                         
                         <div class="card">
+                            <img class="logo-badge" src="images/maginative.jpeg" alt="Maginative Logo">
                             <div class="experience-card">
                                 <div class="experience-header">
                                     <div class="experience-title">Consultant</div>
@@ -1406,6 +1542,8 @@
                     <div class="section-label">Education & Skills</div>
                     <div class="horizontal-scroll-container">
                         <div class="card">
+                            <img class="logo-badge" src="images/Hofstra.png" alt="Hofstra University Logo">
+
                             <div class="card-section-title">Education</div>
                             
                             <div class="experience-card">
@@ -2444,4 +2582,61 @@
     <!-- End Haptic Feedback Script -->
 
 </body>
+
+<!-- JAVASCRIPT - Add this just before the closing </body> tag -->
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // Select all cards
+    const cards = document.querySelectorAll('.card');
+    
+    cards.forEach(card => {
+        // Skip if already processed
+        if (card.querySelector('.card-scrollable-content')) return;
+        
+        // Get the logo badge if it exists
+        const logoBadge = card.querySelector('.logo-badge');
+        
+        // Create a wrapper for all content except the logo badge
+        const scrollableContainer = document.createElement('div');
+        scrollableContainer.className = 'card-scrollable-content';
+        
+        // Clone all children of the card except the logo badge
+        const cardChildren = Array.from(card.childNodes).filter(node => {
+            // Skip the logo badge
+            return !(node === logoBadge);
+        });
+        
+        // Move all children (except logo badge) into the scrollable container
+        cardChildren.forEach(child => {
+            scrollableContainer.appendChild(child);
+        });
+        
+        // Append the scrollable container to the card
+        card.appendChild(scrollableContainer);
+    });
+    
+    // Optional: Scroll to top when filter keywords are clicked
+    const filterKeywords = document.querySelectorAll('.filter-keyword');
+    if (filterKeywords.length > 0) {
+        filterKeywords.forEach(keyword => {
+            keyword.addEventListener('click', () => {
+                // Reset scroll position of all card content containers
+                const scrollableContainers = document.querySelectorAll('.card-scrollable-content');
+                scrollableContainers.forEach(container => {
+                    container.scrollTop = 0;
+                });
+            });
+        });
+    }
+    
+    // Optional: Detect if scrollbar is needed and add class for styling
+    const scrollableContainers = document.querySelectorAll('.card-scrollable-content');
+    scrollableContainers.forEach(container => {
+        // Check if content is taller than container
+        if (container.scrollHeight > container.clientHeight) {
+            container.closest('.card').classList.add('needs-scroll');
+        }
+    });
+});
+</script>
 </html>
