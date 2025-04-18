@@ -143,6 +143,10 @@ body.dark-mode .card-scrollable-content {
         padding-right: 0; /* Remove scrollbar space */
         margin-right: 0; /* Reset margin */
     }
+
+    .logo-badge {
+        left: 10px; /* Adjust logo position for mobile */
+    }
 }
        /* Chain Container Styles */
         #chain-container {
@@ -151,7 +155,7 @@ body.dark-mode .card-scrollable-content {
             right: -15px;
             width: 80px;  /* Adjust size as needed */
             height: 100vh; /* Make container full height */
-            z-index: 9999; /* Increased z-index significantly */
+            z-index: 1000; /* Lowered z-index to be below FAB */
             display: block; /* Explicitly set display */
             cursor: grab; /* Indicate interactivity */
             /* background-color: rgba(255, 0, 0, 0.1); Removed temporary background */
@@ -964,73 +968,86 @@ body.dark-mode .card-scrollable-content {
             background: linear-gradient(to right, #aaaaaa 90%, transparent 100%);
         }
         
+        /* Update dot styles to display logos */
         .dot {
             position: absolute;
             top: 50%;
             transform: translate(-50%, -50%);
-            width: 12px;
-            height: 12px;
+            width: 24px; /* Increased size for logos */
+            height: 24px; /* Increased size for logos */
             border-radius: 50%;
-            background-color: #333;
+            background-color: transparent; /* Remove background color */
             z-index: 2;
             box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+            /* overflow: hidden; /* Removed to allow label visibility */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid white; /* Add white border */
+            box-sizing: content-box; /* Ensure border is added outside */
+            /* Base opacity and transition for fade-in */
+            opacity: 0;
+            transition: opacity 0.75s ease;
         }
-        
+
+        /* Style for the logo images inside dots */
+        .dot img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* Cover the circle area */
+            border-radius: 50%; /* Ensure image is circular */
+        }
+
+        /* Keep the start dot as is, or replace with a graduation cap icon */
         .dot.start {
             left: 0%;
-            background-color: #555;
-            opacity: 0.8;
+            background-color: #555; /* Keep original styling if not using image */
+            opacity: 0.8; /* Start dot is visible initially */
+            border: none; /* Remove border for start dot if not using image */
+            /* If using an image for start dot, remove background-color and add image styles */
+            width: 20px; /* Match smaller dot size */
+            height: 20px; /* Match smaller dot size */
         }
-        
-        .dot.green {
-            left: 7%;
-            background-color: rgba(76, 175, 80, 0.8);
-            opacity: 0;
-            transition: opacity 0.75s ease;
+
+        /* Override styles for start dot when it contains an image */
+        .dot.start:has(img) {
+            background-color: transparent; /* Remove grey background */
+            opacity: 1; /* Make fully opaque */
+            border: 2px solid white; /* Add the white border */
         }
-        
-        .dot.red {
-            left: 15%;
-            background-color: rgba(244, 67, 54, 0.8);
-            opacity: 0;
-            transition: opacity 0.75s ease;
+
+        /* Ensure start dot image (if used) doesn't have the white border initially */
+        .dot.start img {
+             /* No specific border needed here unless different from default */
         }
-        
-        .dot.blue {
-            left: 34%;
-            background-color: rgba(33, 150, 243, 0.8);
-            opacity: 0;
-            transition: opacity 0.75s ease;
+
+        /* Positioning for other dots */
+        .dot.green { left: 7%; }
+        .dot.red { left: 15%; }
+        .dot.blue { left: 34%; }
+        .dot.red-small1 { left: 40%; width: 20px; height: 20px; } /* Slightly smaller */
+        .dot.red2 { left: 50%; }
+        .dot.red-small2 { left: 87%; width: 20px; height: 20px; } /* Slightly smaller */
+
+        /* Update pulse animation to work with images */
+        .pulse {
+            animation: pulse 1.5s infinite;
         }
-        
-        .dot.red-small1 {
-            left: 40%;
-            background-color: rgba(244, 67, 54, 0.8);
-            opacity: 0;
-            transition: opacity 0.75s ease;
-            width: 8px;
-            height: 8px;
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.3), 0 0 5px rgba(0, 0, 0, 0.2); /* Combine shadows */
+            }
+            50% {
+                box-shadow: 0 0 0 5px rgba(255, 255, 255, 0), 0 0 5px rgba(0, 0, 0, 0.2);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(255, 255, 255, 0), 0 0 5px rgba(0, 0, 0, 0.2);
+            }
         }
-        
-        .dot.red2 {
-            left: 50%;
-            background-color: rgba(244, 67, 54, 0.8);
-            opacity: 0;
-            transition: opacity 0.75s ease;
-        }
-        
-        .dot.red-small2 {
-            left: 87%;
-            background-color: rgba(244, 67, 54, 0.8);
-            opacity: 0;
-            transition: opacity 0.75s ease;
-            width: 8px;
-            height: 8px;
-        }
-        
+
+        /* Adjust label positioning for the larger dots */
         .label {
-            /* display: none; /* Keep labels hidden for now */
-            /* New styles for hover label */
             visibility: hidden;
             opacity: 0;
             position: absolute;
@@ -1048,7 +1065,7 @@ body.dark-mode .card-scrollable-content {
             white-space: nowrap; /* Prevent wrapping */
             z-index: 3; /* Ensure label is above progress line */
             transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
-            margin-top: 8px; /* Space between dot and label */
+            margin-top: 14px; /* Increased to account for larger dots */
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             pointer-events: none; /* Don't interfere with dot hover */
             text-align: center;
@@ -1057,22 +1074,6 @@ body.dark-mode .card-scrollable-content {
             visibility: visible;
             opacity: 1;
             transform: translateX(-50%) translateY(0); /* Move into final position */
-        }
-        
-        .pulse {
-            animation: pulse 1.5s infinite;
-        }
-        
-        @keyframes pulse {
-            0% {
-                box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.3);
-            }
-            50% {
-                box-shadow: 0 0 0 5px rgba(0, 0, 0, 0);
-            }
-            100% {
-                box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
-            }
         }
         /* End Timeline Animation Styles */
 
@@ -1172,6 +1173,119 @@ body.dark-mode .card-scrollable-content {
             background-color: transparent !important;
         }
 
+        /* FAB Button Styles */
+        #filter-fab {
+            display: none; /* Hidden by default on desktop */
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            width: 40px     ;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--accent-blue);
+            color: white;
+            border: none;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            z-index: 1002;
+            transition: transform 0.2s ease-in-out, background-color 0.2s ease;
+            /* display: flex; <-- Removed this line */
+            align-items: center;
+            justify-content: center;
+        }
+
+        #filter-fab:hover, #filter-fab:focus {
+            transform: scale(1.1);
+        }
+
+        #filter-fab.active {
+            background-color: #dc3545; /* Red color when active */
+            transform: rotate(45deg);
+        }
+
+        #filter-fab svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        /* Mobile filter styles */
+        /* Mobile filter styles - modify the existing media query */
+        @media (max-width: 768px) {
+            /* Modify the existing rule for filter box */
+            #filter-box {
+                display: flex !important;
+        position: fixed;
+        bottom: 90px; /* Position above the FAB */
+        right: 20px;
+        left: auto; /* Reset left position */
+        top: auto; /* Reset top position */
+        max-width: 160px; /* Fixed width for single column */
+        width: 200px; /* Set explicit width */
+        max-height: 60vh; /* Limit height */
+        overflow-y: auto; /* Allow scrolling if many filters */
+        flex-direction: column; /* Force column layout */
+        align-items: stretch; /* Make items fill container width */
+        flex-wrap: nowrap !important; /* Prevent wrapping at all costs */
+        transform: scale(0);
+        transform-origin: bottom right;
+        opacity: 0;
+        pointer-events: none; /* Not clickable when hidden */
+        transition: transform 0.3s ease-out, opacity 0.2s ease;
+        padding: 12px; /* Add consistent padding */
+        gap: 8px; /* Space between filter items */
+            }
+            
+            #filter-box.mobile-visible {
+                transform: scale(1);
+                opacity: 1;
+                pointer-events: auto; /* Restore clickability */
+                filter: grayscale(0); /* Always full color on mobile */
+            }
+
+            /* Show the FAB on mobile */
+            #filter-fab {
+                display: flex;
+            }
+            
+            /* Adjust filter keyword styles for mobile column layout */
+            .filter-keyword {
+                text-align: left;
+                padding: 8px 12px;
+                margin: 2px 0;
+                border-radius: 8px;
+                font-size: 14px; /* Slightly larger for touch targets */
+                width: 100%; /* Fill the container width */
+                box-sizing: border-box; /* Include padding in width calculation */
+            }
+            
+            /* Make clear filter button match the column width */
+             #clear-filter-btn { /* Base style adjustment for mobile */
+                bottom: 90px; /* Keep initial position relative to FAB */
+                right: 20px;
+                left: auto;
+                top: auto;
+                /* Remove width here, apply only when visible */
+            }
+
+            #clear-filter-btn.mobile-visible {
+                display: block;
+                bottom: 160px; /* Position above the filter options */
+                /* right: 20px; Already set */
+                /* left: auto; Already set */
+                /* top: auto; Already set */
+                width: calc(80% - 24px); /* Match filter box width (max-width 80% minus 2*12px padding) */
+                text-align: center;
+                /* Ensure it's positioned correctly relative to the filter box */
+                 transform: translateX(calc(-1 * (100% - (80% - 24px)) / 2)); /* Center relative to filter box width */
+                 /* This centering might need adjustment depending on exact layout */
+            }
+
+            /* Hide timeline container as before */
+            .timeline-container {
+                display: none !important;
+            }
+        }
+
     </style>
 </head>
 
@@ -1221,6 +1335,13 @@ body.dark-mode .card-scrollable-content {
         <button class="filter-keyword" data-keyword="Visualization" style="background-color: #607D8B;">Visualization</button>
     </div>
     <button id="clear-filter-btn">Clear Filter</button>
+
+    <!-- Filter FAB for mobile -->
+    <button id="filter-fab" aria-label="Filter">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+      </svg>
+    </button>
 
     <div class="container">
         <div class="section">
@@ -1277,27 +1398,49 @@ body.dark-mode .card-scrollable-content {
                 </div>
 
                 <!-- Timeline Animation HTML -->
+                <!-- Timeline Animation HTML with Logos -->
                 <div class="timeline-container" style="left: 50px;">
                     <div class="progress-line" id="progress"></div>
+                    
+                    <!-- First dot (MHA Degree) - using Hofstra logo -->
                     <div class="dot start pulse" id="start-dot">
+                        <img src="images/Hofstra.png" alt="Hofstra University">
                         <div class="label">MHA Degree</div>
                     </div>
-                    <div class="dot green" id="green-dot" data-job-target="icl"> <!-- Added target -->
+                    
+                    <!-- ICL dot -->
+                    <div class="dot green" id="green-dot" data-job-target="icl">
+                        <img src="images/ICL.png" alt="ICL">
                         <div class="label">Administrative Manager<br>ICL, Brooklyn NY</div>
                     </div>
-                    <div class="dot red" id="red-dot" data-job-target="rca"> <!-- Added target -->
+                    
+                    <!-- NYP Revenue Cycle Analyst dot -->
+                    <div class="dot red" id="red-dot" data-job-target="rca">
+                        <img src="images/NYP.jpg" alt="NewYork-Presbyterian">
                         <div class="label">Revenue Cycle Analyst<br>NewYork–Presbyterian</div>
                     </div>
-                    <div class="dot blue" id="blue-dot" data-job-target="iqvia"> <!-- Added target -->
+                    
+                    <!-- IQVIA dot -->
+                    <div class="dot blue" id="blue-dot" data-job-target="iqvia">
+                        <img src="images/IQVIA.png" alt="IQVIA">
                         <div class="label">Data Analyst / Consultant<br>IQVIA, Boston MA</div>
                     </div>
-                    <div class="dot red-small1" id="red-small1-dot" data-job-target="srca"> <!-- Added target -->
+                    
+                    <!-- NYP Senior Revenue Cycle Analyst dot -->
+                    <div class="dot red-small1" id="red-small1-dot" data-job-target="srca">
+                        <img src="images/NYP.jpg" alt="NewYork-Presbyterian">
                         <div class="label">Senior Revenue Cycle Analyst<br>NewYork–Presbyterian</div>
                     </div>
-                    <div class="dot red2" id="red2-dot" data-job-target="bid"> <!-- Added target -->
+                    
+                    <!-- NYP BI Developer dot -->
+                    <div class="dot red2" id="red2-dot" data-job-target="bid">
+                        <img src="images/NYP.jpg" alt="NewYork-Presbyterian">
                         <div class="label">BI Developer, Data Strategy<br>NewYork–Presbyterian</div>
                     </div>
-                    <div class="dot red-small2" id="red-small2-dot" data-job-target="eng"> <!-- Added target -->
+                    
+                    <!-- NYP Engineer dot -->
+                    <div class="dot red-small2" id="red-small2-dot" data-job-target="eng">
+                        <img src="images/NYP.jpg" alt="NewYork-Presbyterian">
                         <div class="label">Engineer / Data Literacy Assoc.<br>NewYork–Presbyterian</div>
                     </div>
                 </div>
@@ -2051,9 +2194,10 @@ body.dark-mode .card-scrollable-content {
                // Progress to green dot
                progress.style.width = '7%';
                setTimeout(() => {
+                   // When using images, we need to make the parent div visible
                    greenDot.style.opacity = '1';
                    greenDot.classList.add('pulse');
-                   startDot.classList.remove('pulse');
+                   startDot.classList.remove('pulse'); // Stop pulsing the start dot
                    
                    // Wait at green dot
                    setTimeout(() => {
@@ -2079,9 +2223,11 @@ body.dark-mode .card-scrollable-content {
                                        progress.style.width = '40%';
                                        setTimeout(() => {
                                            redSmall1Dot.style.opacity = '1';
+                                           // No pulse for smaller dots? Or add if desired: redSmall1Dot.classList.add('pulse');
                                            
                                            // Progress to second red dot
                                            setTimeout(() => {
+                                               // if (redSmall1Dot.classList.contains('pulse')) redSmall1Dot.classList.remove('pulse');
                                                progress.style.width = '50%';
                                                setTimeout(() => {
                                                    red2Dot.style.opacity = '1';
@@ -2093,24 +2239,26 @@ body.dark-mode .card-scrollable-content {
                                                        progress.style.width = '87%';
                                                        setTimeout(() => {
                                                            redSmall2Dot.style.opacity = '1';
+                                                            // No pulse for smaller dots? Or add if desired: redSmall2Dot.classList.add('pulse');
                                                            
                                                            // Progress to end with fade
                                                            setTimeout(() => {
+                                                               // if (redSmall2Dot.classList.contains('pulse')) redSmall2Dot.classList.remove('pulse');
                                                                progress.classList.add('fade-end');
                                                                progress.style.width = '100%';
-                                                           }, 1000);
-                                                       }, 750);
-                                                   }, 1500);
-                                               }, 1250);
-                                           }, 1000);
-                                       }, 750);
-                                   }, 1500);
-                               }, 1250);
-                           }, 1500);
-                       }, 1250);
-                   }, 1500); // Half the original wait time
-               }, 1250);
-          }
+                                                           }, 1000); // Time before fading starts
+                                                       }, 750); // Time for small dot 2 to appear
+                                                   }, 1500); // Wait time at red dot 2
+                                               }, 1250); // Time for red dot 2 to appear
+                                           }, 1000); // Wait time at small red dot 1
+                                       }, 750); // Time for small red dot 1 to appear
+                                   }, 1500); // Wait time at blue dot
+                               }, 1250); // Time for blue dot to appear
+                           }, 1500); // Wait time at red dot 1
+                       }, 1250); // Time for red dot 1 to appear
+                   }, 1500); // Wait time at green dot
+               }, 1250); // Time for green dot to appear
+           }
           // End Timeline Animation Logic
 
           // Timeline Dot Hover to Card Effect Logic
@@ -2580,6 +2728,91 @@ body.dark-mode .card-scrollable-content {
         });
     </script>
     <!-- End Haptic Feedback Script -->
+
+    <!-- FAB JavaScript -->
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const filterFab = document.getElementById('filter-fab');
+        const filterBox = document.getElementById('filter-box');
+        const clearFilterBtn = document.getElementById('clear-filter-btn');
+        
+        if (filterFab && filterBox) {
+            // Toggle filter panel when FAB is clicked
+            filterFab.addEventListener('click', () => {
+                filterFab.classList.toggle('active');
+                filterBox.classList.toggle('mobile-visible');
+                
+                // Also toggle clear button visibility if it exists and is currently displayed
+                // Check the computed style to see if it's actually visible ('block')
+                if (clearFilterBtn && window.getComputedStyle(clearFilterBtn).display === 'block') {
+                    clearFilterBtn.classList.toggle('mobile-visible');
+                }
+                
+                // Update ARIA attributes for accessibility
+                const isExpanded = filterBox.classList.contains('mobile-visible');
+                filterFab.setAttribute('aria-expanded', isExpanded);
+            });
+            
+            // Close filter box when a filter is selected on mobile
+            const filterKeywords = document.querySelectorAll('.filter-keyword');
+            filterKeywords.forEach(keyword => {
+                keyword.addEventListener('click', () => {
+                    if (window.innerWidth <= 768) {
+                        // Add mobile-visible class to clear button when a filter is active
+                        if (clearFilterBtn) {
+                            // Check if the clear button should be visible (i.e., a filter is active)
+                            // This relies on the filter logic adding 'filter-active' to the filter box
+                            if (filterBox.classList.contains('filter-active')) {
+                                clearFilterBtn.classList.add('mobile-visible');
+                            } else {
+                                // If no filter is active after click (e.g., toggling off), hide it
+                                clearFilterBtn.classList.remove('mobile-visible');
+                            }
+                        }
+                        
+                        // Keep filter box open to see multiple filters (optional)
+                        // Comment these lines if you want it to stay open
+                        setTimeout(() => {
+                            filterBox.classList.remove('mobile-visible');
+                            filterFab.classList.remove('active');
+                            filterFab.setAttribute('aria-expanded', 'false'); // Update ARIA on close
+                        }, 300);
+                    }
+                });
+            });
+            
+            // Handle clear filter button on mobile
+            if (clearFilterBtn) {
+                // We need to find the original handler added by the filter logic script
+                // Assuming the original handler is attached via addEventListener, not onclick
+                // This part is tricky without knowing exactly how the original handler is attached.
+                // Let's modify the existing clear button logic slightly.
+                
+                // Find the existing listener (this is complex and might not work reliably)
+                // A better approach might be to modify the original filter script to cooperate.
+                // For now, let's just add our mobile behavior.
+                
+                clearFilterBtn.addEventListener('click', (e) => {
+                    // The original filter logic should handle clearing highlights and hiding the button on desktop.
+                    // We add the mobile-specific closing behavior.
+                    if (window.innerWidth <= 768) {
+                        // Hide the mobile-specific visibility class
+                        clearFilterBtn.classList.remove('mobile-visible');
+                        // Close the filter box and deactivate FAB
+                        filterBox.classList.remove('mobile-visible');
+                        filterFab.classList.remove('active');
+                        filterFab.setAttribute('aria-expanded', 'false'); // Update ARIA on close
+                    }
+                    // Note: The original filter logic should still run to clear highlights.
+                });
+            }
+            
+            // Set initial ARIA attributes
+            filterFab.setAttribute('aria-expanded', 'false');
+            filterFab.setAttribute('aria-controls', 'filter-box');
+        }
+    });
+    </script>
 
 </body>
 
