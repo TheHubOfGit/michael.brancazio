@@ -919,7 +919,7 @@ body.dark-mode .card-scrollable-content {
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
-            max-width: 350px; /* Adjust as needed */
+            max-width: 367px; /* Adjust as needed */
         }
 
         #filter-box.visible {
@@ -956,7 +956,7 @@ body.dark-mode .card-scrollable-content {
         #clear-filter-btn {
             position: fixed;
             top: 20px; /* Align with filter box */
-            left: 380px; /* Position next to filter box (adjust based on filter-box max-width) */
+            left: 395px; /* Position next to filter box (adjust based on filter-box max-width) */
             padding: 5px 10px;
             background-color: #dc3545; /* Red color */
             color: white;
@@ -987,8 +987,9 @@ body.dark-mode .card-scrollable-content {
         .highlight-healthcare { background-color: #FF5722; }
         .highlight-ai { background-color: #00BCD4; }
         .highlight-visualization { background-color: #607D8B; }
+        .highlight-datavisualization { background-color: #607D8B; } /* Added Data Visualization highlight */
 
-        /* Timeline Animation Styles */
+      /* Timeline Animation Styles */
         .timeline-container {
             position: relative;
             width: 80%; /* Adjust width as needed for the column */
@@ -1380,6 +1381,7 @@ body.dark-mode .card-scrollable-content {
         <button class="filter-keyword" data-keyword="Healthcare" style="background-color: #FF5722;">Healthcare</button>
         <button class="filter-keyword" data-keyword="AI" style="background-color: #00BCD4;">AI</button>
         <button class="filter-keyword" data-keyword="Visualization" style="background-color: #607D8B;">Visualization</button>
+        <button class="filter-keyword" data-keyword="Data Visualization" data-highlight-term="Visualization" style="background-color: #607D8B;">Data Visualization</button>
     </div>
     <button id="clear-filter-btn">Clear Filter</button>
 
@@ -1583,7 +1585,7 @@ body.dark-mode .card-scrollable-content {
                                         <li>Employ Microsoft PowerBI for the automation of reports and building of dashboards for clients</li>
                                         <li>Build machine learning forecasting models tailored to each product, brand, and client; utilize Prophet and Plotly</li>
                                         <li>Manage and lead 3 analysts; head Machine Learning & Forecasting initiative within PAAS</li>
-                                        <li>Automate Accumulator and Maximizer Solutions with SPROCs (Stored Procedures), reducing concurrent server load and manual analyst querying by 90%</li>
+                                        <li>Automate Accumulator and Maximizer Solutions with SQL SPROCs (Stored Procedures), reducing concurrent server load and manual analyst querying by 90%</li>
                                     </ul>
                                 </div>
                             </div>
@@ -1787,6 +1789,7 @@ body.dark-mode .card-scrollable-content {
                                 <div class="skill-tag">Epic EHR</div>
                                 <div class="skill-tag">Excel</div>
                                 <div class="skill-tag">R</div>
+                                <div class="skill-tag">Data Visualization</div>
                             </div>
                         </div>
                     </div>
@@ -2186,10 +2189,13 @@ body.dark-mode .card-scrollable-content {
                 let regex;
                 // Use a specific regex for "AI" to match whole word or start of word, outside tags
                 if (keyword.toUpperCase() === 'AI') {
-                    // \b matches word boundary. Matches "AI", "AI.", "AI/ML", but not "train"
+                    // Match "AI" (with word boundaries) or "artificial intelligence", outside tags
                     // (?<!<[^>]*) negative lookbehind to ensure not inside a tag opening
                     // (?![^<]*>) negative lookahead to ensure not inside a tag closing
-                    regex = new RegExp(`(?<!<[^>]*)\\b${keyword}\\b(?![^<]*>)`, 'gi');
+                    regex = new RegExp(`(?<!<[^>]*)(?:\\b${keyword}\\b|artificial intelligence)(?![^<]*>)`, 'gi');
+                } else if (keyword === 'Python') {
+                    // Match "Python", "Plotly", "Prophet", or "Pandas", outside tags
+                    regex = new RegExp(`(?<!<[^>]*)(?:\\bPython\\b|\\bPlotly\\b|\\bProphet\\b|\\bPandas\\b)(?![^<]*>)`, 'gi');
                 } else if (keyword === 'Power BI') {
                     // Specific regex for "Power BI" to match with or without space, outside tags
                     regex = new RegExp(`(?<!<[^>]*)(Power ?BI)(?![^<]*>)`, 'gi');
