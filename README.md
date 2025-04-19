@@ -1,6 +1,6 @@
 # Portfolio Website - Deployment Instructions
 
-This website is hosted using GitHub Pages from the `main` branch of the `TheHubOfGit/portfolio-website` repository.
+This website is hosted using GitHub Pages from the `main` branch of the `TheHubOfGit/michael.brancazio` repository.
 
 ## How to Update the Live Site
 
@@ -19,4 +19,4 @@ This website is hosted using GitHub Pages from the `main` branch of the `TheHubO
     git push
     ```
 
-Pushing changes to the `main` branch will automatically trigger a GitHub Actions workflow that rebuilds and deploys the site. The updated site will be live at [https://TheHubOfGit.github.io/portfolio-website/](https://TheHubOfGit.github.io/portfolio-website/) within a few minutes.
+Pushing changes to the `main` branch will automatically trigger a GitHub Actions workflow that rebuilds and deploys the site. The updated site will be live at [https://TheHubOfGit.github.io/michael.brancazio/](https://TheHubOfGit.github.io/michael.brancazio/) within a few minutes.
