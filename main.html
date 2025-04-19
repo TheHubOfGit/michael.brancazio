@@ -128,24 +128,48 @@ body.dark-mode .card-scrollable-content {
     max-height: 500px; /* Slightly taller for larger cards */
 }
 
-/* Mobile adjustments */
+/* Mobile view adjustments for logo badge */
 @media (max-width: 768px) {
-    .card {
-        max-height: none; /* Remove max height on mobile */
+    /* Move the logo badge to inside the card instead of overhanging */
+    .logo-badge {
+        left: 10px; /* Position inside the card */
+        top: 10px; /* Move down into the card content */
+        position: absolute;
+        z-index: 100;
     }
     
-    .card-wide, .card-large {
-        max-height: none; /* Remove max height on mobile */
-    }
-    
+    /* Add padding to card content to prevent overlap with badge */
     .card-scrollable-content {
-        overflow-y: visible; /* Disable scrolling on mobile */
-        padding-right: 0; /* Remove scrollbar space */
-        margin-right: 0; /* Reset margin */
+        padding-top: 0px; /* Enough space for the badge plus some breathing room */
+        padding-left: 16px
+    }
+    
+    /* Reset other styles */
+    .card {
+        overflow: hidden; /* Keep this as it was probably intended */
+        position: relative;
+    }
+    
+    /* Ensure horizontal scroll container behaves as expected */
+    .horizontal-scroll-container {
+        overflow-x: auto;
+        overflow-y: hidden; /* Keep original behavior */
     }
 
-    .logo-badge {
-        left: 10px; /* Adjust logo position for mobile */
+    /* Mobile padding adjustments */
+    /* Apply specific horizontal padding only to experience, consulting, education/skills sections */
+    /* NOTE: Targeting "Current Experience" assumes it's the first relevant div in .scrollable-content */
+    .scrollable-content > div:nth-of-type(1) > .horizontal-scroll-container, /* Assuming Current Exp is first */
+    .scrollable-content > div:nth-of-type(2) > .horizontal-scroll-container, /* Assuming Previous Exp is second */
+    #consulting-experience-section .horizontal-scroll-container,
+    #education-skills-section .horizontal-scroll-container {
+        padding-left: 16px;
+        padding-right: 16px;
+        /* Keep top/bottom padding default or set explicitly if needed, e.g., padding-top: 20px; padding-bottom: 0; */
+    }
+
+    .card-large {
+        padding: 24px 24px 24px 5px; /* 5px left, 24px others */
     }
 }
        /* Chain Container Styles */
@@ -754,6 +778,29 @@ body.dark-mode .card-scrollable-content {
             .timeline-container {
                 display: none !important; /* Hide filter and timeline on small screens */
             }
+
+            /* Mobile font size adjustments for cards */
+            .experience-title {
+                font-size: 16px; /* Was 18px */
+            }
+            .experience-date {
+                font-size: 13px; /* Was 14px */
+            }
+            .experience-company {
+                font-size: 15px; /* Was 16px */
+            }
+            .experience-description li {
+                font-size: 13px; /* Was 14px */
+            }
+            .card-section-title { /* For Education/Skills/Certs */
+                 font-size: 13px; /* Was 14px */
+            }
+            .cert-title {
+                 font-size: 13px; /* Was 14px */
+            }
+            .cert-issuer {
+                 font-size: 11px; /* Was 12px */
+            }
         }
 
         /* Cursor Halo Styles */
@@ -1243,7 +1290,7 @@ body.dark-mode .card-scrollable-content {
             }
 
             /* Show the FAB on mobile */
-            #filter-fab {
+           /* #filter-fab {
                 display: flex;
             }
             
@@ -1451,7 +1498,7 @@ body.dark-mode .card-scrollable-content {
                 <!-- Current Experience Section -->
                 <div>
                     <div class="section-label">Current Experience</div>
-                    <div class="horizontal-scroll-container">
+                    <div class="horizontal-scroll-container" >
                         <div class="card card-large">
                             <img class="logo-badge" src="images/NYP.jpg" alt="NewYork-Presbyterian Logo">
                             <div class="card-scrollable-content">
@@ -2877,4 +2924,3 @@ keywordButtons.forEach(button => {
 
 <!-- JAVASCRIPT - Add this just before the closing </body> tag -->
 </html>
-b
