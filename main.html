@@ -1256,6 +1256,39 @@ body.dark-mode .card-scrollable-content {
             height: 24px;
         }
 
+        /* Chatbot FAB Styles */
+        #chatbot-fab {
+            display: none; /* Hidden by default on desktop */
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--accent-teal);
+            color: white;
+            border: none;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            z-index: 1002;
+            transition: transform 0.2s ease-in-out, background-color 0.2s ease;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #chatbot-fab:hover, #chatbot-fab:focus {
+            transform: scale(1.1);
+        }
+
+        #chatbot-fab.active {
+            background-color: var(--accent-blue);
+        }
+
+        #chatbot-fab svg {
+            width: 24px;
+            height: 24px;
+        }
+
         /* Integrated Chatbot Styles */
         .integrated-chatbot {
             position: fixed;
@@ -1518,10 +1551,160 @@ body.dark-mode .card-scrollable-content {
             opacity: 0.9;
         }
 
+        /* Mobile Chatbot Modal Styles */
+        #mobile-chatbot-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1003;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        #mobile-chatbot-modal.visible {
+            opacity: 1;
+        }
+
+        .mobile-chatbot-content {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            max-height: 70vh;
+            background-color: var(--bg-color);
+            border-radius: 20px 20px 0 0;
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.2);
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #mobile-chatbot-modal.visible .mobile-chatbot-content {
+            transform: translateY(0);
+        }
+
+        .mobile-chat-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+
+        .mobile-chat-title {
+            font-weight: 600;
+            font-size: 16px;
+            color: var(--text-color);
+        }
+
+        .mobile-chat-close {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: var(--card-bg);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            transition: background-color 0.2s ease;
+        }
+
+        .mobile-chat-close:hover {
+            background-color: var(--border-color);
+        }
+
+        .mobile-response-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            min-height: 200px;
+            max-height: 40vh;
+        }
+
+        .mobile-response-content {
+            font-size: 14px;
+            line-height: 1.5;
+            color: var(--text-color);
+        }
+
+        .mobile-typing-indicator {
+            display: none;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .mobile-chat-input-area {
+            padding: 16px 20px;
+            border-top: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+
+        .mobile-chat-input-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background-color: var(--card-bg);
+            border-radius: 24px;
+            padding: 8px 16px;
+            border: 1px solid var(--border-color);
+        }
+
+        .mobile-chat-input {
+            flex: 1;
+            padding: 12px 0;
+            border: none;
+            outline: none;
+            background: transparent;
+            font-size: 16px;
+            font-family: var(--font-primary);
+            color: var(--text-color);
+        }
+
+        .mobile-chat-input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .mobile-chat-send {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background-color: var(--accent-teal);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            transition: background-color 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .mobile-chat-send:hover {
+            background-color: var(--accent-blue);
+        }
+
+        .mobile-chat-send:disabled {
+            background-color: var(--text-secondary);
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
         /* Mobile adjustments for integrated chatbot */
         @media (max-width: 768px) {
             .integrated-chatbot {
-                display: none !important; /* Hide chatbot completely on mobile */
+                display: none !important; /* Hide desktop chatbot completely on mobile */
+            }
+
+            #chatbot-fab {
+                display: flex; /* Show chatbot FAB on mobile */
             }
         }
 
@@ -1660,6 +1843,53 @@ body.dark-mode .card-scrollable-content {
         <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
       </svg>
     </button>
+
+    <!-- Chatbot FAB for mobile -->
+    <button id="chatbot-fab" aria-label="Chat with Assistant">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+      </svg>
+    </button>
+
+    <!-- Mobile Chatbot Modal -->
+    <div id="mobile-chatbot-modal">
+        <div class="mobile-chatbot-content">
+            <div class="mobile-chat-header">
+                <div class="mobile-chat-title">Ask about Michael's experience</div>
+                <button class="mobile-chat-close" aria-label="Close chat">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="mobile-response-area">
+                <div class="mobile-response-content" id="mobile-response-content">
+                    <p style="color: var(--text-secondary); text-align: center; margin-top: 40px;">👋 Hi! Ask me anything about Michael's background, experience, or skills.</p>
+                </div>
+                
+                <div class="mobile-typing-indicator" id="mobile-typing-indicator">
+                    <div class="dots">
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mobile-chat-input-area">
+                <div class="mobile-chat-input-container">
+                    <input type="text" class="mobile-chat-input" id="mobile-chat-input" placeholder="Ask about Michael's experience...">
+                    <button class="mobile-chat-send" id="mobile-chat-send">
+                        <svg viewBox="0 0 24 24" width="20" height="20">
+                            <path d="M2 21l21-9L2 3v7l15 2-15 2v7z" fill="currentColor"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Integrated Chatbot -->
     <div class="integrated-chatbot" id="integrated-chatbot">
@@ -3429,12 +3659,15 @@ When appropriate, use rich formatting:
                 this.isConnected = false;
                 this.conversationHistory = [];
                 this.hideTimeout = null;
+                this.isMobile = window.innerWidth <= 768;
                 this.initializeElements();
                 // Show immediately without testing connection
                 this.showChatbotImmediately();
+                this.setupMobileEventListeners();
             }
 
             initializeElements() {
+                // Desktop elements
                 this.container = document.getElementById('integrated-chatbot');
                 this.input = document.getElementById('chat-input');
                 this.sendButton = document.getElementById('chat-send');
@@ -3442,12 +3675,23 @@ When appropriate, use rich formatting:
                 this.responseContent = document.getElementById('response-content');
                 this.typingIndicator = document.getElementById('typing-indicator-new');
 
-                if (!this.container || !this.input || !this.sendButton || !this.popup) {
-                    console.error('Integrated chatbot elements not found');
+                // Mobile elements
+                this.mobileModal = document.getElementById('mobile-chatbot-modal');
+                this.mobileFab = document.getElementById('chatbot-fab');
+                this.mobileInput = document.getElementById('mobile-chat-input');
+                this.mobileSendButton = document.getElementById('mobile-chat-send');
+                this.mobileResponseContent = document.getElementById('mobile-response-content');
+                this.mobileTypingIndicator = document.getElementById('mobile-typing-indicator');
+                this.mobileCloseButton = document.querySelector('.mobile-chat-close');
+
+                if (!this.container && !this.mobileModal) {
+                    console.error('No chatbot elements found');
                     return;
                 }
 
-                this.setupEventListeners();
+                if (this.container) {
+                    this.setupEventListeners();
+                }
             }
 
             setupEventListeners() {
@@ -3485,8 +3729,73 @@ When appropriate, use rich formatting:
 
             showChatbotImmediately() {
                 // Show chatbot immediately without connection test
-                this.container.classList.add('visible');
-                console.log('Integrated chatbot loaded immediately');
+                if (this.container) {
+                    this.container.classList.add('visible');
+                    console.log('Integrated chatbot loaded immediately');
+                }
+            }
+
+            setupMobileEventListeners() {
+                if (!this.mobileFab || !this.mobileModal) return;
+
+                // Open mobile modal when FAB is clicked
+                this.mobileFab.addEventListener('click', () => {
+                    this.showMobileModal();
+                });
+
+                // Close mobile modal when close button is clicked
+                if (this.mobileCloseButton) {
+                    this.mobileCloseButton.addEventListener('click', () => {
+                        this.hideMobileModal();
+                    });
+                }
+
+                // Close modal when clicking outside content area
+                this.mobileModal.addEventListener('click', (e) => {
+                    if (e.target === this.mobileModal) {
+                        this.hideMobileModal();
+                    }
+                });
+
+                // Mobile send message functionality
+                if (this.mobileSendButton) {
+                    this.mobileSendButton.addEventListener('click', () => this.sendMobileMessage());
+                }
+
+                if (this.mobileInput) {
+                    this.mobileInput.addEventListener('keypress', (e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            this.sendMobileMessage();
+                        }
+                    });
+                }
+            }
+
+            showMobileModal() {
+                if (this.mobileModal) {
+                    this.mobileModal.style.display = 'block';
+                    // Use setTimeout to ensure display:block is applied before adding visible class
+                    setTimeout(() => {
+                        this.mobileModal.classList.add('visible');
+                    }, 10);
+                    
+                    // Focus input after animation
+                    setTimeout(() => {
+                        if (this.mobileInput) {
+                            this.mobileInput.focus();
+                        }
+                    }, 300);
+                }
+            }
+
+            hideMobileModal() {
+                if (this.mobileModal) {
+                    this.mobileModal.classList.remove('visible');
+                    setTimeout(() => {
+                        this.mobileModal.style.display = 'none';
+                    }, 300);
+                }
             }
 
             async testConnection() {
@@ -3567,6 +3876,31 @@ When appropriate, use rich formatting:
                 }
 
                 this.sendButton.disabled = false;
+            }
+
+            async sendMobileMessage() {
+                const message = this.mobileInput.value.trim();
+                if (!message) return;
+
+                this.conversationHistory.push({ role: 'user', content: message });
+                this.mobileInput.value = '';
+                this.mobileSendButton.disabled = true;
+                
+                this.showMobileTypingIndicator();
+
+                try {
+                    const response = await this.callGeminiAPI(message);
+                    this.hideMobileTypingIndicator();
+                    this.displayMobileResponse(response);
+                    this.conversationHistory.push({ role: 'assistant', content: response });
+                } catch (error) {
+                    this.hideMobileTypingIndicator();
+                    const errorMsg = "Sorry, I'm having trouble connecting right now. Please try again.";
+                    this.displayMobileResponse(errorMsg);
+                    this.conversationHistory.push({ role: 'assistant', content: errorMsg });
+                }
+
+                this.mobileSendButton.disabled = false;
             }
 
             displayResponse(text) {
@@ -3730,13 +4064,51 @@ When appropriate, use rich formatting:
             }
 
             showTypingIndicator() {
-                this.typingIndicator.style.display = 'block';
-                this.responseContent.style.display = 'none';
+                if (this.typingIndicator && this.responseContent) {
+                    this.typingIndicator.style.display = 'block';
+                    this.responseContent.style.display = 'none';
+                }
             }
 
             hideTypingIndicator() {
-                this.typingIndicator.style.display = 'none';
-                this.responseContent.style.display = 'block';
+                if (this.typingIndicator && this.responseContent) {
+                    this.typingIndicator.style.display = 'none';
+                    this.responseContent.style.display = 'block';
+                }
+            }
+
+            displayMobileResponse(text) {
+                if (!this.mobileResponseContent) return;
+                
+                // Add animation class for replacement
+                this.mobileResponseContent.style.opacity = '0';
+                this.mobileResponseContent.style.transform = 'translateY(10px)';
+                
+                setTimeout(() => {
+                    this.mobileResponseContent.innerHTML = this.parseMarkdown(text);
+                    this.mobileResponseContent.style.opacity = '1';
+                    this.mobileResponseContent.style.transform = 'translateY(0)';
+                    
+                    // Scroll to bottom of response area
+                    const responseArea = document.querySelector('.mobile-response-area');
+                    if (responseArea) {
+                        responseArea.scrollTop = responseArea.scrollHeight;
+                    }
+                }, 150);
+            }
+
+            showMobileTypingIndicator() {
+                if (this.mobileTypingIndicator && this.mobileResponseContent) {
+                    this.mobileTypingIndicator.style.display = 'block';
+                    this.mobileResponseContent.style.display = 'none';
+                }
+            }
+
+            hideMobileTypingIndicator() {
+                if (this.mobileTypingIndicator && this.mobileResponseContent) {
+                    this.mobileTypingIndicator.style.display = 'none';
+                    this.mobileResponseContent.style.display = 'block';
+                }
             }
         }
 
