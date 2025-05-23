@@ -3394,41 +3394,96 @@ keywordButtons.forEach(button => {
 
             const cards = document.querySelectorAll('.card');
             const vibratedCards = new Set(); // Keep track of cards that have triggered vibration
-
+            
             let lastScrollY = window.scrollY;
+            let isScrolling = false;
+            let scrollTimeout;
 
-            window.addEventListener('scroll', () => {
+            // Throttled scroll handler for better performance
+            function handleScroll() {
                 // Only run on mobile screens
                 if (window.innerWidth <= 768) {
-                    const viewportCenter = window.innerHeight / 2;
                     const currentScrollY = window.scrollY;
                     const scrollingDown = currentScrollY > lastScrollY;
+                    const scrollThreshold = 5; // Minimum scroll distance to register
+                    
+                    // Only process if scroll is significant enough
+                    if (Math.abs(currentScrollY - lastScrollY) > scrollThreshold) {
+                        // Define trigger zone (top 40% of viewport)
+                        const triggerZone = window.innerHeight * 0.4;
 
-                    cards.forEach((card, index) => {
-                        const rect = card.getBoundingClientRect();
+                        cards.forEach((card, index) => {
+                            const rect = card.getBoundingClientRect();
+                            
+                            // Simplified trigger logic: when scrolling down and card enters trigger zone
+                            if (scrollingDown && 
+                                rect.top <= triggerZone && 
+                                rect.bottom > 0 && 
+                                !vibratedCards.has(index)) {
+                                
+                                // Quick vibration (1ms)
+                                navigator.vibrate(1);
+                                vibratedCards.add(index);
+                                
+                                // Debug log for troubleshooting
+                                console.log(`Vibrated for card ${index} at scroll position ${currentScrollY}`);
+                            }
+                            
+                            // Reset vibration status when card completely leaves viewport
+                            if (rect.bottom < -50) { // Add buffer to prevent immediate re-triggering
+                                vibratedCards.delete(index);
+                            }
+                        });
 
-                        // Trigger vibration when scrolling down and card top passes viewport center
-                        // Also ensure card is still somewhat visible (bottom > 0)
-                        if (scrollingDown && rect.top < viewportCenter && rect.bottom < window.innerHeight && rect.bottom > 0 && !vibratedCards.has(index)) {
-                            navigator.vibrate(1); // 1ms vibration
-                            vibratedCards.add(index);
-                        }
-                        // Reset card status if it scrolls back up above the center
-                        else if (!scrollingDown && rect.top >= viewportCenter && vibratedCards.has(index)) {
-                             vibratedCards.delete(index);
-                        }
-                        // Also reset if card goes completely out of view above the top edge when scrolling up
-                        else if (!scrollingDown && rect.bottom < 0 && vibratedCards.has(index)) {
-                            vibratedCards.delete(index);
-                        }
-                    });
-
-                    lastScrollY = currentScrollY;
+                        lastScrollY = currentScrollY;
+                    }
                 } else {
                     // Clear the set if not on mobile view anymore
                     vibratedCards.clear();
                 }
-            }, { passive: true }); // Use passive listener for scroll performance
+                
+                isScrolling = false;
+            }
+
+            // Use requestAnimationFrame for smoother performance
+            window.addEventListener('scroll', () => {
+                if (!isScrolling) {
+                    requestAnimationFrame(handleScroll);
+                    isScrolling = true;
+                }
+                
+                // Clear any existing timeout
+                clearTimeout(scrollTimeout);
+                
+                // Reset vibrated cards after scroll ends (allows re-triggering on direction change)
+                scrollTimeout = setTimeout(() => {
+                    // Reset some cards that are out of view to allow re-triggering
+                    cards.forEach((card, index) => {
+                        const rect = card.getBoundingClientRect();
+                        if (rect.bottom < 0 || rect.top > window.innerHeight) {
+                            vibratedCards.delete(index);
+                        }
+                    });
+                }, 150);
+            }, { passive: true });
+
+            // Handle orientation change to recalculate
+            window.addEventListener('orientationchange', () => {
+                setTimeout(() => {
+                    vibratedCards.clear();
+                    lastScrollY = window.scrollY;
+                }, 200);
+            });
+
+            // Test vibration on first touch to ensure it works
+            let hasTestedVibration = false;
+            document.addEventListener('touchstart', () => {
+                if (!hasTestedVibration && window.innerWidth <= 768) {
+                    navigator.vibrate(1); // Quick test vibration
+                    hasTestedVibration = true;
+                    console.log('Vibration test performed');
+                }
+            }, { once: true, passive: true });
         });
     </script>
     <!-- End Haptic Feedback Script -->
