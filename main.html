@@ -298,6 +298,32 @@ body.dark-mode .card-scrollable-content {
         .avatar.shocked-zoom {
             transform: scale(1.2); /* Zoom effect */
         }
+
+        /* CSS-based shocked animation */
+        .profile-picture {
+            transition: all 0.1s ease-in-out;
+        }
+
+        .profile-picture.shocked {
+            content: url('images/shocked.png');
+            object-position: center 20%;
+            animation: shockFlash 0.2s ease-in-out;
+        }
+
+        @keyframes shockFlash {
+            0% { 
+                opacity: 1; 
+                transform: scale(1);
+            }
+            50% { 
+                opacity: 0.9; 
+                transform: scale(1.05);
+            }
+            100% { 
+                opacity: 1; 
+                transform: scale(1);
+            }
+        }
         
         .profile-info {
             display: flex;
@@ -747,6 +773,14 @@ body.dark-mode .card-scrollable-content {
                 /* min-width: 100%; */
                 /* width: 100%; */
             }
+
+            /* Make Education & Skills section cards consistent width on mobile */
+            #education-skills-section .card {
+                width: 340px; /* Match standard card width */
+                min-width: 340px; /* Ensure minimum width */
+                max-width: 340px; /* Ensure maximum width */
+                flex-shrink: 0; /* Prevent shrinking */
+            }
             
             /* .card-wide, .card-large {
                 min-width: 100%;
@@ -853,7 +887,7 @@ body.dark-mode .card-scrollable-content {
             margin: 5% auto; /* 5% from the top and centered */
             padding: 0; /* Remove padding for iframe */
             border: 1px solid var(--border-color);
-            width: 70%; /* Changed default width */
+            width: 85%; /* Increased width for better viewing */
             height: 85%; /* Adjust height */
             position: relative;
             border-radius: 10px;
@@ -1816,6 +1850,19 @@ body.dark-mode .card-scrollable-content {
             }
         }
 
+        #related-projects-section .card {
+            width: 340px;
+            min-width: 340px;
+            max-width: 340px;
+        }
+
+        #fun-projects-section .card {
+            width: 340px;
+            min-width: 340px;
+            max-width: 340px;
+            flex-shrink: 0;
+        }
+
     </style>
 </head>
 
@@ -2074,7 +2121,7 @@ body.dark-mode .card-scrollable-content {
                                         <div class="experience-company" style="margin-top: 4px;">NewYork–Presbyterian Hospital</div>
                                         <div class="experience-description" style="margin-top: 8px;">
                                             <ul>
-                                                <li>Develop and implement a machine learning predictive model in Python to predict healthcare reimbursement likelihood, enhancing vendor referral efficiency and data-driven decision-making within NYP’s Revenue Cycle Department</li>
+                                                <li>Develop and implement a machine learning predictive model in Python to predict healthcare reimbursement likelihood, enhancing vendor referral efficiency and data-driven decision-making within NYP's Revenue Cycle Department</li>
                                                 <li>Projected to reduce unnecessary vendor referrals by 30%, increase reimbursement rates on referred cases by 15%, and potentially save ~$500,000 annually through optimized vendor agreements and reduced operational costs</li>
                                                 <li>Engineer in-house LLMs leveraging RAG framework and vector-based retrieval to assist front-end users in navigating proprietary data models, data definitions, and dashboards</li>
                                                 <li>Create a full-stack web resource (HTML, CSS, Javascript) that aggregates all Access-to-Care department data, integrating a custom chatbot trained on department-specific documentation and data models</li>
@@ -2104,13 +2151,13 @@ body.dark-mode .card-scrollable-content {
                                         <div class="experience-company" style="margin-top: 4px;">NewYork–Presbyterian Hospital</div>
                                         <div class="experience-description" style="margin-top: 8px;">
                                             <ul>
-                                                <li>Rollout in-house data warehousing initiative, ‘JupiterGOLD’, along with manage proper data governance policy</li>
+                                                <li>Rollout in-house data warehousing initiative, 'JupiterGOLD', along with manage proper data governance policy</li>
                                                 <li>Establish standard practices and templates for all reporting tables</li>
                                                 <li>Build in-query error reporting with QA checks delivered via email to database administrators</li>
                                                 <li>Create checklist for table creation, production server requirements, and data mart/data source standards</li>
                                                 <li>Designed snowflake schema architecture within JupiterGOLD data warehouse to normalize complex Epic Clarity hierarchies, enabling efficient cross-domain analysis of clinical and operational data</li>
                                                 <li>Redesign and maintain backend SQL code for enterprise-wide Palliative Care dashboard, comprising of both clinical and non-clinical data</li>
-                                                <li>Utilize Epic Clarity data model for custom reporting on various enterprise initiatives (i.e., Opioid guideline monitoring, Parkinson’s patient registry, Press Ganey score assessment)</li>
+                                                <li>Utilize Epic Clarity data model for custom reporting on various enterprise initiatives (i.e., Opioid guideline monitoring, Parkinson's patient registry, Press Ganey score assessment)</li>
                                                 <li>Collaborate on the creation of a shared resource guide & formal documentation for all in-house data projects, scripts, and dashboards</li>
                                                 <li>Communicate with organizational stakeholders on business case for each report</li>
                                                 <li>Ensure proper QA/QC procedures are formalized and checked</li>
@@ -2596,30 +2643,19 @@ body.dark-mode .card-scrollable-content {
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const profilePic = document.getElementById('profile-picture');
-            const avatarDiv = profilePic.closest('.avatar'); // Get the parent avatar div
-            const originalSrc = 'images/headshot.jpeg'; // Assuming this is the default
-            const styledSrc = 'images/styled.png';
-            const shockedSrc = 'images/shocked.png';
-            let isShocked = false; // Track if shocked image is shown
-            let shockTimeout; // To store the timeout ID
 
             if (profilePic) {
                 profilePic.style.cursor = 'pointer'; // Indicate it's interactive
+                profilePic.classList.add('profile-picture'); // Add class for CSS targeting
 
                 profilePic.addEventListener('dblclick', () => {
-                    // Clear any existing timeout to prevent reverting too early if double-clicked again quickly
-                    clearTimeout(shockTimeout);
-
-                    profilePic.src = shockedSrc; // Show shocked image
-                    profilePic.style.objectPosition = 'center 20%'; // Adjust image position within the frame (shifted down)
-                    isShocked = true;
-
-                    // Set a timeout to revert back to the original image
-                    shockTimeout = setTimeout(() => {
-                        profilePic.src = originalSrc;
-                        profilePic.style.objectPosition = 'center center'; // Reset image position
-                        isShocked = false;
-                    }, 200); // Revert after 200 milliseconds (0.2 seconds)
+                    // Add shocked class to trigger CSS animation
+                    profilePic.classList.add('shocked');
+                    
+                    // Remove the class after animation completes (CSS handles timing)
+                    setTimeout(() => {
+                        profilePic.classList.remove('shocked');
+                    }, 200); // Match the CSS animation duration
                 });
             } else {
                 console.error("Profile picture element not found!");
