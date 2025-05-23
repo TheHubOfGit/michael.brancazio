@@ -998,7 +998,7 @@ body.dark-mode .card-scrollable-content {
             /* Make background track fade like the progress line */
             background: linear-gradient(to right, rgba(234, 234, 234, 0.5) 90%, transparent 100%);
             border-radius: 5px;
-            margin: 100px 0 20px 0; /* Increased top margin */
+            margin: 60px 0 20px 0; /* Increased top margin */
         }
         
         .progress-line {
@@ -3770,6 +3770,120 @@ When appropriate, use rich formatting:
                         }
                     });
                 }
+
+                // Setup keyboard visibility handling for mobile
+                this.setupKeyboardHandling();
+            }
+
+            setupKeyboardHandling() {
+                if (!this.mobileModal) return;
+
+                const mobileContent = this.mobileModal.querySelector('.mobile-chatbot-content');
+                if (!mobileContent) return;
+
+                let initialViewportHeight = window.innerHeight;
+                let isKeyboardVisible = false;
+
+                // Visual Viewport API (modern browsers)
+                if (window.visualViewport) {
+                    const handleViewportChange = () => {
+                        const currentHeight = window.visualViewport.height;
+                        const heightDifference = initialViewportHeight - currentHeight;
+                        
+                        // Keyboard is considered visible if viewport height decreased significantly (>150px)
+                        const keyboardNowVisible = heightDifference > 150;
+                        
+                        if (keyboardNowVisible !== isKeyboardVisible) {
+                            isKeyboardVisible = keyboardNowVisible;
+                            
+                            if (isKeyboardVisible) {
+                                // Keyboard appeared - adjust modal position
+                                const keyboardHeight = heightDifference;
+                                mobileContent.style.bottom = `${keyboardHeight}px`;
+                                mobileContent.style.maxHeight = `${currentHeight * 0.7}px`;
+                                mobileContent.style.transition = 'bottom 0.3s ease, max-height 0.3s ease';
+                            } else {
+                                // Keyboard disappeared - reset position
+                                mobileContent.style.bottom = '0px';
+                                mobileContent.style.maxHeight = '70vh';
+                                mobileContent.style.transition = 'bottom 0.3s ease, max-height 0.3s ease';
+                            }
+                        }
+                    };
+
+                    window.visualViewport.addEventListener('resize', handleViewportChange);
+                    
+                    // Store the cleanup function
+                    this.cleanupKeyboardHandler = () => {
+                        window.visualViewport.removeEventListener('resize', handleViewportChange);
+                    };
+                } else {
+                    // Fallback for older browsers - use window resize
+                    const handleWindowResize = () => {
+                        const currentHeight = window.innerHeight;
+                        const heightDifference = initialViewportHeight - currentHeight;
+                        
+                        // Keyboard is considered visible if window height decreased significantly
+                        const keyboardNowVisible = heightDifference > 150;
+                        
+                        if (keyboardNowVisible !== isKeyboardVisible) {
+                            isKeyboardVisible = keyboardNowVisible;
+                            
+                            if (isKeyboardVisible) {
+                                // Keyboard appeared
+                                const keyboardHeight = heightDifference;
+                                mobileContent.style.bottom = `${keyboardHeight}px`;
+                                mobileContent.style.maxHeight = `${currentHeight * 0.7}px`;
+                                mobileContent.style.transition = 'bottom 0.3s ease, max-height 0.3s ease';
+                            } else {
+                                // Keyboard disappeared
+                                mobileContent.style.bottom = '0px';
+                                mobileContent.style.maxHeight = '70vh';
+                                mobileContent.style.transition = 'bottom 0.3s ease, max-height 0.3s ease';
+                            }
+                        }
+                    };
+
+                    window.addEventListener('resize', handleWindowResize);
+                    
+                    // Store the cleanup function
+                    this.cleanupKeyboardHandler = () => {
+                        window.removeEventListener('resize', handleWindowResize);
+                    };
+                }
+
+                // Also handle input focus/blur events for additional reliability
+                if (this.mobileInput) {
+                    this.mobileInput.addEventListener('focus', () => {
+                        // Small delay to allow keyboard animation to start
+                        setTimeout(() => {
+                            // Scroll the input into view if needed
+                            this.mobileInput.scrollIntoView({ 
+                                behavior: 'smooth', 
+                                block: 'center' 
+                            });
+                        }, 300);
+                    });
+                }
+
+                // Reset viewport height when modal is opened
+                this.originalShowMobileModal = this.showMobileModal;
+                this.showMobileModal = () => {
+                    initialViewportHeight = window.innerHeight;
+                    this.originalShowMobileModal();
+                };
+
+                // Cleanup when modal is closed
+                this.originalHideMobileModal = this.hideMobileModal;
+                this.hideMobileModal = () => {
+                    // Reset any keyboard adjustments
+                    if (mobileContent) {
+                        mobileContent.style.bottom = '0px';
+                        mobileContent.style.maxHeight = '70vh';
+                    }
+                    isKeyboardVisible = false;
+                    this.originalHideMobileModal();
+                };
             }
 
             showMobileModal() {
