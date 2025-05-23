@@ -3782,62 +3782,38 @@ When appropriate, use rich formatting:
                 let isKeyboardVisible = false;
                 let keyboardAdjustmentApplied = false;
 
-                // Add CSS class for smooth page transitions
-                if (!document.head.querySelector('#keyboard-transition-styles')) {
-                    const style = document.createElement('style');
-                    style.id = 'keyboard-transition-styles';
-                    style.textContent = `
-                        .keyboard-shift-active {
-                            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
-                        }
-                        
-                        .keyboard-shift-active body {
-                            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
-                        }
-                    `;
-                    document.head.appendChild(style);
-                }
+
 
                 const applyKeyboardShift = (keyboardHeight) => {
                     if (keyboardAdjustmentApplied) return;
                     
-                    // Add transition class
-                    document.documentElement.classList.add('keyboard-shift-active');
-                    document.body.classList.add('keyboard-shift-active');
+                    // Calculate how much to shift up (more aggressive since we're targeting the modal)
+                    const shiftAmount = Math.min(keyboardHeight * 0.85, 350); // Increased to 85% and max 350px
                     
-                    // Calculate how much to shift up (less aggressive than full keyboard height)
-                    const shiftAmount = Math.min(keyboardHeight * 0.6, 200); // Max 200px shift
-                    
-                    // Apply transform to shift page up
-                    document.body.style.transform = `translateY(-${shiftAmount}px)`;
-                    document.body.style.transformOrigin = 'top center';
+                    // Apply smooth transition and transform to the modal
+                    this.mobileModal.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+                    this.mobileModal.style.transform = `translateY(-${shiftAmount}px)`;
                     
                     keyboardAdjustmentApplied = true;
                     
-                    // Remove transition class after animation completes
+                    // Remove transition after animation completes to prevent interference
                     setTimeout(() => {
-                        document.documentElement.classList.remove('keyboard-shift-active');
-                        document.body.classList.remove('keyboard-shift-active');
+                        this.mobileModal.style.transition = '';
                     }, 400);
                 };
 
                 const removeKeyboardShift = () => {
                     if (!keyboardAdjustmentApplied) return;
                     
-                    // Add transition class for smooth return
-                    document.documentElement.classList.add('keyboard-shift-active');
-                    document.body.classList.add('keyboard-shift-active');
-                    
-                    // Reset transform
-                    document.body.style.transform = '';
-                    document.body.style.transformOrigin = '';
+                    // Apply smooth transition for return animation
+                    this.mobileModal.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+                    this.mobileModal.style.transform = '';
                     
                     keyboardAdjustmentApplied = false;
                     
-                    // Remove transition class after animation completes
+                    // Remove transition after animation completes
                     setTimeout(() => {
-                        document.documentElement.classList.remove('keyboard-shift-active');
-                        document.body.classList.remove('keyboard-shift-active');
+                        this.mobileModal.style.transition = '';
                     }, 400);
                 };
 
