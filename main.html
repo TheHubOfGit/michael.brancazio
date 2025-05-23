@@ -3101,7 +3101,8 @@ keywordButtons.forEach(button => {
 
             const engine = Engine.create({ enableSleeping: true, positionIterations: 10 });
             const world = engine.world;
-            engine.gravity.y = 4.2; // Slightly less gravity for a lighter feel
+            engine.gravity.y = 8.5; // Higher gravity so chain doesn't swing as easily
+            engine.gravity.x = 0; // Horizontal gravity will be controlled by gyroscope
 
             // Get container dimensions
             let containerWidth = chainContainer.offsetWidth;
@@ -3245,6 +3246,79 @@ keywordButtons.forEach(button => {
             }
             // Don't call updateChainColors here, wait for createChain
 
+            // --- Gyroscope/Accelerometer Support ---
+            let gyroscopeEnabled = false;
+            let lastOrientation = { gamma: 0 }; // gamma = left/right tilt
+            const maxTilt = 45; // Maximum tilt angle to consider (degrees)
+            const gravityMultiplier = 3.0; // Strength of gravity effect from tilt
+
+            function handleDeviceOrientation(event) {
+                if (!gyroscopeEnabled) return;
+
+                // gamma: left/right tilt (-90 to 90 degrees)
+                // Negative gamma = tilt left, Positive gamma = tilt right
+                let gamma = event.gamma || 0;
+                
+                // Clamp the tilt to our max range
+                gamma = Math.max(-maxTilt, Math.min(maxTilt, gamma));
+                
+                // Convert to a normalized value (-1 to 1)
+                const normalizedTilt = gamma / maxTilt;
+                
+                // Apply horizontal gravity based on tilt
+                // Positive tilt (right) = positive gravity (right)
+                // Negative tilt (left) = negative gravity (left)
+                engine.gravity.x = normalizedTilt * gravityMultiplier;
+                
+                lastOrientation.gamma = gamma;
+            }
+
+            function requestGyroscopePermission() {
+                if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                    // iOS 13+ requires permission
+                    DeviceOrientationEvent.requestPermission()
+                        .then(response => {
+                            if (response === 'granted') {
+                                enableGyroscope();
+                            } else {
+                                console.log('Gyroscope permission denied');
+                            }
+                        })
+                        .catch(error => {
+                            console.log('Error requesting gyroscope permission:', error);
+                        });
+                } else {
+                    // Android and older iOS - just enable
+                    enableGyroscope();
+                }
+            }
+
+            function enableGyroscope() {
+                gyroscopeEnabled = true;
+                window.addEventListener('deviceorientation', handleDeviceOrientation, true);
+                console.log('Gyroscope enabled for chain physics');
+            }
+
+            // Check if device supports orientation and enable it
+            if (window.DeviceOrientationEvent) {
+                // Enable gyroscope on first user interaction
+                const enableGyroOnInteraction = () => {
+                    requestGyroscopePermission();
+                    // Remove listener after first interaction
+                    ['touchstart', 'click'].forEach(eventType => {
+                        document.removeEventListener(eventType, enableGyroOnInteraction);
+                    });
+                };
+
+                // Wait for user interaction before enabling gyroscope
+                ['touchstart', 'click'].forEach(eventType => {
+                    document.addEventListener(eventType, enableGyroOnInteraction, { once: true });
+                });
+            } else {
+                console.log('Device orientation not supported');
+            }
+            // --- End Gyroscope Support ---
+
             Events.on(mouseConstraint, 'startdrag', (event) => {
                 if (chain.bodies.includes(event.body)) {
                     draggedChainBody = event.body;
@@ -3385,144 +3459,110 @@ keywordButtons.forEach(button => {
 
     <!-- Haptic Feedback on Mobile Scroll Script -->
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
+        // Enhanced haptic feedback with better initialization timing
+        let hapticFeedbackInitialized = false;
+        let cards = null;
+        let vibratedCards = new Set();
+        let lastScrollY = 0;
+        let userHasInteracted = false;
+
+        function initializeHapticFeedback() {
+            if (hapticFeedbackInitialized) return;
+
             // Check if the Vibration API is supported
             if (!('vibrate' in navigator)) {
                 console.log("Vibration API not supported on this browser.");
                 return;
             }
 
-            const cards = document.querySelectorAll('.card');
-            const cardStates = new Map(); // Track previous state of each card
-            
-            let lastScrollY = window.scrollY;
-            let isScrolling = false;
-            let scrollTimeout;
+            // Wait for images to load and layout to stabilize
+            cards = document.querySelectorAll('.card');
+            if (cards.length === 0) {
+                // Cards not ready yet, try again in a moment
+                setTimeout(initializeHapticFeedback, 100);
+                return;
+            }
 
-            // Initialize card states after a short delay to ensure layout is settled
-            function initializeCardStates() {
+            lastScrollY = window.scrollY;
+            hapticFeedbackInitialized = true;
+            console.log('Haptic feedback initialized with', cards.length, 'cards');
+        }
+
+        function handleScroll() {
+            if (!hapticFeedbackInitialized || !cards) return;
+
+            // Only run on mobile screens
+            if (window.innerWidth <= 768) {
+                const viewportCenter = window.innerHeight / 2;
+                const currentScrollY = window.scrollY;
+                const scrollingDown = currentScrollY > lastScrollY;
+
                 cards.forEach((card, index) => {
                     const rect = card.getBoundingClientRect();
-                    cardStates.set(index, {
-                        wasAboveViewport: rect.bottom < 0,
-                        wasBelowViewport: rect.top > window.innerHeight
-                    });
-                });
-                console.log('Card states initialized for vibration tracking');
-            }
-            
-            // Initialize immediately and also after a short delay
-            initializeCardStates();
-            setTimeout(initializeCardStates, 500);
 
-            // Throttled scroll handler for better performance
-            function handleScroll() {
-                // Only run on mobile screens
-                if (window.innerWidth <= 768) {
-                    const currentScrollY = window.scrollY;
-                    const scrollingDown = currentScrollY > lastScrollY;
-                    const scrollThreshold = 5; // Minimum scroll distance to register
-                    
-                    // Only process if scroll is significant enough
-                    if (Math.abs(currentScrollY - lastScrollY) > scrollThreshold) {
-                        const viewportHeight = window.innerHeight;
-
-                        cards.forEach((card, index) => {
-                            const rect = card.getBoundingClientRect();
-                            const prevState = cardStates.get(index);
-                            
-                            let shouldVibrate = false;
-                            
-                            if (scrollingDown) {
-                                // Scrolling down: vibrate when bottom of card enters viewport
-                                if (prevState.wasBelowViewport && rect.bottom <= viewportHeight && rect.bottom > 0) {
-                                    shouldVibrate = true;
-                                }
-                            } else {
-                                // Scrolling up: vibrate when top of card enters viewport  
-                                if (prevState.wasAboveViewport && rect.top >= 0 && rect.top < viewportHeight) {
-                                    shouldVibrate = true;
-                                }
+                    // Trigger vibration when scrolling down and card top passes viewport center
+                    // Also ensure card is still somewhat visible (bottom > 0)
+                    if (scrollingDown && rect.top < viewportCenter && rect.bottom < window.innerHeight && rect.bottom > 0 && !vibratedCards.has(index)) {
+                        // Try vibration with fallback
+                        try {
+                            if (userHasInteracted) {
+                                navigator.vibrate(1); // 1ms vibration
                             }
-                            
-                            if (shouldVibrate && vibrationEnabled) {
-                                // Quick vibration (1ms)
-                                navigator.vibrate(1);
-                                
-                                // Debug log for troubleshooting
-                                console.log(`Vibrated for card ${index} (${scrollingDown ? 'down' : 'up'}) at scroll position ${currentScrollY}`);
-                            }
-                            
-                            // Update card state for next iteration
-                            cardStates.set(index, {
-                                wasAboveViewport: rect.bottom < 0,
-                                wasBelowViewport: rect.top > viewportHeight
-                            });
-                        });
-
-                        lastScrollY = currentScrollY;
+                        } catch (e) {
+                            console.log('Vibration failed:', e);
+                        }
+                        vibratedCards.add(index);
                     }
-                } else {
-                    // Clear states if not on mobile view anymore
-                    cardStates.clear();
-                }
-                
-                isScrolling = false;
+                    // Reset card status if it scrolls back up above the center
+                    else if (!scrollingDown && rect.top >= viewportCenter && vibratedCards.has(index)) {
+                         vibratedCards.delete(index);
+                    }
+                    // Also reset if card goes completely out of view above the top edge when scrolling up
+                    else if (!scrollingDown && rect.bottom < 0 && vibratedCards.has(index)) {
+                        vibratedCards.delete(index);
+                    }
+                });
+
+                lastScrollY = currentScrollY;
+            } else {
+                // Clear the set if not on mobile view anymore
+                vibratedCards.clear();
             }
+        }
 
-            // Use requestAnimationFrame for smoother performance
-            window.addEventListener('scroll', () => {
-                if (!isScrolling) {
-                    requestAnimationFrame(handleScroll);
-                    isScrolling = true;
-                }
-                
-                // Clear any existing timeout
-                clearTimeout(scrollTimeout);
-                
-                                 // Update card states after scroll ends
-                 scrollTimeout = setTimeout(() => {
-                     cards.forEach((card, index) => {
-                         const rect = card.getBoundingClientRect();
-                         cardStates.set(index, {
-                             wasAboveViewport: rect.bottom < 0,
-                             wasBelowViewport: rect.top > window.innerHeight
-                         });
-                     });
-                 }, 150);
-            }, { passive: true });
+        // Track user interaction to enable vibration
+        function markUserInteraction() {
+            userHasInteracted = true;
+        }
 
-                         // Handle orientation change to recalculate
-             window.addEventListener('orientationchange', () => {
-                 setTimeout(() => {
-                     // Reinitialize card states after orientation change
-                     cards.forEach((card, index) => {
-                         const rect = card.getBoundingClientRect();
-                         cardStates.set(index, {
-                             wasAboveViewport: rect.bottom < 0,
-                             wasBelowViewport: rect.top > window.innerHeight
-                         });
-                     });
-                     lastScrollY = window.scrollY;
-                 }, 200);
-             });
-
-            // Test vibration on first user interaction to ensure it works
-            let vibrationEnabled = false;
+        // Initialize when DOM is ready
+        document.addEventListener('DOMContentLoaded', () => {
+            // Try immediate initialization
+            initializeHapticFeedback();
             
-            function enableVibration() {
-                if (!vibrationEnabled && window.innerWidth <= 768) {
-                    navigator.vibrate(1); // Quick test vibration to enable API
-                    vibrationEnabled = true;
-                    console.log('Vibration enabled after user interaction');
-                }
-            }
+            // Also try after window load for better reliability
+            window.addEventListener('load', initializeHapticFeedback);
             
-            // Enable vibration on any of these first user interactions
-            ['touchstart', 'touchend', 'click', 'scroll'].forEach(eventType => {
-                document.addEventListener(eventType, enableVibration, { once: true, passive: true });
+            // Add scroll listener
+            window.addEventListener('scroll', handleScroll, { passive: true });
+
+            // Track user interactions to enable vibration API
+            ['touchstart', 'touchmove', 'click', 'scroll'].forEach(eventType => {
+                document.addEventListener(eventType, markUserInteraction, { once: true, passive: true });
             });
         });
+
+        // Reinitialize on resize in case layout changes
+        window.addEventListener('resize', () => {
+            if (window.innerWidth <= 768) {
+                // Reset on mobile layout changes
+                setTimeout(() => {
+                    cards = document.querySelectorAll('.card');
+                    vibratedCards.clear();
+                    lastScrollY = window.scrollY;
+                }, 100);
+            }
+        }, { passive: true });
     </script>
     <!-- End Haptic Feedback Script -->
 
