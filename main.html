@@ -3399,14 +3399,21 @@ keywordButtons.forEach(button => {
             let isScrolling = false;
             let scrollTimeout;
 
-            // Initialize card states
-            cards.forEach((card, index) => {
-                const rect = card.getBoundingClientRect();
-                cardStates.set(index, {
-                    wasAboveViewport: rect.bottom < 0,
-                    wasBelowViewport: rect.top > window.innerHeight
+            // Initialize card states after a short delay to ensure layout is settled
+            function initializeCardStates() {
+                cards.forEach((card, index) => {
+                    const rect = card.getBoundingClientRect();
+                    cardStates.set(index, {
+                        wasAboveViewport: rect.bottom < 0,
+                        wasBelowViewport: rect.top > window.innerHeight
+                    });
                 });
-            });
+                console.log('Card states initialized for vibration tracking');
+            }
+            
+            // Initialize immediately and also after a short delay
+            initializeCardStates();
+            setTimeout(initializeCardStates, 500);
 
             // Throttled scroll handler for better performance
             function handleScroll() {
@@ -3438,7 +3445,7 @@ keywordButtons.forEach(button => {
                                 }
                             }
                             
-                            if (shouldVibrate) {
+                            if (shouldVibrate && vibrationEnabled) {
                                 // Quick vibration (1ms)
                                 navigator.vibrate(1);
                                 
@@ -3500,15 +3507,21 @@ keywordButtons.forEach(button => {
                  }, 200);
              });
 
-            // Test vibration on first touch to ensure it works
-            let hasTestedVibration = false;
-            document.addEventListener('touchstart', () => {
-                if (!hasTestedVibration && window.innerWidth <= 768) {
-                    navigator.vibrate(1); // Quick test vibration
-                    hasTestedVibration = true;
-                    console.log('Vibration test performed');
+            // Test vibration on first user interaction to ensure it works
+            let vibrationEnabled = false;
+            
+            function enableVibration() {
+                if (!vibrationEnabled && window.innerWidth <= 768) {
+                    navigator.vibrate(1); // Quick test vibration to enable API
+                    vibrationEnabled = true;
+                    console.log('Vibration enabled after user interaction');
                 }
-            }, { once: true, passive: true });
+            }
+            
+            // Enable vibration on any of these first user interactions
+            ['touchstart', 'touchend', 'click', 'scroll'].forEach(eventType => {
+                document.addEventListener(eventType, enableVibration, { once: true, passive: true });
+            });
         });
     </script>
     <!-- End Haptic Feedback Script -->
