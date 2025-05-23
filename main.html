@@ -1571,14 +1571,14 @@ body.dark-mode .card-scrollable-content {
 
         .mobile-chatbot-content {
             position: absolute;
-            bottom: 0;
+            top: 0;
             left: 0;
             right: 0;
             max-height: 70vh;
             background-color: var(--bg-color);
-            border-radius: 20px 20px 0 0;
-            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.2);
-            transform: translateY(100%);
+            border-radius: 0 0 20px 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            transform: translateY(-100%);
             transition: transform 0.3s ease;
             display: flex;
             flex-direction: column;
@@ -3770,163 +3770,6 @@ When appropriate, use rich formatting:
                         }
                     });
                 }
-
-                // Setup keyboard visibility handling for mobile
-                this.setupKeyboardHandling();
-            }
-
-            setupKeyboardHandling() {
-                if (!this.mobileModal) return;
-
-                let initialViewportHeight = window.innerHeight;
-                let isKeyboardVisible = false;
-                let keyboardAdjustmentApplied = false;
-
-
-
-                const applyKeyboardShift = (keyboardHeight) => {
-                    if (keyboardAdjustmentApplied) return;
-                    
-                    // Calculate how much to shift up (more aggressive since we're targeting the modal)
-                    const shiftAmount = Math.min(keyboardHeight * 0.85, 350); // Increased to 85% and max 350px
-                    
-                    // Apply smooth transition and transform to the modal
-                    this.mobileModal.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
-                    this.mobileModal.style.transform = `translateY(-${shiftAmount}px)`;
-                    
-                    keyboardAdjustmentApplied = true;
-                    
-                    // Remove transition after animation completes to prevent interference
-                    setTimeout(() => {
-                        this.mobileModal.style.transition = '';
-                    }, 400);
-                };
-
-                const removeKeyboardShift = () => {
-                    if (!keyboardAdjustmentApplied) return;
-                    
-                    // Apply smooth transition for return animation
-                    this.mobileModal.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
-                    this.mobileModal.style.transform = '';
-                    
-                    keyboardAdjustmentApplied = false;
-                    
-                    // Remove transition after animation completes
-                    setTimeout(() => {
-                        this.mobileModal.style.transition = '';
-                    }, 400);
-                };
-
-                // Visual Viewport API (modern browsers) - preferred method
-                if (window.visualViewport) {
-                    const handleViewportChange = () => {
-                        const currentHeight = window.visualViewport.height;
-                        const heightDifference = initialViewportHeight - currentHeight;
-                        
-                        // Keyboard is considered visible if viewport height decreased significantly (>120px)
-                        const keyboardNowVisible = heightDifference > 120;
-                        
-                        if (keyboardNowVisible !== isKeyboardVisible) {
-                            isKeyboardVisible = keyboardNowVisible;
-                            
-                            if (isKeyboardVisible) {
-                                // Keyboard appeared - shift page up
-                                applyKeyboardShift(heightDifference);
-                            } else {
-                                // Keyboard disappeared - shift page back
-                                removeKeyboardShift();
-                            }
-                        }
-                    };
-
-                    window.visualViewport.addEventListener('resize', handleViewportChange);
-                    
-                    // Store the cleanup function
-                    this.cleanupKeyboardHandler = () => {
-                        window.visualViewport.removeEventListener('resize', handleViewportChange);
-                        removeKeyboardShift(); // Ensure we clean up any transforms
-                    };
-                } else {
-                    // Fallback for older browsers - use window resize
-                    const handleWindowResize = () => {
-                        const currentHeight = window.innerHeight;
-                        const heightDifference = initialViewportHeight - currentHeight;
-                        
-                        // Keyboard is considered visible if window height decreased significantly
-                        const keyboardNowVisible = heightDifference > 120;
-                        
-                        if (keyboardNowVisible !== isKeyboardVisible) {
-                            isKeyboardVisible = keyboardNowVisible;
-                            
-                            if (isKeyboardVisible) {
-                                // Keyboard appeared - shift page up
-                                applyKeyboardShift(heightDifference);
-                            } else {
-                                // Keyboard disappeared - shift page back
-                                removeKeyboardShift();
-                            }
-                        }
-                    };
-
-                    window.addEventListener('resize', handleWindowResize);
-                    
-                    // Store the cleanup function
-                    this.cleanupKeyboardHandler = () => {
-                        window.removeEventListener('resize', handleWindowResize);
-                        removeKeyboardShift(); // Ensure we clean up any transforms
-                    };
-                }
-
-                // Handle input focus for additional reliability and immediate response
-                if (this.mobileInput) {
-                    this.mobileInput.addEventListener('focus', () => {
-                        // If keyboard detection hasn't triggered yet, wait a bit and check
-                        setTimeout(() => {
-                            if (!isKeyboardVisible) {
-                                const currentHeight = window.visualViewport ? 
-                                    window.visualViewport.height : window.innerHeight;
-                                const heightDifference = initialViewportHeight - currentHeight;
-                                
-                                if (heightDifference > 120) {
-                                    isKeyboardVisible = true;
-                                    applyKeyboardShift(heightDifference);
-                                }
-                            }
-                        }, 300);
-                    });
-
-                    this.mobileInput.addEventListener('blur', () => {
-                        // When input loses focus, wait a moment then check if we should hide keyboard
-                        setTimeout(() => {
-                            if (document.activeElement !== this.mobileInput) {
-                                const currentHeight = window.visualViewport ? 
-                                    window.visualViewport.height : window.innerHeight;
-                                const heightDifference = initialViewportHeight - currentHeight;
-                                
-                                if (heightDifference <= 120 && isKeyboardVisible) {
-                                    isKeyboardVisible = false;
-                                    removeKeyboardShift();
-                                }
-                            }
-                        }, 100);
-                    });
-                }
-
-                // Reset viewport height when modal is opened
-                this.originalShowMobileModal = this.showMobileModal;
-                this.showMobileModal = () => {
-                    initialViewportHeight = window.innerHeight;
-                    this.originalShowMobileModal();
-                };
-
-                // Cleanup when modal is closed
-                this.originalHideMobileModal = this.hideMobileModal;
-                this.hideMobileModal = () => {
-                    // Reset any keyboard adjustments
-                    removeKeyboardShift();
-                    isKeyboardVisible = false;
-                    this.originalHideMobileModal();
-                };
             }
 
             showMobileModal() {
