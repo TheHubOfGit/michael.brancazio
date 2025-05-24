@@ -179,7 +179,7 @@ body.dark-mode .card-scrollable-content {
             right: -15px;
             width: 80px;  /* Default mobile width */
             height: 100vh; /* Make container full height */
-            z-index: 1000; /* Lowered z-index to be below FAB */
+            z-index: 1000; /* Lowered z-index to be below chatbot FAB */
             display: block; /* Explicitly set display */
             /* cursor: grab; Removed - will be managed by JavaScript */
             /* background-color: rgba(255, 0, 0, 0.1); Removed temporary background */
@@ -1263,47 +1263,7 @@ body.dark-mode .card-scrollable-content {
             background-color: transparent !important;
         }
 
-        /* FAB Button Styles */
-        #filter-fab {
-            display: none; /* Hidden by default on desktop */
-            position: fixed;
-            bottom: 10px;
-            right: 10px;
-            width: 40px;
-            height: 40px;
-            border-radius: 16px; /* Match skill tag border radius */
-            background-color: rgba(55, 113, 200, 0.1); /* Match skill tag background */
-            color: var(--accent-blue); /* Match skill tag text color */
-            border: none;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Softer shadow like skill tags */
-            cursor: pointer;
-            z-index: 1002;
-            transition: transform 0.2s ease-in-out, background-color 0.2s ease;
-            align-items: center;
-            justify-content: center;
-            /* Remove default browser tap/focus effects */
-            outline: none;
-            -webkit-tap-highlight-color: transparent;
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            appearance: none;
-        }
 
-        #filter-fab:hover, #filter-fab:focus {
-            background-color: rgba(55, 113, 200, 0.2); /* Match skill tag hover */
-            transform: scale(1.05); /* Subtle scale like skill tags */
-        }
-
-        #filter-fab.active {
-            background-color: rgba(220, 53, 69, 0.2); /* Red with transparency when active */
-            color: #dc3545;
-            transform: rotate(45deg);
-        }
-
-        #filter-fab svg {
-            width: 20px; /* Slightly smaller to fit better */
-            height: 20px;
-        }
 
         /* Chatbot FAB Styles */
         #chatbot-fab {
@@ -1847,7 +1807,7 @@ body.dark-mode .card-scrollable-content {
             #filter-box {
                 display: flex !important;
         position: fixed;
-        bottom: 90px; /* Position above the FAB */
+                        bottom: 90px; /* Position above the chatbot FAB */
         right: 20px;
         left: auto; /* Reset left position */
         top: auto; /* Reset top position */
@@ -1874,10 +1834,7 @@ body.dark-mode .card-scrollable-content {
                 filter: grayscale(0); /* Always full color on mobile */
             }
 
-            /* Show the FAB on mobile */
-           /* #filter-fab {
-                display: flex;
-            }
+
             
             /* Adjust filter keyword styles for mobile column layout */
             .filter-keyword {
@@ -1892,7 +1849,7 @@ body.dark-mode .card-scrollable-content {
             
             /* Make clear filter button match the column width */
              #clear-filter-btn { /* Base style adjustment for mobile */
-                bottom: 90px; /* Keep initial position relative to FAB */
+                bottom: 90px; /* Keep initial position relative to chatbot FAB */
                 right: 20px;
                 left: auto;
                 top: auto;
@@ -1983,12 +1940,7 @@ body.dark-mode .card-scrollable-content {
     </div>
     <button id="clear-filter-btn">Clear Filter</button>
 
-    <!-- Filter FAB for mobile -->
-    <button id="filter-fab" aria-label="Filter">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
-      </svg>
-    </button>
+
 
     <!-- Chatbot FAB for mobile -->
     <button id="chatbot-fab" aria-label="Chat with Assistant">
@@ -3864,90 +3816,7 @@ keywordButtons.forEach(button => {
     </script>
     <!-- End Haptic Feedback Script -->
 
-    <!-- FAB JavaScript -->
-    <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const filterFab = document.getElementById('filter-fab');
-        const filterBox = document.getElementById('filter-box');
-        const clearFilterBtn = document.getElementById('clear-filter-btn');
-        
-        if (filterFab && filterBox) {
-            // Toggle filter panel when FAB is clicked
-            filterFab.addEventListener('click', () => {
-                filterFab.classList.toggle('active');
-                filterBox.classList.toggle('mobile-visible');
-                
-                // Also toggle clear button visibility if it exists and is currently displayed
-                // Check the computed style to see if it's actually visible ('block')
-                if (clearFilterBtn && window.getComputedStyle(clearFilterBtn).display === 'block') {
-                    clearFilterBtn.classList.toggle('mobile-visible');
-                }
-                
-                // Update ARIA attributes for accessibility
-                const isExpanded = filterBox.classList.contains('mobile-visible');
-                filterFab.setAttribute('aria-expanded', isExpanded);
-            });
-            
-            // Close filter box when a filter is selected on mobile
-            const filterKeywords = document.querySelectorAll('.filter-keyword');
-            filterKeywords.forEach(keyword => {
-                keyword.addEventListener('click', () => {
-                    if (window.innerWidth <= 768) {
-                        // Add mobile-visible class to clear button when a filter is active
-                        if (clearFilterBtn) {
-                            // Check if the clear button should be visible (i.e., a filter is active)
-                            // This relies on the filter logic adding 'filter-active' to the filter box
-                            if (filterBox.classList.contains('filter-active')) {
-                                clearFilterBtn.classList.add('mobile-visible');
-                            } else {
-                                // If no filter is active after click (e.g., toggling off), hide it
-                                clearFilterBtn.classList.remove('mobile-visible');
-                            }
-                        }
-                        
-                        // Keep filter box open to see multiple filters (optional)
-                        // Comment these lines if you want it to stay open
-                        setTimeout(() => {
-                            filterBox.classList.remove('mobile-visible');
-                            filterFab.classList.remove('active');
-                            filterFab.setAttribute('aria-expanded', 'false'); // Update ARIA on close
-                        }, 300);
-                    }
-                });
-            });
-            
-            // Handle clear filter button on mobile
-            if (clearFilterBtn) {
-                // We need to find the original handler added by the filter logic script
-                // Assuming the original handler is attached via addEventListener, not onclick
-                // This part is tricky without knowing exactly how the original handler is attached.
-                // Let's modify the existing clear button logic slightly.
-                
-                // Find the existing listener (this is complex and might not work reliably)
-                // A better approach might be to modify the original filter script to cooperate.
-                // For now, let's just add our mobile behavior.
-                
-                clearFilterBtn.addEventListener('click', (e) => {
-                    // The original filter logic should handle clearing highlights and hiding the button on desktop.
-                    // We add the mobile-specific closing behavior.
-                    if (window.innerWidth <= 768) {
-                        // Hide the mobile-specific visibility class
-                        clearFilterBtn.classList.remove('mobile-visible');
-                        // Close the filter box and deactivate FAB
-                        filterBox.classList.remove('mobile-visible');
-                        filterFab.classList.remove('active');
-                        filterFab.setAttribute('aria-expanded', 'false'); // Update ARIA on close
-                    }
-                    // Note: The original filter logic should still run to clear highlights.
-                });
-            }
-            
-            // Set initial ARIA attributes
-            filterFab.setAttribute('aria-expanded', 'false');
-            filterFab.setAttribute('aria-controls', 'filter-box');
-        }
-    });
-    </script>
+
 
     <!-- Chatbot JavaScript -->
     <script>
@@ -4238,6 +4107,11 @@ When appropriate, use rich formatting:
 
                 // Open mobile modal when FAB is clicked
                 this.mobileFab.addEventListener('click', () => {
+                    // Add 1ms vibration on mobile
+                    if (navigator.vibrate && window.innerWidth <= 768) {
+                        navigator.vibrate(1);
+                    }
+                    
                     this.showMobileModal();
                 });
 
