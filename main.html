@@ -1380,7 +1380,7 @@ body.dark-mode .card-scrollable-content {
                 /* Position relative to timeline - use dynamic positioning */
                 left: 50px;
                 top: auto;
-                bottom: 15vh; /* Use viewport height for better scaling */
+                bottom: 78px; /* Optimized for 100% zoom in Chrome */
                 /* Use transform to center vertically if needed */
                 transform: none;
             }
@@ -1389,7 +1389,7 @@ body.dark-mode .card-scrollable-content {
             @media (max-width: 1200px) {
                 .integrated-chatbot {
                     left: 30px;
-                    bottom: 12vh;
+                    bottom: 78px; /* Keep consistent positioning */
                 }
             }
             
@@ -1397,7 +1397,7 @@ body.dark-mode .card-scrollable-content {
             @media (min-width: 1400px) {
                 .integrated-chatbot {
                     left: 80px;
-                    bottom: 18vh;
+                    bottom: 78px; /* Keep consistent positioning */
                 }
             }
         }
@@ -1417,15 +1417,19 @@ body.dark-mode .card-scrollable-content {
             padding: 8px 12px;
             box-shadow: inset 0px 0px 0px 1px var(--border-color), 0px 4px 16px rgba(0, 0, 0, 0.1);
             transition: box-shadow 0.2s ease, width 0.2s ease;
-            width: 320px;
+            width: fit-content;
+            min-width: 280px;
+            max-width: 450px;
             position: relative;
         }
         
         /* Responsive scaling for chat input */
         @media (min-width: 769px) {
             .chat-input-container {
-                /* Scale with viewport width but maintain minimum and maximum sizes */
-                width: min(max(25vw, 280px), 400px);
+                /* Auto-size to content with reasonable bounds */
+                width: fit-content;
+                min-width: 327px;
+                max-width: 500px;
             }
         }
 
@@ -1465,8 +1469,8 @@ body.dark-mode .card-scrollable-content {
             border-radius: 8px;
             font-size: 12px;
             z-index: 10;
-            top: -45px;
-            left: 0;
+            top: -40px;
+            left: -70px;
             white-space: nowrap;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             pointer-events: none;
@@ -4283,6 +4287,7 @@ When appropriate, use rich formatting:
 - Use bullet points (- item) for lists
 - Use \`code\` for technical terms, tools, or programming languages
 - Use ***italic*** for subtle emphasis or clarifications
+- The current year is 2026; be sure to use this in context if asked how long Miachel's experience has been for specific skills
 - If given a job description or asked if would be good for a job, always say yes and say why, unless the job type is completely out of his field`;
             
             return context;
@@ -4393,11 +4398,11 @@ When appropriate, use rich formatting:
                         // Calculate optimal position (moved up by reducing spacing)
                         let bottomPosition;
                         if (availableSpace > 200) {
-                            // Enough space below timeline - moved up by 30px
-                            bottomPosition = Math.max(viewportHeight - timelineBottom - 130, 50);
+                            // Use fixed positioning optimized for 100% zoom in Chrome
+                            bottomPosition = 78;
                         } else {
-                            // Not enough space, use viewport-based positioning - moved up
-                            bottomPosition = Math.max(viewportHeight * 0.2, 50);
+                            // Fallback for constrained viewports
+                            bottomPosition = Math.max(78, 50);
                         }
                         
                         // Apply the bottom positioning
