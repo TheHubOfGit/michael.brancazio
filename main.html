@@ -177,12 +177,20 @@ body.dark-mode .card-scrollable-content {
             position: fixed;
             top: -10px;
             right: -15px;
-            width: 80px;  /* Adjust size as needed */
+            width: 80px;  /* Default mobile width */
             height: 100vh; /* Make container full height */
             z-index: 1000; /* Lowered z-index to be below FAB */
             display: block; /* Explicitly set display */
-            cursor: grab; /* Indicate interactivity */
+            /* cursor: grab; Removed - will be managed by JavaScript */
             /* background-color: rgba(255, 0, 0, 0.1); Removed temporary background */
+        }
+
+        /* Desktop chain container adjustments */
+        @media (min-width: 769px) {
+            #chain-container {
+                width: 60px; /* Much smaller width - just enough for chain */
+                right: -10px; /* Closer to edge */
+            }
         }
         #chain-container canvas {
              display: block;
@@ -3207,9 +3215,13 @@ keywordButtons.forEach(button => {
 
             // --- Chain Creation (Adapted) ---
             const group = Matter.Body.nextGroup(true);
-            const segmentLength = 5; // Shorter segments for smaller container
-            const segmentRadius = 7;  // Smaller radius
-            const numSegments = 5;    // Fewer segments
+            
+            // Desktop vs Mobile chain parameters
+            const isDesktop = window.innerWidth > 768;
+            const segmentLength = isDesktop ? 5 : 5; // 6 * 0.8 = 4.8 → 5px
+            const segmentRadius = isDesktop ? 7 : 7;  // 9 * 0.8 = 7.2 → 7px
+            const numSegments = isDesktop ? 5 : 5;    // 6 * 0.8 = 4.8 → 5 segments  
+            const segmentSpacing = isDesktop ? 5 : 5; // 6 * 0.8 = 4.8 → 5px
             const stiffness = 0.7;
             const damping = 0.2; // Increased damping
             let chainStartX = containerWidth / 2;
@@ -3267,8 +3279,15 @@ keywordButtons.forEach(button => {
 
                 chainStartX = containerWidth / 2; // Recalculate start X
 
-                chain = Composites.stack(chainStartX, chainStartY, numSegments, 1, 5, 5, function(x, y) {
-                    return Bodies.circle(x, y, segmentRadius, {
+                // Recalculate desktop vs mobile parameters (in case of resize)
+                const currentIsDesktop = window.innerWidth > 768;
+                const currentSegmentLength = currentIsDesktop ? 5 : 5;
+                const currentSegmentRadius = currentIsDesktop ? 7 : 7;
+                const currentNumSegments = currentIsDesktop ? 5 : 5;
+                const segmentSpacing = currentIsDesktop ? 5 : 5;
+                
+                chain = Composites.stack(chainStartX, chainStartY, currentNumSegments, 1, segmentSpacing, segmentSpacing, function(x, y) {
+                    return Bodies.circle(x, y, currentSegmentRadius, {
                         collisionFilter: { group: group },
                         frictionAir: 0.22, // Higher air friction for smoother, more controlled movement
                         slop: 0.05, // Reduced slop for more precise physics
@@ -3282,7 +3301,7 @@ keywordButtons.forEach(button => {
 
                 Composites.chain(chain, 0.5, 0, -0.5, 0, {
                     stiffness: stiffness,
-                    length: segmentLength * 0.8, // Slightly shorter constraint length
+                    length: currentSegmentLength * 0.8, // Slightly shorter constraint length
                     damping: 0.35, // Increased damping for much smoother movement
                     render: {
                         type: 'line',
@@ -3297,9 +3316,9 @@ keywordButtons.forEach(button => {
                     label: 'AnchorConstraint', // Add label for easier finding
                     pointA: anchor,
                     bodyB: firstSegment,
-                    pointB: { x: 0, y: -segmentRadius }, // Connect to top edge of first segment
+                    pointB: { x: 0, y: -currentSegmentRadius }, // Connect to top edge of first segment
                     stiffness: 0.9, // Stiffer anchor
-                    length: 5, // Allow a tiny bit of slack
+                    length: currentIsDesktop ? 6 : 5, // Bigger slack for desktop chain
                      render: { visible: false } // Hide anchor constraint line
                 });
 
@@ -3313,13 +3332,62 @@ keywordButtons.forEach(button => {
             const mouseConstraint = MouseConstraint.create(engine, {
                 mouse: mouse,
                 constraint: {
-                    stiffness: 0.1,
+                    stiffness: 0.1, // Will be updated dynamically
                     render: { visible: false }
                 }
             });
+            
+            // Function to update mouse constraint stiffness based on screen size
+            function updateMouseConstraint() {
+                const currentIsDesktop = window.innerWidth > 768;
+                mouseConstraint.constraint.stiffness = currentIsDesktop ? 0.2 : 0.1; // Higher stiffness for bigger desktop chain
+            }
+            
+            // Set initial stiffness
+            updateMouseConstraint();
 
             Composite.add(world, mouseConstraint);
             render.mouse = mouse;
+
+            // Dynamic cursor management - only show grab cursor near chain
+            let isNearChain = false;
+
+            chainContainer.addEventListener('mousemove', (event) => {
+                if (!chain || !chain.bodies || chain.bodies.length === 0) return;
+                
+                const rect = chainContainer.getBoundingClientRect();
+                const mouseX = event.clientX - rect.left;
+                const mouseY = event.clientY - rect.top;
+                
+                // Convert to world coordinates
+                const worldX = mouseX * (containerWidth / chainContainer.offsetWidth);
+                const worldY = mouseY * (containerHeight / chainContainer.offsetHeight);
+                
+                // Check if mouse is near any chain segment
+                let nearChain = false;
+                const hoverDistance = window.innerWidth > 768 ? 25 : 20; // Hover area around chain
+                
+                chain.bodies.forEach(body => {
+                    const distance = Math.sqrt(
+                        Math.pow(worldX - body.position.x, 2) + 
+                        Math.pow(worldY - body.position.y, 2)
+                    );
+                    if (distance < hoverDistance) {
+                        nearChain = true;
+                    }
+                });
+                
+                // Update cursor only when state changes
+                if (nearChain !== isNearChain) {
+                    isNearChain = nearChain;
+                    chainContainer.style.cursor = nearChain ? 'grab' : 'default';
+                }
+            });
+
+            chainContainer.addEventListener('mouseleave', () => {
+                isNearChain = false;
+                chainContainer.style.cursor = 'default';
+            });
 
             // --- Mobile Touch Enhancement ---
             let mobileConstraint = null;
@@ -3444,8 +3512,16 @@ keywordButtons.forEach(button => {
             let draggedChainBody = null;
             let startPullX = 0; // Store initial X for pull limit
             let startPullY = 0; // Store initial Y for pull limit
-            const maxPullDistance = 150; // Maximum pixels to pull from start point
-            const pullThreshold = maxPullDistance * 0.7; // Set threshold relative to max pull (e.g., 70%)
+            
+            // Dynamic pull distances based on screen size
+            function getMaxPullDistance() {
+                return window.innerWidth > 768 ? 200 : 150; // Bigger pull distance for desktop
+            }
+            
+            function getPullThreshold() {
+                return getMaxPullDistance() * 0.7; // Set threshold relative to max pull (e.g., 70%)
+            }
+            
             const minDragDistance = 30; // Minimum distance before considering it a real drag (not just a tap)
             let themeToggledThisDrag = false;
             let hasMovedEnoughToDrag = false; // Track if user has moved enough to be considered dragging
@@ -3498,7 +3574,7 @@ keywordButtons.forEach(button => {
                     const currentPullVerticalDistance = mouse.position.y - startPullY;
 
                     // --- Theme Toggle Logic (Only if actually dragging, not just tapping) ---
-                    if (!themeToggledThisDrag && hasMovedEnoughToDrag && currentPullVerticalDistance > pullThreshold) {
+                    if (!themeToggledThisDrag && hasMovedEnoughToDrag && currentPullVerticalDistance > getPullThreshold()) {
                         body.classList.toggle('dark-mode');
                         updateChainColors(); // Update colors immediately after toggle
                         localStorage.setItem('theme', body.classList.contains('dark-mode') ? 'dark' : 'light');
@@ -3515,7 +3591,7 @@ keywordButtons.forEach(button => {
                     if (draggedChainBody) {
                         const currentDistance = totalMovement;
 
-                        if (currentDistance > maxPullDistance) {
+                        if (currentDistance > getMaxPullDistance()) {
                             // Release the drag
                             if (isMobileTouch && mobileConstraint) {
                                 // Mobile touch - remove the constraint
@@ -3558,6 +3634,9 @@ keywordButtons.forEach(button => {
 
                  // Recreate the chain to reposition it correctly
                  createChain();
+                 
+                 // Update mouse constraint for new screen size
+                 updateMouseConstraint();
             }
 
             // Initial setup
@@ -3707,7 +3786,7 @@ keywordButtons.forEach(button => {
                             const deltaY = touchY - startPullY;
                             const currentDistance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
 
-                            if (currentDistance > maxPullDistance) {
+                            if (currentDistance > getMaxPullDistance()) {
                                 // Release the drag (mirroring logic in beforeUpdate)
                                 mouse.button = -1;
                                 draggedChainBody = null;
