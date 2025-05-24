@@ -3099,7 +3099,11 @@ keywordButtons.forEach(button => {
             const Bodies = Matter.Bodies;
             const Events = Matter.Events;
 
-            const engine = Engine.create({ enableSleeping: true, positionIterations: 10 });
+            const engine = Engine.create({ 
+                enableSleeping: true, 
+                positionIterations: 20, // Increased iterations for smoother physics
+                velocityIterations: 12   // More velocity iterations for smoother movement
+            });
             const world = engine.world;
             engine.gravity.y = 15.0; // Very heavy gravity to limit movement
 
@@ -3177,8 +3181,8 @@ keywordButtons.forEach(button => {
                 chain = Composites.stack(chainStartX, chainStartY, numSegments, 1, 5, 5, function(x, y) {
                     return Bodies.circle(x, y, segmentRadius, {
                         collisionFilter: { group: group },
-                        frictionAir: 0.18, // Much higher air friction for heavier feel
-                        slop: 0.1,
+                        frictionAir: 0.22, // Higher air friction for smoother, more controlled movement
+                        slop: 0.05, // Reduced slop for more precise physics
                         render: {
                             fillStyle: segmentFill,
                             strokeStyle: segmentStroke,
@@ -3190,7 +3194,7 @@ keywordButtons.forEach(button => {
                 Composites.chain(chain, 0.5, 0, -0.5, 0, {
                     stiffness: stiffness,
                     length: segmentLength * 0.8, // Slightly shorter constraint length
-                    damping: damping,
+                    damping: 0.35, // Increased damping for much smoother movement
                     render: {
                         type: 'line',
                         strokeStyle: constraintStroke,
@@ -3341,6 +3345,7 @@ keywordButtons.forEach(button => {
             // --- Gyroscope Support for Mobile ---
             let gyroscopeSupported = false;
             let lastGamma = 0; // Store last gamma value for smoothing
+            let smoothingBuffer = []; // Buffer for more advanced smoothing
             let permissionRequested = false;
 
             // Function to check if permission is already granted
@@ -3404,12 +3409,27 @@ keywordButtons.forEach(button => {
                 // Get gamma (left/right tilt) - ignore beta (forward/backward)
                 const gamma = event.gamma || 0; // Range: -90 to 90 degrees
                 
-                // Smooth the input more heavily to avoid jittery motion and make it more weighty
-                const smoothedGamma = lastGamma * 0.9 + gamma * 0.1;
-                lastGamma = smoothedGamma;
+                // Advanced smoothing using rolling average
+                smoothingBuffer.push(gamma);
+                if (smoothingBuffer.length > 8) { // Keep last 8 readings for very smooth movement
+                    smoothingBuffer.shift();
+                }
+                
+                // Calculate weighted average with more weight on recent values
+                let weightedSum = 0;
+                let totalWeight = 0;
+                for (let i = 0; i < smoothingBuffer.length; i++) {
+                    const weight = (i + 1) / smoothingBuffer.length; // More weight on recent values
+                    weightedSum += smoothingBuffer[i] * weight;
+                    totalWeight += weight;
+                }
+                const smoothedGamma = weightedSum / totalWeight;
+                
+                // Additional exponential smoothing on top
+                lastGamma = lastGamma * 0.85 + smoothedGamma * 0.15;
 
                 // Convert gamma to a force (-90 to 90 degrees -> -1 to 1 force)
-                const normalizedForce = Math.max(-1, Math.min(1, smoothedGamma / 120)); // Divide by 120 for even less sensitivity
+                const normalizedForce = Math.max(-1, Math.min(1, lastGamma / 120)); // Use final smoothed value
                 const forceStrength = normalizedForce * 0.004; // Even weaker force for very subtle movement
 
                 // Apply horizontal force to all chain segments
