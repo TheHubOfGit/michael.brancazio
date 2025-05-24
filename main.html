@@ -1990,7 +1990,7 @@ body.dark-mode .card-scrollable-content {
             user-select: none; /* Prevent text selection during drag */
         }
 
-        .suggestion-item:hover {
+                .suggestion-item:hover {
             background-color: var(--accent-blue);
             color: white;
             border-color: var(--accent-blue);
@@ -1998,7 +1998,18 @@ body.dark-mode .card-scrollable-content {
             box-shadow: 0 2px 8px rgba(55, 113, 200, 0.3);
         }
 
+        @keyframes scrollSuggestions {
+            0% {
+                transform: translateX(0);
+            }
+            100% {
+                transform: translateX(-50%);
+            }
+        }
 
+        .suggestions-track.auto-scroll {
+            animation: scrollSuggestions 30s linear infinite;
+        }
 
         /* Mobile adjustments for integrated chatbot */
         @media (max-width: 768px) {
@@ -4444,7 +4455,8 @@ When appropriate, use rich formatting:
 
             setupDragScrolling() {
                 const carousel = document.querySelector('.suggestions-carousel');
-                if (!carousel) return;
+                const track = document.querySelector('.suggestions-track');
+                if (!carousel || !track) return;
 
                 let isDown = false;
                 let startX;
@@ -4452,9 +4464,39 @@ When appropriate, use rich formatting:
                 let startTime;
                 let lastX;
                 let velocity = 0;
+                let autoScrollTimeout = null;
+                let isUserInteracting = false;
 
-                const stopPropagation = (e) => {
-                    e.stopPropagation();
+                // Start auto-scroll initially
+                this.startAutoScroll(track);
+
+                const stopAutoScroll = () => {
+                    track.classList.remove('auto-scroll');
+                    if (autoScrollTimeout) {
+                        clearTimeout(autoScrollTimeout);
+                        autoScrollTimeout = null;
+                    }
+                };
+
+                const scheduleAutoScrollRestart = () => {
+                    if (autoScrollTimeout) {
+                        clearTimeout(autoScrollTimeout);
+                    }
+                    autoScrollTimeout = setTimeout(() => {
+                        if (!isUserInteracting) {
+                            this.startAutoScroll(track);
+                        }
+                    }, 2000); // 2 seconds delay
+                };
+
+                const handleInteractionStart = () => {
+                    isUserInteracting = true;
+                    stopAutoScroll();
+                };
+
+                const handleInteractionEnd = () => {
+                    isUserInteracting = false;
+                    scheduleAutoScrollRestart();
                 };
 
                 carousel.addEventListener('mousedown', (e) => {
@@ -4465,21 +4507,29 @@ When appropriate, use rich formatting:
                     lastX = e.pageX;
                     velocity = 0;
                     carousel.style.cursor = 'grabbing';
+                    handleInteractionStart();
                     e.preventDefault();
                 });
 
                 carousel.addEventListener('mouseleave', () => {
-                    isDown = false;
-                    carousel.style.cursor = 'grab';
+                    if (isDown) {
+                        isDown = false;
+                        carousel.style.cursor = 'grab';
+                        handleInteractionEnd();
+                    }
                 });
 
                 carousel.addEventListener('mouseup', () => {
-                    isDown = false;
-                    carousel.style.cursor = 'grab';
-                    
-                    // Apply momentum scrolling
-                    if (Math.abs(velocity) > 0.5) {
-                        this.applyMomentum(carousel, velocity);
+                    if (isDown) {
+                        isDown = false;
+                        carousel.style.cursor = 'grab';
+                        
+                        // Apply momentum scrolling
+                        if (Math.abs(velocity) > 0.5) {
+                            this.applyMomentum(carousel, velocity, handleInteractionEnd);
+                        } else {
+                            handleInteractionEnd();
+                        }
                     }
                 });
 
@@ -4509,6 +4559,7 @@ When appropriate, use rich formatting:
                     lastX = touch.pageX;
                     velocity = 0;
                     isDown = true;
+                    handleInteractionStart();
                 }, { passive: true });
 
                 carousel.addEventListener('touchmove', (e) => {
@@ -4529,11 +4580,15 @@ When appropriate, use rich formatting:
                 }, { passive: true });
 
                 carousel.addEventListener('touchend', () => {
-                    isDown = false;
-                    
-                    // Apply momentum scrolling
-                    if (Math.abs(velocity) > 0.5) {
-                        this.applyMomentum(carousel, velocity);
+                    if (isDown) {
+                        isDown = false;
+                        
+                        // Apply momentum scrolling
+                        if (Math.abs(velocity) > 0.5) {
+                            this.applyMomentum(carousel, velocity, handleInteractionEnd);
+                        } else {
+                            handleInteractionEnd();
+                        }
                     }
                 }, { passive: true });
 
@@ -4549,13 +4604,16 @@ When appropriate, use rich formatting:
                 carousel.style.cursor = 'grab';
             }
 
-            applyMomentum(carousel, velocity) {
+            applyMomentum(carousel, velocity, onComplete) {
                 let currentVelocity = velocity * 100; // Scale velocity
                 const friction = 0.95;
                 const minVelocity = 0.5;
 
                 const animate = () => {
-                    if (Math.abs(currentVelocity) < minVelocity) return;
+                    if (Math.abs(currentVelocity) < minVelocity) {
+                        if (onComplete) onComplete();
+                        return;
+                    }
                     
                     carousel.scrollLeft -= currentVelocity;
                     currentVelocity *= friction;
@@ -4564,6 +4622,19 @@ When appropriate, use rich formatting:
                 };
 
                 requestAnimationFrame(animate);
+            }
+
+            startAutoScroll(track) {
+                if (!track) return;
+                
+                // Reset scroll position to start for seamless loop
+                const carousel = track.parentElement;
+                if (carousel) {
+                    carousel.scrollLeft = 0;
+                }
+                
+                // Add auto-scroll class to trigger CSS animation
+                track.classList.add('auto-scroll');
             }
 
             showMobileModal() {
