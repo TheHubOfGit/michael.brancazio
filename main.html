@@ -4393,9 +4393,8 @@ When appropriate, use rich formatting:
                 });
 
                 // Also add touchstart event for immediate feedback
-                this.mobileFab.addEventListener('touchstart', (e) => {
-                    e.preventDefault();
-                    // Immediate haptic feedback on touch
+                this.mobileFab.addEventListener('touchstart', () => {
+                    // Immediate haptic feedback on touch (passive, doesn't interfere with click)
                     if (navigator.vibrate) {
                         try {
                             navigator.vibrate(1); // Quick initial feedback
@@ -4403,7 +4402,7 @@ When appropriate, use rich formatting:
                             console.log('Vibration not supported or failed');
                         }
                     }
-                }, { passive: false });
+                }, { passive: true });
 
                 // Close mobile modal when close button is clicked
                 if (this.mobileCloseButton) {
