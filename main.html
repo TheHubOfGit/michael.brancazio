@@ -1944,6 +1944,8 @@ body.dark-mode .card-scrollable-content {
             border-top: 1px solid var(--border-color);
             flex-shrink: 0;
             background-color: var(--bg-color);
+            /* Optimize for mobile performance */
+            contain: layout style paint;
         }
 
         .suggestions-label {
@@ -1962,6 +1964,9 @@ body.dark-mode .card-scrollable-content {
             -webkit-overflow-scrolling: touch;
             scrollbar-width: none; /* Firefox */
             -ms-overflow-style: none; /* IE/Edge */
+            /* Improve mobile scrolling performance */
+            overscroll-behavior-x: contain;
+            scroll-snap-type: x proximity;
         }
 
         .suggestions-carousel::-webkit-scrollbar {
@@ -1973,7 +1978,9 @@ body.dark-mode .card-scrollable-content {
             align-items: center;
             gap: 12px;
             white-space: nowrap;
-            /* Remove animation - will be controlled by touch/drag */
+            /* Optimize for smooth mobile scrolling */
+            will-change: transform;
+            transform: translateZ(0); /* Force hardware acceleration */
         }
 
         .suggestion-item {
@@ -1988,6 +1995,11 @@ body.dark-mode .card-scrollable-content {
             flex-shrink: 0;
             white-space: nowrap;
             user-select: none; /* Prevent text selection during drag */
+            scroll-snap-align: start;
+            /* Better touch targets for mobile */
+            min-height: 20px;
+            display: flex;
+            align-items: center;
         }
 
                 .suggestion-item:hover {
@@ -2008,7 +2020,7 @@ body.dark-mode .card-scrollable-content {
         }
 
         .suggestions-track.auto-scroll {
-            animation: scrollSuggestions 30s linear infinite;
+            animation: scrollSuggestions 10s linear infinite;
         }
 
         /* Mobile adjustments for integrated chatbot */
@@ -2019,6 +2031,27 @@ body.dark-mode .card-scrollable-content {
 
             #chatbot-fab {
                 display: flex; /* Show chatbot FAB on mobile */
+            }
+
+            /* Enhanced mobile touch performance for suggestions */
+            .suggestions-carousel {
+                /* Improve touch scrolling on mobile */
+                touch-action: pan-x;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .suggestion-item {
+                /* Better touch targets */
+                padding: 8px 14px;
+                min-height: 24px;
+                /* Reduce transition duration for snappier feel */
+                transition: all 0.15s ease;
+            }
+
+            .suggestions-track {
+                /* Optimize mobile performance */
+                backface-visibility: hidden;
+                perspective: 1000px;
             }
         }
 
@@ -4458,14 +4491,9 @@ When appropriate, use rich formatting:
                 const track = document.querySelector('.suggestions-track');
                 if (!carousel || !track) return;
 
-                let isDown = false;
-                let startX;
-                let scrollLeft;
-                let startTime;
-                let lastX;
-                let velocity = 0;
                 let autoScrollTimeout = null;
                 let isUserInteracting = false;
+                let interactionStartTime = 0;
 
                 // Start auto-scroll initially
                 this.startAutoScroll(track);
@@ -4486,143 +4514,63 @@ When appropriate, use rich formatting:
                         if (!isUserInteracting) {
                             this.startAutoScroll(track);
                         }
-                    }, 2000); // 2 seconds delay
+                    }, 3000); // 3 seconds delay for better UX
                 };
 
                 const handleInteractionStart = () => {
                     isUserInteracting = true;
+                    interactionStartTime = Date.now();
                     stopAutoScroll();
                 };
 
                 const handleInteractionEnd = () => {
+                    // Only restart auto-scroll if the interaction was brief (< 2 seconds)
+                    // This prevents auto-scroll from restarting if user was actively browsing
+                    const interactionDuration = Date.now() - interactionStartTime;
+                    if (interactionDuration < 2000) {
+                        setTimeout(() => {
+                            if (!isUserInteracting) {
+                                scheduleAutoScrollRestart();
+                            }
+                        }, 1000);
+                    }
                     isUserInteracting = false;
-                    scheduleAutoScrollRestart();
                 };
 
-                carousel.addEventListener('mousedown', (e) => {
-                    isDown = true;
-                    startX = e.pageX - carousel.offsetLeft;
-                    scrollLeft = carousel.scrollLeft;
-                    startTime = Date.now();
-                    lastX = e.pageX;
-                    velocity = 0;
-                    carousel.style.cursor = 'grabbing';
-                    handleInteractionStart();
-                    e.preventDefault();
+                // Use native scroll events for better mobile performance
+                carousel.addEventListener('touchstart', handleInteractionStart, { passive: true });
+                carousel.addEventListener('touchend', handleInteractionEnd, { passive: true });
+                carousel.addEventListener('scroll', () => {
+                    if (isUserInteracting) {
+                        stopAutoScroll();
+                    }
+                }, { passive: true });
+
+                // Mouse events for desktop (simplified)
+                carousel.addEventListener('mouseenter', () => {
+                    carousel.style.cursor = 'grab';
+                    stopAutoScroll();
                 });
 
                 carousel.addEventListener('mouseleave', () => {
-                    if (isDown) {
-                        isDown = false;
-                        carousel.style.cursor = 'grab';
-                        handleInteractionEnd();
+                    carousel.style.cursor = 'default';
+                    if (!isUserInteracting) {
+                        scheduleAutoScrollRestart();
                     }
                 });
 
-                carousel.addEventListener('mouseup', () => {
-                    if (isDown) {
-                        isDown = false;
-                        carousel.style.cursor = 'grab';
-                        
-                        // Apply momentum scrolling
-                        if (Math.abs(velocity) > 0.5) {
-                            this.applyMomentum(carousel, velocity, handleInteractionEnd);
-                        } else {
-                            handleInteractionEnd();
-                        }
-                    }
-                });
-
-                carousel.addEventListener('mousemove', (e) => {
-                    if (!isDown) return;
+                // Mouse wheel support for horizontal scrolling
+                carousel.addEventListener('wheel', (e) => {
                     e.preventDefault();
-                    
-                    const x = e.pageX - carousel.offsetLeft;
-                    const walk = (x - startX) * 1.5;
-                    carousel.scrollLeft = scrollLeft - walk;
-                    
-                    // Calculate velocity for momentum
-                    const currentTime = Date.now();
-                    const timeDiff = currentTime - startTime;
-                    if (timeDiff > 0) {
-                        velocity = (e.pageX - lastX) / timeDiff;
+                    carousel.scrollLeft += e.deltaY;
+                    stopAutoScroll();
+                    if (!isUserInteracting) {
+                        scheduleAutoScrollRestart();
                     }
-                    lastX = e.pageX;
-                });
-
-                // Touch events for mobile
-                carousel.addEventListener('touchstart', (e) => {
-                    const touch = e.touches[0];
-                    startX = touch.pageX - carousel.offsetLeft;
-                    scrollLeft = carousel.scrollLeft;
-                    startTime = Date.now();
-                    lastX = touch.pageX;
-                    velocity = 0;
-                    isDown = true;
-                    handleInteractionStart();
-                }, { passive: true });
-
-                carousel.addEventListener('touchmove', (e) => {
-                    if (!isDown) return;
-                    
-                    const touch = e.touches[0];
-                    const x = touch.pageX - carousel.offsetLeft;
-                    const walk = (x - startX) * 1.5;
-                    carousel.scrollLeft = scrollLeft - walk;
-                    
-                    // Calculate velocity for momentum
-                    const currentTime = Date.now();
-                    const timeDiff = currentTime - startTime;
-                    if (timeDiff > 0) {
-                        velocity = (touch.pageX - lastX) / timeDiff;
-                    }
-                    lastX = touch.pageX;
-                }, { passive: true });
-
-                carousel.addEventListener('touchend', () => {
-                    if (isDown) {
-                        isDown = false;
-                        
-                        // Apply momentum scrolling
-                        if (Math.abs(velocity) > 0.5) {
-                            this.applyMomentum(carousel, velocity, handleInteractionEnd);
-                        } else {
-                            handleInteractionEnd();
-                        }
-                    }
-                }, { passive: true });
-
-                // Prevent click events when dragging
-                carousel.addEventListener('click', (e) => {
-                    if (Math.abs(velocity) > 0.1) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                    }
-                }, true);
-
-                // Set initial cursor style
-                carousel.style.cursor = 'grab';
+                }, { passive: false });
             }
 
-            applyMomentum(carousel, velocity, onComplete) {
-                let currentVelocity = velocity * 100; // Scale velocity
-                const friction = 0.95;
-                const minVelocity = 0.5;
 
-                const animate = () => {
-                    if (Math.abs(currentVelocity) < minVelocity) {
-                        if (onComplete) onComplete();
-                        return;
-                    }
-                    
-                    carousel.scrollLeft -= currentVelocity;
-                    currentVelocity *= friction;
-                    
-                    requestAnimationFrame(animate);
-                };
-
-                requestAnimationFrame(animate);
-            }
 
             startAutoScroll(track) {
                 if (!track) return;
