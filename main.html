@@ -1761,6 +1761,66 @@ body.dark-mode .card-scrollable-content {
             opacity: 0.6;
         }
 
+        /* Mobile Suggestions Carousel Styles */
+        .mobile-suggestions-area {
+            padding: 16px 20px 8px 20px;
+            border-top: 1px solid var(--border-color);
+            flex-shrink: 0;
+            background-color: var(--bg-color);
+        }
+
+        .suggestions-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            font-weight: 500;
+        }
+
+        .suggestions-carousel {
+            overflow: hidden;
+            position: relative;
+            height: 32px;
+        }
+
+        .suggestions-track {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            position: absolute;
+            white-space: nowrap;
+            animation: scrollSuggestions 30s linear infinite;
+        }
+
+        .suggestion-item {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 6px 12px;
+            font-size: 13px;
+            color: var(--text-color);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+
+        .suggestion-item:hover {
+            background-color: var(--accent-blue);
+            color: white;
+            border-color: var(--accent-blue);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(55, 113, 200, 0.3);
+        }
+
+        @keyframes scrollSuggestions {
+            0% {
+                transform: translateX(0);
+            }
+            100% {
+                transform: translateX(-50%);
+            }
+        }
+
         /* Mobile adjustments for integrated chatbot */
         @media (max-width: 768px) {
             .integrated-chatbot {
@@ -1952,6 +2012,24 @@ body.dark-mode .card-scrollable-content {
                         <div class="dot"></div>
                         <div class="dot"></div>
                         <div class="dot"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Suggestion Carousel -->
+            <div class="mobile-suggestions-area" id="mobile-suggestions-area">
+                <div class="suggestions-label">For example...</div>
+                <div class="suggestions-carousel">
+                    <div class="suggestions-track" id="suggestions-track">
+                        <div class="suggestion-item" data-question="How many years of SQL experience?">How many years of SQL experience?</div>
+                        <div class="suggestion-item" data-question="Where did Michael graduate from?">Where did Michael graduate from?</div>
+                        <div class="suggestion-item" data-question="What are some of his skills?">What are some of his skills?</div>
+                        <div class="suggestion-item" data-question="Is Mike experienced with data?">Is Mike experienced with data?</div>
+                        <!-- Duplicate for seamless loop -->
+                        <div class="suggestion-item" data-question="How many years of SQL experience?">How many years of SQL experience?</div>
+                        <div class="suggestion-item" data-question="Where did Michael graduate from?">Where did Michael graduate from?</div>
+                        <div class="suggestion-item" data-question="What are some of his skills?">What are some of his skills?</div>
+                        <div class="suggestion-item" data-question="Is Mike experienced with data?">Is Mike experienced with data?</div>
                     </div>
                 </div>
             </div>
@@ -3174,6 +3252,17 @@ keywordButtons.forEach(button => {
                     // Also remove the anchor constraint specifically if it exists
                     const anchorConstraint = world.constraints.find(c => c.label === 'AnchorConstraint');
                     if (anchorConstraint) Composite.remove(world, anchorConstraint);
+                    
+                    // Clean up any mobile constraint
+                    if (mobileConstraint) {
+                        Composite.remove(world, mobileConstraint);
+                        mobileConstraint = null;
+                    }
+                    
+                    // Reset mobile touch state
+                    isMobileTouch = false;
+                    draggedChainBody = null;
+                    hasMovedEnoughToDrag = false;
                 }
 
                 chainStartX = containerWidth / 2; // Recalculate start X
@@ -3232,12 +3321,134 @@ keywordButtons.forEach(button => {
             Composite.add(world, mouseConstraint);
             render.mouse = mouse;
 
+            // --- Mobile Touch Enhancement ---
+            let mobileConstraint = null;
+            let isMobileTouch = false;
+
+            // Add touch listeners to the entire container for easier mobile interaction
+            chainContainer.addEventListener('touchstart', (event) => {
+                if (!chain || !chain.bodies || chain.bodies.length === 0) return;
+                
+                // Get touch position relative to the canvas
+                const touch = event.touches[0];
+                const canvasBounds = render.canvas.getBoundingClientRect();
+                const touchX = touch.clientX - canvasBounds.left;
+                const touchY = touch.clientY - canvasBounds.top;
+                
+                // Convert to world coordinates
+                const worldX = touchX * (containerWidth / render.canvas.offsetWidth);
+                const worldY = touchY * (containerHeight / render.canvas.offsetHeight);
+                
+                // Only trigger if touch is in the immediate corner area where the chain hangs
+                // Much more restrictive area - only the top portion and center area
+                const chainCenterX = containerWidth / 2;
+                const touchDistanceFromCenter = Math.abs(worldX - chainCenterX);
+                const maxTouchDistance = 25; // Only within 25px of center (much smaller area)
+                
+                // Only in the very top portion where the chain starts
+                const isInChainArea = touchDistanceFromCenter <= maxTouchDistance && worldY <= containerHeight * 0.15;
+                
+                if (!isInChainArea) {
+                    return; // Don't start chain interaction if touch is too far from chain area
+                }
+                
+                event.preventDefault(); // Prevent scrolling
+                isMobileTouch = true;
+                
+                // Find the bottom-most (last) chain segment for easier grabbing
+                const targetBody = chain.bodies[chain.bodies.length - 1];
+                
+                // Create a constraint from the touch point to the target body
+                mobileConstraint = Constraint.create({
+                    pointA: { x: worldX, y: worldY },
+                    bodyB: targetBody,
+                    pointB: { x: 0, y: 0 }, // Center of the body
+                    stiffness: 0.1,
+                    length: 0,
+                    render: { visible: false }
+                });
+                
+                Composite.add(world, mobileConstraint);
+                
+                // Set up drag tracking
+                draggedChainBody = targetBody;
+                startPullX = worldX;
+                startPullY = worldY;
+                themeToggledThisDrag = false;
+                hasMovedEnoughToDrag = false; // Reset drag movement tracking
+                chainContainer.style.cursor = 'grabbing';
+                
+                // Try to enable gyroscope on first interaction
+                if (!gyroscopeSupported && !permissionRequested) {
+                    requestGyroscopePermission();
+                }
+            }, { passive: false });
+
+            chainContainer.addEventListener('touchmove', (event) => {
+                if (!isMobileTouch || !mobileConstraint) return;
+                
+                event.preventDefault(); // Prevent scrolling
+                
+                const touch = event.touches[0];
+                const canvasBounds = render.canvas.getBoundingClientRect();
+                const touchX = touch.clientX - canvasBounds.left;
+                const touchY = touch.clientY - canvasBounds.top;
+                
+                // Convert to world coordinates
+                const worldX = touchX * (containerWidth / render.canvas.offsetWidth);
+                const worldY = touchY * (containerHeight / render.canvas.offsetHeight);
+                
+                // Update the constraint's point A to follow the touch
+                mobileConstraint.pointA.x = worldX;
+                mobileConstraint.pointA.y = worldY;
+                
+                // Update mouse position for other logic that depends on it
+                mouse.position.x = worldX;
+                mouse.position.y = worldY;
+            }, { passive: false });
+
+            chainContainer.addEventListener('touchend', (event) => {
+                if (!isMobileTouch) return;
+                
+                event.preventDefault();
+                isMobileTouch = false;
+                
+                // Remove the mobile constraint
+                if (mobileConstraint) {
+                    Composite.remove(world, mobileConstraint);
+                    mobileConstraint = null;
+                }
+                
+                // Reset drag state
+                draggedChainBody = null;
+                hasMovedEnoughToDrag = false; // Reset movement tracking
+                chainContainer.style.cursor = 'grab';
+            }, { passive: false });
+
+            chainContainer.addEventListener('touchcancel', (event) => {
+                // Handle touch cancel the same as touch end
+                if (!isMobileTouch) return;
+                
+                isMobileTouch = false;
+                
+                if (mobileConstraint) {
+                    Composite.remove(world, mobileConstraint);
+                    mobileConstraint = null;
+                }
+                
+                draggedChainBody = null;
+                hasMovedEnoughToDrag = false; // Reset movement tracking
+                chainContainer.style.cursor = 'grab';
+            });
+
             let draggedChainBody = null;
             let startPullX = 0; // Store initial X for pull limit
             let startPullY = 0; // Store initial Y for pull limit
             const maxPullDistance = 150; // Maximum pixels to pull from start point
             const pullThreshold = maxPullDistance * 0.7; // Set threshold relative to max pull (e.g., 70%)
+            const minDragDistance = 30; // Minimum distance before considering it a real drag (not just a tap)
             let themeToggledThisDrag = false;
+            let hasMovedEnoughToDrag = false; // Track if user has moved enough to be considered dragging
             let initialBodyClasses = body.className; // Store initial classes
 
             // Apply saved theme on load & set initial colors
@@ -3255,6 +3466,7 @@ keywordButtons.forEach(button => {
                     startPullX = mouse.position.x; // Record start X
                     startPullY = mouse.position.y; // Record start Y
                     themeToggledThisDrag = false; // Reset toggle flag
+                    hasMovedEnoughToDrag = false; // Reset drag movement tracking
                     chainContainer.style.cursor = 'grabbing'; // Change cursor
                     
                     // Try to enable gyroscope on first interaction (if not already enabled)
@@ -3267,16 +3479,26 @@ keywordButtons.forEach(button => {
             Events.on(mouseConstraint, 'enddrag', (event) => {
                 if (draggedChainBody && event.body === draggedChainBody) {
                     draggedChainBody = null;
+                    hasMovedEnoughToDrag = false; // Reset movement tracking
                     chainContainer.style.cursor = 'grab'; // Restore cursor
                 }
             });
 
             Events.on(engine, 'beforeUpdate', () => {
                 if (draggedChainBody) {
+                    const deltaX = mouse.position.x - startPullX;
+                    const deltaY = mouse.position.y - startPullY;
+                    const totalMovement = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+                    
+                    // Check if user has moved enough to be considered dragging (not just tapping)
+                    if (!hasMovedEnoughToDrag && totalMovement > minDragDistance) {
+                        hasMovedEnoughToDrag = true;
+                    }
+                    
                     const currentPullVerticalDistance = mouse.position.y - startPullY;
 
-                    // --- Theme Toggle Logic (Check First) ---
-                    if (!themeToggledThisDrag && currentPullVerticalDistance > pullThreshold) {
+                    // --- Theme Toggle Logic (Only if actually dragging, not just tapping) ---
+                    if (!themeToggledThisDrag && hasMovedEnoughToDrag && currentPullVerticalDistance > pullThreshold) {
                         body.classList.toggle('dark-mode');
                         updateChainColors(); // Update colors immediately after toggle
                         localStorage.setItem('theme', body.classList.contains('dark-mode') ? 'dark' : 'light');
@@ -3289,15 +3511,22 @@ keywordButtons.forEach(button => {
                     }
 
                     // --- Max Pull Distance Logic (Check Second) ---
-                    // Check if still dragging
+                    // Check if still dragging (reuse the movement calculation from above)
                     if (draggedChainBody) {
-                        const deltaX = mouse.position.x - startPullX;
-                        const deltaY = mouse.position.y - startPullY;
-                        const currentDistance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+                        const currentDistance = totalMovement;
 
                         if (currentDistance > maxPullDistance) {
                             // Release the drag
-                            mouse.button = -1; // Simulate mouse up for Matter.js internal state
+                            if (isMobileTouch && mobileConstraint) {
+                                // Mobile touch - remove the constraint
+                                Composite.remove(world, mobileConstraint);
+                                mobileConstraint = null;
+                                isMobileTouch = false;
+                            } else {
+                                // Desktop mouse - simulate mouse up
+                                mouse.button = -1;
+                            }
+                            
                             draggedChainBody = null; // Stop processing this drag
                             chainContainer.style.cursor = 'grab'; // Restore cursor
 
@@ -3305,7 +3534,6 @@ keywordButtons.forEach(button => {
                             if (navigator.vibrate) {
                                  navigator.vibrate(20); // Short vibration for feedback
                             }
-                            // No return needed here, just stop processing the drag state
                         }
                     }
                 }
@@ -3462,11 +3690,11 @@ keywordButtons.forEach(button => {
             setTimeout(initializeGyroscope, 1000);
 
 
-            // --- Explicit Touch Event Listener for Max Pull ---
-            // Add this listener directly to the canvas for potentially more reliable touch handling
+            // --- Additional Touch Event Listener for Max Pull Distance (Canvas-specific) ---
+            // This works alongside the container touch listeners for additional distance checking
             if (render.canvas) {
                 render.canvas.addEventListener('touchmove', (event) => {
-                    if (draggedChainBody) {
+                    if (draggedChainBody && !isMobileTouch) { // Only run if not using new mobile touch system
                         // Get the first touch point
                         const touch = event.touches[0];
                         if (touch) {
@@ -3478,10 +3706,6 @@ keywordButtons.forEach(button => {
                             const deltaX = touchX - startPullX;
                             const deltaY = touchY - startPullY;
                             const currentDistance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-
-                             // DEBUG LOG for TouchMove
-                             // console.log(`TouchMove Check: start=(${startPullX.toFixed(1)}, ${startPullY.toFixed(1)}), current=(${touchX.toFixed(1)}, ${touchY.toFixed(1)}), distance=${currentDistance.toFixed(1)}, max=${maxPullDistance}`);
-
 
                             if (currentDistance > maxPullDistance) {
                                 // Release the drag (mirroring logic in beforeUpdate)
@@ -3965,6 +4189,26 @@ When appropriate, use rich formatting:
                         }
                     });
                 }
+
+                // Handle suggestion item clicks
+                this.setupSuggestionListeners();
+            }
+
+            setupSuggestionListeners() {
+                const suggestionItems = document.querySelectorAll('.suggestion-item');
+                suggestionItems.forEach(item => {
+                    item.addEventListener('click', () => {
+                        const question = item.getAttribute('data-question');
+                        if (this.mobileInput && question) {
+                            this.mobileInput.value = question;
+                            this.mobileInput.focus();
+                            // Optionally auto-send the message
+                            setTimeout(() => {
+                                this.sendMobileMessage();
+                            }, 200);
+                        }
+                    });
+                });
             }
 
             showMobileModal() {
@@ -3974,6 +4218,9 @@ When appropriate, use rich formatting:
                     setTimeout(() => {
                         this.mobileModal.classList.add('visible');
                     }, 10);
+                    
+                    // Show suggestions when modal opens
+                    this.showSuggestions();
                     
                     // Focus input after animation
                     setTimeout(() => {
@@ -3989,7 +4236,23 @@ When appropriate, use rich formatting:
                     this.mobileModal.classList.remove('visible');
                     setTimeout(() => {
                         this.mobileModal.style.display = 'none';
+                        // Reset suggestions visibility when modal closes
+                        this.showSuggestions();
                     }, 300);
+                }
+            }
+
+            showSuggestions() {
+                const suggestionsArea = document.getElementById('mobile-suggestions-area');
+                if (suggestionsArea) {
+                    suggestionsArea.style.display = 'block';
+                }
+            }
+
+            hideSuggestions() {
+                const suggestionsArea = document.getElementById('mobile-suggestions-area');
+                if (suggestionsArea) {
+                    suggestionsArea.style.display = 'none';
                 }
             }
 
@@ -4080,6 +4343,9 @@ When appropriate, use rich formatting:
                 this.conversationHistory.push({ role: 'user', content: message });
                 this.mobileInput.value = '';
                 this.mobileSendButton.disabled = true;
+                
+                // Hide suggestions when sending a message
+                this.hideSuggestions();
                 
                 this.showMobileTypingIndicator();
 
