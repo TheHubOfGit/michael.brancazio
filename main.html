@@ -112,7 +112,7 @@ body.dark-mode .card-scrollable-content {
     border: 2px solid rgba(255, 255, 255, 0.5);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2), inset 0 0 0 1px rgba(0,0,0,0.1);
     background-color: var(--card-bg);
-    z-index: 100;
+    z-index: 1003; /* Higher than chatbot FAB (1002) to prevent overlap */
 }
 
 /* Ensure card-wide and card-large retain proper dimensions */
@@ -135,7 +135,7 @@ body.dark-mode .card-scrollable-content {
         left: 10px; /* Position inside the card */
         top: 10px; /* Move down into the card content */
         position: absolute;
-        z-index: 100;
+        z-index: 1003; /* Higher than chatbot FAB (1002) to prevent overlap */
     }
     
     /* Add padding to card content to prevent overlap with badge */
@@ -408,7 +408,7 @@ body.dark-mode .card-scrollable-content {
         .location-info {
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 0px;
             font-size: 14px;
         }
         
@@ -687,7 +687,7 @@ body.dark-mode .card-scrollable-content {
             position: fixed;
             bottom: 0;
             background-color: var(--bg-color);
-            z-index: 10;
+            z-index: 99999;
         }
         /* Role Progression Styles */
         .role-progression {
@@ -845,6 +845,63 @@ body.dark-mode .card-scrollable-content {
             }
         }
 
+        /* Easter Egg for Zoomed Out View */
+        .zoom-easter-egg {
+            position: fixed;
+            top: 50%;
+            right: 20px;
+            transform: translateY(-50%);
+            background-color: var(--card-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            color: var(--text-color);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: inset 0px 0px 0px 1px var(--border-color), 0px 4px 12px 0px rgba(0, 0, 0, 0.15);
+            max-width: 300px;
+            z-index: 9999;
+            font-family: var(--font-primary);
+            font-size: 14px;
+            line-height: 1.4;
+            display: none;
+            animation: fadeInSlide 0.5s ease-out;
+        }
+
+        /* Show easter egg when zoomed out significantly (around 33% zoom) */
+        @media (min-width: 4000px) {
+            .zoom-easter-egg {
+                display: block;
+            }
+            
+            /* Position chatbot more appropriately when extremely zoomed out */
+            .integrated-chatbot {
+                left: 2vw !important;
+                bottom: 5vh !important;
+                transform: scale(0.7);
+            }
+            
+            .chat-input-container {
+                width: 200px !important;
+            }
+            
+            .chat-response-popup {
+                width: 250px !important;
+                max-height: 200px !important;
+                left: -20px !important;
+            }
+        }
+
+        @keyframes fadeInSlide {
+            from {
+                opacity: 0;
+                transform: translateY(-50%) translateX(100px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(-50%) translateX(0);
+            }
+        }
+
         /* Cursor Halo Styles */
         .cursor-halo {
     position: fixed;
@@ -881,7 +938,7 @@ body.dark-mode .card-scrollable-content {
         .modal {
             display: none; /* Hidden by default */
             position: fixed; /* Stay in place */
-            z-index: 1000; /* Sit on top */
+            z-index: 99999; /* Sit on top */
             left: 0;
             top: 0;
             width: 100%; /* Full width */
@@ -1308,13 +1365,41 @@ body.dark-mode .card-scrollable-content {
         /* Integrated Chatbot Styles */
         .integrated-chatbot {
             position: fixed;
-            bottom: 120px;
-            left: 150px;
-            top: 850px;
             z-index: 1001;
             opacity: 0; /* Hidden by default until connection is successful */
             transition: opacity 0.5s ease-in-out; /* Smooth fade-in effect */
             pointer-events: none; /* Disable interactions while hidden */
+            /* Default positioning for desktop */
+            left: 50px;
+            bottom: 10vh;
+        }
+        
+        /* Desktop-specific positioning for chatbot */
+        @media (min-width: 769px) {
+            .integrated-chatbot {
+                /* Position relative to timeline - use dynamic positioning */
+                left: 50px;
+                top: auto;
+                bottom: 15vh; /* Use viewport height for better scaling */
+                /* Use transform to center vertically if needed */
+                transform: none;
+            }
+            
+            /* When zoomed out, ensure chatbot scales appropriately */
+            @media (max-width: 1200px) {
+                .integrated-chatbot {
+                    left: 30px;
+                    bottom: 12vh;
+                }
+            }
+            
+            /* For very wide screens */
+            @media (min-width: 1400px) {
+                .integrated-chatbot {
+                    left: 80px;
+                    bottom: 18vh;
+                }
+            }
         }
 
         .integrated-chatbot.visible {
@@ -1325,18 +1410,74 @@ body.dark-mode .card-scrollable-content {
         .chat-input-container {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 4px;
             background-color: var(--card-bg);
             backdrop-filter: blur(20px);
             border-radius: 24px;
             padding: 8px 12px;
             box-shadow: inset 0px 0px 0px 1px var(--border-color), 0px 4px 16px rgba(0, 0, 0, 0.1);
-            transition: box-shadow 0.2s ease;
+            transition: box-shadow 0.2s ease, width 0.2s ease;
             width: 320px;
+            position: relative;
+        }
+        
+        /* Responsive scaling for chat input */
+        @media (min-width: 769px) {
+            .chat-input-container {
+                /* Scale with viewport width but maintain minimum and maximum sizes */
+                width: min(max(25vw, 280px), 400px);
+            }
         }
 
         .chat-input-container:focus-within {
             box-shadow: inset 0px 0px 0px 1px var(--accent-blue), 0px 4px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        .chat-info-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background-color: rgba(55, 113, 200, 0.1);
+            color: var(--accent-blue);
+            cursor: help;
+            transition: background-color 0.2s ease, transform 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .chat-info-icon:hover {
+            background-color: rgba(55, 113, 200, 0.2);
+            transform: scale(1.05);
+        }
+
+        .chat-info-tooltip {
+            visibility: hidden;
+            opacity: 0;
+            position: absolute;
+            background-color: var(--card-bg);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            z-index: 10;
+            top: -45px;
+            left: 0;
+            white-space: nowrap;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            pointer-events: none;
+            transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
+            text-align: left;
+            line-height: 1.4;
+        }
+
+        #chat-info-icon:hover + .chat-info-tooltip {
+            visibility: visible;
+            opacity: 1;
         }
 
         .chat-input {
@@ -1403,9 +1544,20 @@ body.dark-mode .card-scrollable-content {
             overflow: hidden;
             opacity: 0;
             transform: translateY(10px);
-            transition: opacity 0.3s ease, transform 0.3s ease;
+            transition: opacity 0.3s ease, transform 0.3s ease, width 0.2s ease;
             display: none;
             font-family: var(--font-primary);
+        }
+        
+        /* Responsive scaling for chat response popup */
+        @media (min-width: 769px) {
+            .chat-response-popup {
+                /* Scale with viewport but maintain reasonable bounds */
+                width: min(max(30vw, 350px), 500px);
+                max-height: min(40vh, 400px);
+                /* Adjust left positioning to account for variable width */
+                left: calc(-40px - (min(max(30vw, 350px), 500px) - 400px) / 2);
+            }
         }
 
         .chat-response-popup.visible {
@@ -1916,6 +2068,11 @@ body.dark-mode .card-scrollable-content {
         }
       })();
     </script>
+    <!-- Easter Egg for Zoomed Out View -->
+    <div class="zoom-easter-egg">
+        If you've zoomed out this far, you've probably realized how poorly this site scales. I could have fixed that, but this easter egg was more fun.
+    </div>
+
     <!-- Sticky Mobile Header -->
     <div id="sticky-mobile-header">
         <div class="avatar-sticky"><img src="images/headshot.jpeg" alt="Michael Brancazio headshot"></div>
@@ -2010,6 +2167,16 @@ body.dark-mode .card-scrollable-content {
     <!-- Integrated Chatbot -->
     <div class="integrated-chatbot" id="integrated-chatbot">
         <div class="chat-input-container">
+            <div class="chat-info-icon" id="chat-info-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+            </div>
+            <span class="chat-info-tooltip">
+                Looking to hire Michael? Paste your job description and ask if he'd be good for the role!
+            </span>
             <input type="text" class="chat-input" id="chat-input" placeholder="Ask about Michael's experience...">
             <button class="chat-send" id="chat-send">
                 <svg viewBox="0 0 24 24" width="16" height="16">
@@ -4031,6 +4198,8 @@ When appropriate, use rich formatting:
                 // Show immediately without testing connection
                 this.showChatbotImmediately();
                 this.setupMobileEventListeners();
+                // Set up responsive positioning
+                this.setupResponsivePositioning();
             }
 
             initializeElements() {
@@ -4100,6 +4269,52 @@ When appropriate, use rich formatting:
                     this.container.classList.add('visible');
                     console.log('Integrated chatbot loaded immediately');
                 }
+            }
+
+            setupResponsivePositioning() {
+                if (!this.container || this.isMobile) return;
+                
+                // Function to update chatbot position based on timeline
+                const updatePosition = () => {
+                    const timeline = document.querySelector('.timeline-container');
+                    if (timeline) {
+                        const timelineRect = timeline.getBoundingClientRect();
+                        const viewportHeight = window.innerHeight;
+                        const chatInputContainer = this.container.querySelector('.chat-input-container');
+                        
+                        // Position chatbot below timeline with some spacing (moved up)
+                        const timelineBottom = timelineRect.bottom;
+                        const availableSpace = viewportHeight - timelineBottom;
+                        
+                        // Calculate optimal position (moved up by reducing spacing)
+                        let bottomPosition;
+                        if (availableSpace > 200) {
+                            // Enough space below timeline - moved up by 30px
+                            bottomPosition = Math.max(viewportHeight - timelineBottom - 130, 50);
+                        } else {
+                            // Not enough space, use viewport-based positioning - moved up
+                            bottomPosition = Math.max(viewportHeight * 0.2, 50);
+                        }
+                        
+                        // Apply the bottom positioning
+                        this.container.style.bottom = `${bottomPosition}px`;
+                        
+                        // Center-align with timeline
+                        const timelineCenter = timelineRect.left + (timelineRect.width / 2);
+                        const chatboxWidth = chatInputContainer ? chatInputContainer.offsetWidth : 320;
+                        const leftPosition = Math.max(timelineCenter - (chatboxWidth / 2), 10);
+                        
+                        this.container.style.left = `${leftPosition}px`;
+                        this.container.style.transform = 'none'; // Remove any existing transform
+                    }
+                };
+                
+                // Update position on load and resize
+                updatePosition();
+                window.addEventListener('resize', updatePosition);
+                
+                // Also update when timeline animation completes
+                setTimeout(updatePosition, 2000);
             }
 
             setupMobileEventListeners() {
