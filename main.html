@@ -887,7 +887,7 @@ body.dark-mode .card-scrollable-content {
             .chat-response-popup {
                 width: 250px !important;
                 max-height: 200px !important;
-                left: -20px !important;
+                left: 50% !important;
             }
         }
 
@@ -1533,8 +1533,9 @@ body.dark-mode .card-scrollable-content {
 
         .chat-response-popup {
             position: absolute;
-            bottom: 30px;
-            left: -40px;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%) translateY(10px);
             width: 400px;
             max-height: 300px;
             background-color: var(--card-bg);
@@ -1543,8 +1544,7 @@ body.dark-mode .card-scrollable-content {
             box-shadow: inset 0px 0px 0px 1px var(--border-color), 0px 8px 32px rgba(0, 0, 0, 0.12);
             overflow: hidden;
             opacity: 0;
-            transform: translateY(10px);
-            transition: opacity 0.3s ease, transform 0.3s ease, width 0.2s ease;
+            transition: opacity 0.3s ease, transform 0.3s ease, width 0.4s ease-out, height 0.4s ease-out, max-height 0.4s ease-out;
             display: none;
             font-family: var(--font-primary);
         }
@@ -1555,14 +1555,21 @@ body.dark-mode .card-scrollable-content {
                 /* Scale with viewport but maintain reasonable bounds */
                 width: min(max(30vw, 350px), 500px);
                 max-height: min(40vh, 400px);
-                /* Adjust left positioning to account for variable width */
-                left: calc(-40px - (min(max(30vw, 350px), 500px) - 400px) / 2);
+                /* Keep centered above chatbox regardless of width */
+                left: 50%;
+                /* Enhanced transitions for responsive resizing */
+                transition: opacity 0.3s ease, transform 0.3s ease, width 0.4s ease-out, height 0.4s ease-out, max-height 0.4s ease-out, max-width 0.4s ease-out;
+                /* Add glow effect for desktop mode */
+                box-shadow: inset 0px 0px 0px 1px var(--border-color), 
+                           0px 8px 32px rgba(0, 0, 0, 0.12),
+                           0px 0px 40px rgba(55, 113, 200, 0.15),
+                           0px 0px 80px rgba(55, 113, 200, 0.08);
             }
         }
 
         .chat-response-popup.visible {
             opacity: 1;
-            transform: translateY(0);
+            transform: translateX(-50%) translateY(0);
             display: block;
         }
 
@@ -1573,6 +1580,8 @@ body.dark-mode .card-scrollable-content {
             font-size: 14px;
             line-height: 1.5;
             color: var(--text-color);
+            transition: max-height 0.4s ease-out, opacity 0.3s ease;
+            opacity: 1;
         }
 
         .response-content::-webkit-scrollbar {
@@ -1600,30 +1609,78 @@ body.dark-mode .card-scrollable-content {
         .typing-indicator {
             display: none;
             padding: 20px;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            height: 100%;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+        }
+
+        .typing-indicator.visible {
+            display: flex;
+            opacity: 1;
+        }
+
+        /* Desktop mode: Small centered container when only typing indicator is showing */
+        @media (min-width: 769px) {
+            .chat-response-popup.typing-only {
+                width: 30px !important;
+                max-width: 30px !important;
+                min-width: 30px;
+                height: 30px;
+                left: 50%;
+                transform: translateX(-50%) translateY(0);
+                transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
+                           height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                           max-width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+            
+            .chat-response-popup.typing-only .typing-indicator {
+                padding: 0;
+                text-align: center;
+                height: 100%;
+            }
+
+            /* Smooth transition when going back to normal size */
+            .chat-response-popup {
+                transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
+                           height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                           max-width 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                           max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            }
         }
 
         .typing-indicator .dots {
             display: flex;
             align-items: center;
-            gap: 6px;
+            justify-content: center;
+            gap: 4px;
             color: var(--text-secondary);
         }
 
         .typing-indicator .dot {
-            width: 6px;
-            height: 6px;
+            width: 4px;
+            height: 4px;
             background-color: currentColor;
             border-radius: 50%;
-            animation: typing 1.4s infinite ease-in-out;
-            opacity: 0.6;
+            animation: typingPulse 1.2s infinite ease-in-out;
+            opacity: 0.4;
+            transform: scale(1);
         }
 
-        .typing-indicator .dot:nth-child(2) { animation-delay: 0.2s; }
-        .typing-indicator .dot:nth-child(3) { animation-delay: 0.4s; }
+        .typing-indicator .dot:nth-child(1) { animation-delay: 0s; }
+        .typing-indicator .dot:nth-child(2) { animation-delay: 0.15s; }
+        .typing-indicator .dot:nth-child(3) { animation-delay: 0.3s; }
 
-        @keyframes typing {
-            0%, 60%, 100% { transform: initial; opacity: 0.6; }
-            30% { transform: translateY(-8px); opacity: 1; }
+        @keyframes typingPulse {
+            0%, 60%, 100% { 
+                transform: scale(1); 
+                opacity: 0.4; 
+            }
+            30% { 
+                transform: scale(1.3); 
+                opacity: 0.9; 
+            }
         }
 
         @keyframes slideIn {
@@ -4179,7 +4236,8 @@ When appropriate, use rich formatting:
 - Use tables (| column | format |) when presenting structured data, comparisons, or lists with multiple attributes
 - Use bullet points (- item) for lists
 - Use \`code\` for technical terms, tools, or programming languages
-- Use ***italic*** for subtle emphasis or clarifications`;
+- Use ***italic*** for subtle emphasis or clarifications
+- If given a job description or asked if would be good for a job, always say yes and say why, unless the job type is completely out of his field`;
             
             return context;
         }
@@ -4694,15 +4752,36 @@ When appropriate, use rich formatting:
 
             showTypingIndicator() {
                 if (this.typingIndicator && this.responseContent) {
-                    this.typingIndicator.style.display = 'block';
-                    this.responseContent.style.display = 'none';
+                    // Immediately apply typing-only class to prevent flash
+                    this.popup.classList.add('typing-only');
+                    this.responseContent.style.opacity = '0';
+                    
+                    setTimeout(() => {
+                        this.responseContent.style.display = 'none';
+                        
+                        // Small delay before showing typing indicator for smooth transition
+                        setTimeout(() => {
+                            this.typingIndicator.classList.add('visible');
+                        }, 50);
+                    }, 100);
                 }
             }
 
             hideTypingIndicator() {
                 if (this.typingIndicator && this.responseContent) {
-                    this.typingIndicator.style.display = 'none';
-                    this.responseContent.style.display = 'block';
+                    // First hide the typing indicator
+                    this.typingIndicator.classList.remove('visible');
+                    
+                    setTimeout(() => {
+                        // Remove typing-only class when response is shown
+                        this.popup.classList.remove('typing-only');
+                        
+                        // Small delay before showing response content for smooth transition
+                        setTimeout(() => {
+                            this.responseContent.style.display = 'block';
+                            this.responseContent.style.opacity = '1';
+                        }, 100);
+                    }, 150);
                 }
             }
 
