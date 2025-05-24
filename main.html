@@ -4380,13 +4380,30 @@ When appropriate, use rich formatting:
 
                 // Open mobile modal when FAB is clicked
                 this.mobileFab.addEventListener('click', () => {
-                    // Add 1ms vibration on mobile
-                    if (navigator.vibrate && window.innerWidth <= 768) {
-                        navigator.vibrate(1);
+                    // Enhanced haptic feedback for mobile
+                    if (navigator.vibrate) {
+                        try {
+                            navigator.vibrate(5); // Slightly longer vibration for better feel
+                        } catch (error) {
+                            console.log('Vibration not supported or failed');
+                        }
                     }
                     
                     this.showMobileModal();
                 });
+
+                // Also add touchstart event for immediate feedback
+                this.mobileFab.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    // Immediate haptic feedback on touch
+                    if (navigator.vibrate) {
+                        try {
+                            navigator.vibrate(1); // Quick initial feedback
+                        } catch (error) {
+                            console.log('Vibration not supported or failed');
+                        }
+                    }
+                }, { passive: false });
 
                 // Close mobile modal when close button is clicked
                 if (this.mobileCloseButton) {
