@@ -4017,7 +4017,7 @@ keywordButtons.forEach(button => {
                         // Trigger vibration when scrolling down and card top passes viewport center
                         // Also ensure card is still somewhat visible (bottom > 0)
                         if (scrollingDown && rect.top < viewportCenter && rect.bottom < window.innerHeight && rect.bottom > 0 && !vibratedCards.has(index)) {
-                            navigator.vibrate(1); // 1ms vibration
+                            navigator.vibrate(10); // 10ms vibration
                             vibratedCards.add(index);
                         }
                         // Reset card status if it scrolls back up above the center
@@ -4380,29 +4380,13 @@ When appropriate, use rich formatting:
 
                 // Open mobile modal when FAB is clicked
                 this.mobileFab.addEventListener('click', () => {
-                    // Enhanced haptic feedback for mobile
-                    if (navigator.vibrate) {
-                        try {
-                            navigator.vibrate(5); // Slightly longer vibration for better feel
-                        } catch (error) {
-                            console.log('Vibration not supported or failed');
-                        }
+                    // Add 10ms vibration on mobile
+                    if (navigator.vibrate && window.innerWidth <= 768) {
+                        navigator.vibrate(10);
                     }
                     
                     this.showMobileModal();
                 });
-
-                // Also add touchstart event for immediate feedback
-                this.mobileFab.addEventListener('touchstart', () => {
-                    // Immediate haptic feedback on touch (passive, doesn't interfere with click)
-                    if (navigator.vibrate) {
-                        try {
-                            navigator.vibrate(1); // Quick initial feedback
-                        } catch (error) {
-                            console.log('Vibration not supported or failed');
-                        }
-                    }
-                }, { passive: true });
 
                 // Close mobile modal when close button is clicked
                 if (this.mobileCloseButton) {
