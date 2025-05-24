@@ -1954,18 +1954,26 @@ body.dark-mode .card-scrollable-content {
         }
 
         .suggestions-carousel {
-            overflow: hidden;
+            overflow-x: auto;
+            overflow-y: hidden;
             position: relative;
             height: 32px;
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE/Edge */
+        }
+
+        .suggestions-carousel::-webkit-scrollbar {
+            display: none; /* Chrome/Safari */
         }
 
         .suggestions-track {
             display: flex;
             align-items: center;
             gap: 12px;
-            position: absolute;
             white-space: nowrap;
-            animation: scrollSuggestions 30s linear infinite;
+            /* Remove animation - will be controlled by touch/drag */
         }
 
         .suggestion-item {
@@ -1979,6 +1987,7 @@ body.dark-mode .card-scrollable-content {
             transition: all 0.2s ease;
             flex-shrink: 0;
             white-space: nowrap;
+            user-select: none; /* Prevent text selection during drag */
         }
 
         .suggestion-item:hover {
@@ -1989,14 +1998,7 @@ body.dark-mode .card-scrollable-content {
             box-shadow: 0 2px 8px rgba(55, 113, 200, 0.3);
         }
 
-        @keyframes scrollSuggestions {
-            0% {
-                transform: translateX(0);
-            }
-            100% {
-                transform: translateX(-50%);
-            }
-        }
+
 
         /* Mobile adjustments for integrated chatbot */
         @media (max-width: 768px) {
@@ -4435,6 +4437,133 @@ When appropriate, use rich formatting:
                         }
                     });
                 });
+                
+                // Setup drag scrolling for suggestions carousel
+                this.setupDragScrolling();
+            }
+
+            setupDragScrolling() {
+                const carousel = document.querySelector('.suggestions-carousel');
+                if (!carousel) return;
+
+                let isDown = false;
+                let startX;
+                let scrollLeft;
+                let startTime;
+                let lastX;
+                let velocity = 0;
+
+                const stopPropagation = (e) => {
+                    e.stopPropagation();
+                };
+
+                carousel.addEventListener('mousedown', (e) => {
+                    isDown = true;
+                    startX = e.pageX - carousel.offsetLeft;
+                    scrollLeft = carousel.scrollLeft;
+                    startTime = Date.now();
+                    lastX = e.pageX;
+                    velocity = 0;
+                    carousel.style.cursor = 'grabbing';
+                    e.preventDefault();
+                });
+
+                carousel.addEventListener('mouseleave', () => {
+                    isDown = false;
+                    carousel.style.cursor = 'grab';
+                });
+
+                carousel.addEventListener('mouseup', () => {
+                    isDown = false;
+                    carousel.style.cursor = 'grab';
+                    
+                    // Apply momentum scrolling
+                    if (Math.abs(velocity) > 0.5) {
+                        this.applyMomentum(carousel, velocity);
+                    }
+                });
+
+                carousel.addEventListener('mousemove', (e) => {
+                    if (!isDown) return;
+                    e.preventDefault();
+                    
+                    const x = e.pageX - carousel.offsetLeft;
+                    const walk = (x - startX) * 1.5;
+                    carousel.scrollLeft = scrollLeft - walk;
+                    
+                    // Calculate velocity for momentum
+                    const currentTime = Date.now();
+                    const timeDiff = currentTime - startTime;
+                    if (timeDiff > 0) {
+                        velocity = (e.pageX - lastX) / timeDiff;
+                    }
+                    lastX = e.pageX;
+                });
+
+                // Touch events for mobile
+                carousel.addEventListener('touchstart', (e) => {
+                    const touch = e.touches[0];
+                    startX = touch.pageX - carousel.offsetLeft;
+                    scrollLeft = carousel.scrollLeft;
+                    startTime = Date.now();
+                    lastX = touch.pageX;
+                    velocity = 0;
+                    isDown = true;
+                }, { passive: true });
+
+                carousel.addEventListener('touchmove', (e) => {
+                    if (!isDown) return;
+                    
+                    const touch = e.touches[0];
+                    const x = touch.pageX - carousel.offsetLeft;
+                    const walk = (x - startX) * 1.5;
+                    carousel.scrollLeft = scrollLeft - walk;
+                    
+                    // Calculate velocity for momentum
+                    const currentTime = Date.now();
+                    const timeDiff = currentTime - startTime;
+                    if (timeDiff > 0) {
+                        velocity = (touch.pageX - lastX) / timeDiff;
+                    }
+                    lastX = touch.pageX;
+                }, { passive: true });
+
+                carousel.addEventListener('touchend', () => {
+                    isDown = false;
+                    
+                    // Apply momentum scrolling
+                    if (Math.abs(velocity) > 0.5) {
+                        this.applyMomentum(carousel, velocity);
+                    }
+                }, { passive: true });
+
+                // Prevent click events when dragging
+                carousel.addEventListener('click', (e) => {
+                    if (Math.abs(velocity) > 0.1) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    }
+                }, true);
+
+                // Set initial cursor style
+                carousel.style.cursor = 'grab';
+            }
+
+            applyMomentum(carousel, velocity) {
+                let currentVelocity = velocity * 100; // Scale velocity
+                const friction = 0.95;
+                const minVelocity = 0.5;
+
+                const animate = () => {
+                    if (Math.abs(currentVelocity) < minVelocity) return;
+                    
+                    carousel.scrollLeft -= currentVelocity;
+                    currentVelocity *= friction;
+                    
+                    requestAnimationFrame(animate);
+                };
+
+                requestAnimationFrame(animate);
             }
 
             showMobileModal() {
