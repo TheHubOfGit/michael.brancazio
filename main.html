@@ -154,6 +154,7 @@ body.dark-mode .card-scrollable-content {
     .horizontal-scroll-container {
         overflow-x: auto;
         overflow-y: hidden; /* Keep original behavior */
+        padding-top: 18px; /* Increase top padding to 20px in mobile view only */
     }
 
     /* Mobile padding adjustments */
@@ -165,6 +166,7 @@ body.dark-mode .card-scrollable-content {
     #education-skills-section .horizontal-scroll-container {
         padding-left: 16px;
         padding-right: 16px;
+        padding-top: 18px; /* Set top padding to 20px for mobile view */
         /* Keep top/bottom padding default or set explicitly if needed, e.g., padding-top: 20px; padding-bottom: 0; */
     }
 
@@ -276,7 +278,7 @@ body.dark-mode .card-scrollable-content {
             width: 100%;
             height: 520px;
         }
-        
+
         .horizontal-scroll-container::-webkit-scrollbar {
             display: none;
         }
