@@ -46,8 +46,8 @@
     display: flex;
     flex-direction: column;
     min-height: 180px;
-    min-width: 320px;
-    width: 320px;
+    min-width: 340px;
+    width: 340px;
     flex-shrink: 0;
     transition: transform 0.2s ease-in-out;
     position: relative; /* Keep this for logo badge positioning */
@@ -112,7 +112,7 @@ body.dark-mode .card-scrollable-content {
     border: 2px solid rgba(255, 255, 255, 0.5);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2), inset 0 0 0 1px rgba(0,0,0,0.1);
     background-color: var(--card-bg);
-    z-index: 1003; /* Higher than chatbot FAB (1002) to prevent overlap */
+    z-index: 998; /* Below sticky header (999) to prevent overlap */
 }
 
 /* Ensure card-wide and card-large retain proper dimensions */
@@ -135,7 +135,7 @@ body.dark-mode .card-scrollable-content {
         left: 10px; /* Position inside the card */
         top: 10px; /* Move down into the card content */
         position: absolute;
-        z-index: 1003; /* Higher than chatbot FAB (1002) to prevent overlap */
+        z-index: 998; /* Below sticky header (999) to prevent overlap */
     }
     
     /* Add padding to card content to prevent overlap with badge */
@@ -183,6 +183,13 @@ body.dark-mode .card-scrollable-content {
             display: block; /* Explicitly set display */
             /* cursor: grab; Removed - will be managed by JavaScript */
             /* background-color: rgba(255, 0, 0, 0.1); Removed temporary background */
+        }
+
+        /* Mobile chain container adjustments */
+        @media (max-width: 768px) {
+            #chain-container {
+                height: 20vh; /* Only take up top 20% of viewport height */
+            }
         }
 
         /* Desktop chain container adjustments */
@@ -429,8 +436,8 @@ body.dark-mode .card-scrollable-content {
             flex-direction: column;
             min-height: 180px;
             /* height: 100%; Let align-items: stretch handle height */
-            min-width: 320px;
-            width: 320px;
+            min-width: 340px;
+            width: 340px;
             flex-shrink: 0;
             overflow: visible; /* Allow logo badge to overflow */
             /* overflow-x: hidden; /* Prevent badge overflow horizontally */
@@ -677,7 +684,15 @@ body.dark-mode .card-scrollable-content {
             margin-bottom: 16px;
             padding-left: 16px;
         }
-        
+
+        @media (max-width: 768px) {
+            .section-label {
+                font-weight: 600;
+                font-size: 18px;
+                margin-bottom: 16px;
+                padding-left: 36px;
+            }
+        }
         .footer {
             padding: 10px 16px; /* Adjusted top/bottom padding */
             text-align: center;
@@ -762,7 +777,7 @@ body.dark-mode .card-scrollable-content {
                 width: 100%;
                 height: auto;
                 overflow: visible;
-                padding: 32px 24px; /* Adjust padding for mobile */
+                padding: 32px 0px; /* Adjust padding for mobile */
             }
             
             .horizontal-scroll-container {
@@ -775,27 +790,51 @@ body.dark-mode .card-scrollable-content {
             .card {
                 /* Allow centering, prevent overflow, and allow shrinking */
                 max-width: 100%;
-                width: auto; /* Override fixed base width */
-                min-width: 0; /* Override fixed base min-width */
-                /* Keep original width overrides commented out */
-                /* min-width: 100%; */
-                /* width: 100%; */
+                width: 340px; /* Set consistent width for all cards in mobile */
+                min-width: 340px; /* Ensure minimum width */
+                flex-shrink: 0; /* Prevent shrinking */
             }
 
             /* Make Education & Skills section cards consistent width on mobile */
             #education-skills-section .card {
-                width: 400px; /* Compact width for better readability */
-                min-width: 400px; /* Ensure minimum width */
-                max-width: 400px; /* Ensure maximum width */
+                width: 340px; /* Compact width for better readability */
+                min-width: 340px; /* Ensure minimum width */
+                max-width: 340px; /* Ensure maximum width */
                 flex-shrink: 0; /* Prevent shrinking */
-                height: 450px; /* Fixed height to match other cards */
-                max-height: 450px; /* Ensure maximum height */
+                height: auto !important; /* Auto height for mobile - content-based */
+                max-height: none !important; /* Remove height constraints */
+                min-height: auto !important; /* Remove minimum height constraint */
+            }
+
+            /* Make Related Projects section cards consistent width on mobile */
+            #related-projects-section .card {
+                width: 340px;
+                min-width: 340px;
+                max-width: 340px;
+                flex-shrink: 0;
+            }
+
+            /* Make Room Turnover Time card (first card in related-projects) auto height and non-scrollable */
+            #related-projects-section .horizontal-scroll-container .card:nth-child(1) {
+                height: auto !important;
+                max-height: none !important;
+                min-height: auto !important;
             }
             
-            /* .card-wide, .card-large {
-                min-width: 100%;
-                width: 100%;
-            } */
+            #related-projects-section .horizontal-scroll-container .card:nth-child(1) .card-scrollable-content {
+                height: auto !important;
+                max-height: none !important;
+                overflow-y: visible !important;
+                overflow-x: hidden !important;
+            }
+
+            /* Make Fun Projects section cards consistent width on mobile */
+            #fun-projects-section .card {
+                width: 340px;
+                min-width: 340px;
+                max-width: 340px;
+                flex-shrink: 0;
+            }
             
             .profile-card {
                 max-width: 100%;
@@ -2137,33 +2176,57 @@ body.dark-mode .card-scrollable-content {
         }
 
         #related-projects-section .card {
-            width: 400px;
-            min-width: 400px;
-            max-width: 400px;
+            width: 340px;
+            min-width: 340px;
+            max-width: 340px;
             flex-shrink: 0;
         }
 
         #fun-projects-section .card {
-            width: 400px;
-            min-width: 400px;
-            max-width: 400px;
+            width: 340px;
+            min-width: 340px;
+            max-width: 340px;
             flex-shrink: 0;
         }
 
-        /* Force Education & Skills section cards to maintain consistent height */
-        #education-skills-section .card {
-            height: 320px !important; /* Much shorter height to match Technical Skills card */
-            max-height: 320px !important; /* Ensure maximum height */
-            min-height: 320px !important; /* Force minimum height */
-            overflow: visible !important; /* Allow logo badge to show outside */
+        /* Desktop: Force Education & Skills section cards to maintain consistent height */
+        @media (min-width: 769px) {
+            #education-skills-section .card {
+                height: 340px !important; /* Fixed height for desktop */
+                max-height: 340px !important; /* Ensure maximum height */
+                min-height: 340px !important; /* Force minimum height */
+                overflow: visible !important; /* Allow logo badge to show outside */
+            }
         }
 
-        /* Ensure scrollable content within education-skills cards is properly constrained */
-        #education-skills-section .card .card-scrollable-content {
-            height: 100% !important;
-            max-height: 100% !important;
-            overflow-y: auto !important;
-            overflow-x: hidden !important;
+        /* Mobile: Allow Education & Skills section cards to have auto height */
+        @media (max-width: 768px) {
+            #education-skills-section .card {
+                height: auto !important; /* Auto height for mobile - content-based */
+                max-height: none !important; /* Remove height constraints */
+                min-height: auto !important; /* Remove minimum height constraint */
+                overflow: visible !important; /* Allow logo badge to show outside */
+            }
+        }
+
+        /* Desktop: Ensure scrollable content within education-skills cards is properly constrained */
+        @media (min-width: 769px) {
+            #education-skills-section .card .card-scrollable-content {
+                height: 100% !important;
+                max-height: 100% !important;
+                overflow-y: auto !important;
+                overflow-x: hidden !important;
+            }
+        }
+
+        /* Mobile: Allow scrollable content to expand naturally */
+        @media (max-width: 768px) {
+            #education-skills-section .card .card-scrollable-content {
+                height: auto !important;
+                max-height: none !important;
+                overflow-y: visible !important;
+                overflow-x: hidden !important;
+            }
         }
 
         /* Ensure logo badge shows properly on education card */
@@ -2171,7 +2234,73 @@ body.dark-mode .card-scrollable-content {
             position: absolute !important;
             top: -12px !important;
             left: -15px !important;
-            z-index: 1004 !important; /* Higher z-index to ensure it shows */
+            z-index: 998 !important; /* Below sticky header (999) to prevent overlap */
+        }
+
+        /* Mobile: Allow specific Education & Skills section cards to have auto height, but keep Certifications card fixed */
+        @media (max-width: 768px) {
+            /* Keep Certifications card (3rd card) with fixed height and scrolling */
+            #education-skills-section .horizontal-scroll-container .card:nth-child(3) {
+                height: 340px !important;
+                max-height: 340px !important;
+                min-height: 340px !important;
+                overflow: visible !important;
+                display: flex;
+                flex-direction: column;
+            }
+            
+            #education-skills-section .horizontal-scroll-container .card:nth-child(3) .card-section-title {
+                flex-shrink: 0; /* Don't shrink the title */
+                margin-bottom: 16px; /* Add some space below title */
+            }
+            
+            #education-skills-section .horizontal-scroll-container .card:nth-child(3) .card-scrollable-content {
+                flex: 1; /* Take remaining space */
+                overflow-y: auto !important;
+                overflow-x: hidden !important;
+                min-height: 0; /* Allow flexbox to shrink */
+            }
+            
+            #education-skills-section .horizontal-scroll-container .card:nth-child(3) .cert-item {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            
+            #education-skills-section .horizontal-scroll-container .card:nth-child(3) .cert-icon {
+                width: 20px;
+                height: 20px;
+                color: var(--accent-blue);
+            }
+            
+            #education-skills-section .horizontal-scroll-container .card:nth-child(3) .cert-title {
+                font-weight: 500;
+                font-size: 14px;
+            }
+            
+            #education-skills-section .horizontal-scroll-container .card:nth-child(3) .cert-issuer {
+                font-size: 12px;
+                color: var(--text-secondary);
+            }
+            
+            /* Auto height for Education (1st), Technical Skills (2nd), and Professional Memberships (4th) cards */
+            #education-skills-section .horizontal-scroll-container .card:nth-child(1),
+            #education-skills-section .horizontal-scroll-container .card:nth-child(2),
+            #education-skills-section .horizontal-scroll-container .card:nth-child(4) {
+                height: auto !important;
+                max-height: none !important;
+                min-height: auto !important;
+                overflow: visible !important;
+            }
+            
+            #education-skills-section .horizontal-scroll-container .card:nth-child(1) .card-scrollable-content,
+            #education-skills-section .horizontal-scroll-container .card:nth-child(2) .card-scrollable-content,
+            #education-skills-section .horizontal-scroll-container .card:nth-child(4) .card-scrollable-content {
+                height: auto !important;
+                max-height: none !important;
+                overflow-y: visible !important;
+                overflow-x: hidden !important;
+            }
         }
     </style>
 </head>
@@ -2755,8 +2884,8 @@ body.dark-mode .card-scrollable-content {
                     </div>
                         
                         <div class="card"> <!-- Removed card-wide class -->
-                            <div class="card-scrollable-content">
                             <div class="card-section-title">Certifications</div>
+                            <div class="card-scrollable-content">
                             
                             <div class="certifications-list">
                                 <div class="cert-item">
@@ -3761,17 +3890,30 @@ keywordButtons.forEach(button => {
                 const worldX = touchX * (containerWidth / render.canvas.offsetWidth);
                 const worldY = touchY * (containerHeight / render.canvas.offsetHeight);
                 
-                // Only trigger if touch is in the immediate corner area where the chain hangs
-                // Much more restrictive area - only the top portion and center area
+                // More permissive touch area for mobile - especially with reduced container height
                 const chainCenterX = containerWidth / 2;
                 const touchDistanceFromCenter = Math.abs(worldX - chainCenterX);
-                const maxTouchDistance = 25; // Only within 25px of center (much smaller area)
                 
-                // Only in the very top portion where the chain starts
-                const isInChainArea = touchDistanceFromCenter <= maxTouchDistance && worldY <= containerHeight * 0.15;
+                // Check if we're on mobile (reduced height container)
+                const isMobileView = window.innerWidth <= 768;
                 
-                if (!isInChainArea) {
-                    return; // Don't start chain interaction if touch is too far from chain area
+                if (isMobileView) {
+                    // For mobile with 20vh container, make the entire container grabbable
+                    // since the chain should be visible throughout the reduced height
+                    const maxTouchDistance = containerWidth * 0.4; // Much wider touch area (40% of container width)
+                    const isInChainArea = touchDistanceFromCenter <= maxTouchDistance; // Allow touch anywhere in height
+                    
+                    if (!isInChainArea) {
+                        return; // Don't start chain interaction if touch is too far from chain area
+                    }
+                } else {
+                    // Desktop behavior - keep original restrictive area
+                    const maxTouchDistance = 25; // Only within 25px of center
+                    const isInChainArea = touchDistanceFromCenter <= maxTouchDistance && worldY <= containerHeight * 0.15;
+                    
+                    if (!isInChainArea) {
+                        return; // Don't start chain interaction if touch is too far from chain area
+                    }
                 }
                 
                 event.preventDefault(); // Prevent scrolling
