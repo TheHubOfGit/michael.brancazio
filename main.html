@@ -1041,6 +1041,27 @@ body.dark-mode .card-scrollable-content {
             text-decoration: none;
         }
 
+        /* Subtle glow animation for technology words */
+        .glow-tech {
+            display: inline-block;
+            animation: subtleGlow 3s ease-in-out infinite;
+        }
+
+        .glow-tech:nth-child(1) { animation-delay: 0s; }
+        .glow-tech:nth-child(2) { animation-delay: 0.6s; }
+        .glow-tech:nth-child(3) { animation-delay: 1.2s; }
+        .glow-tech:nth-child(4) { animation-delay: 1.8s; }
+        .glow-tech:nth-child(5) { animation-delay: 2.4s; }
+
+        @keyframes subtleGlow {
+            0%, 100% { 
+                text-shadow: 0 0 5px rgba(66, 153, 225, 0.3);
+            }
+            50% { 
+                text-shadow: 0 0 10px rgba(66, 153, 225, 0.6), 0 0 15px rgba(66, 153, 225, 0.4);
+            }
+        }
+
         /* Removed "What have you done?" styles */
 
         /* Filter Box Styles */
@@ -3154,6 +3175,18 @@ body.dark-mode .card-scrollable-content {
                             </div>
                         </div>
                     </div>
+                        
+                        <!-- This Portfolio Site Card -->
+                        <div class="card">
+                            <div class="card-scrollable-content">
+                            <div class="experience-card">
+                                <div class="experience-title project-link" data-external-link="https://thehubofgit.github.io/michael.brancazio/main.html">This Portfolio Site</div>
+                                <div class="experience-description">
+                                    <p>This portfolio isn't just a static page; it's a dynamic application showcasing advanced front-end development. It features a custom-built <strong><span class="glow-tech">Gemini API</span></strong> powered chatbot for interactive Q&A, a unique physics-based theme toggle using <strong><span class="glow-tech">Matter.js</span></strong>, and sophisticated content interactions like dynamic filtering and an animated career timeline, all built from scratch. Every element is carefully constructed with <strong><span class="glow-tech">HTML</span></strong>, styled with <strong><span class="glow-tech">CSS</span></strong>, and made interactive through extensive <strong><span class="glow-tech">JavaScript</span></strong>.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     </div>
                 </div>
             </div>
@@ -3187,6 +3220,18 @@ body.dark-mode .card-scrollable-content {
                         if (iframe) {
                             iframe.focus();
                         }
+                    }
+                });
+            });
+
+            // Handle external links
+            const externalLinkTriggers = document.querySelectorAll('.project-link[data-external-link]');
+            
+            externalLinkTriggers.forEach(trigger => {
+                trigger.addEventListener('click', () => {
+                    const externalUrl = trigger.getAttribute('data-external-link');
+                    if (externalUrl) {
+                        window.open(externalUrl, '_blank');
                     }
                 });
             });
