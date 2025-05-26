@@ -27,7 +27,7 @@
     }
     .terminal-content {
       position: relative;
-      width: 80%;
+      width: 90%; /* Increased from 80% for better mobile margins */
       max-width: 600px;
       height: 300px;
       display: flex;
@@ -35,6 +35,8 @@
       align-items: center;
       justify-content: flex-end;
       overflow: hidden;
+      padding: 0 20px; /* Added horizontal padding for extra safety margin */
+      box-sizing: border-box;
     }
     .line {
       font-family: monospace;
@@ -45,6 +47,7 @@
       line-height: 1.5;
       transform: translateY(0);
       transition: transform 0.5s ease-out;
+      word-break: break-word; /* Prevent overflow on very small screens */
     }
     .command {
       font-size: 28px;
@@ -96,6 +99,32 @@
       50% { opacity: 0; }
     }
 
+    /* Mobile responsive styles */
+    @media (max-width: 768px) {
+      .terminal-content {
+        width: 95%; /* Even more margin on mobile */
+        padding: 0 15px;
+      }
+      .command {
+        font-size: 20px; /* Smaller font size for mobile */
+      }
+      .output {
+        font-size: 16px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .terminal-content {
+        width: 98%; /* Maximum width utilization on very small screens */
+        padding: 0 10px;
+      }
+      .command {
+        font-size: 16px; /* Even smaller for very small screens */
+      }
+      .output {
+        font-size: 14px;
+      }
+    }
 
   </style>
 </head>
@@ -148,10 +177,14 @@
       
       // Show the floating bubble
       function showFloatingBubble() {
+        // Detect if user is on mobile device
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+                        (navigator.maxTouchPoints && navigator.maxTouchPoints > 2);
+        
         // Create floating bubble
         const bubble = document.createElement('div');
         bubble.className = 'floating-bubble';
-        bubble.textContent = '(Press enter)';
+        bubble.textContent = isMobile ? '(Tap anywhere)' : '(Press enter)';
         
         // Add the bubble to the terminal content
         commandLine.style.position = 'relative';

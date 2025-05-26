@@ -788,6 +788,8 @@ body.dark-mode .card-scrollable-content {
                 min-width: 400px; /* Ensure minimum width */
                 max-width: 400px; /* Ensure maximum width */
                 flex-shrink: 0; /* Prevent shrinking */
+                height: 450px; /* Fixed height to match other cards */
+                max-height: 450px; /* Ensure maximum height */
             }
             
             /* .card-wide, .card-large {
@@ -2148,6 +2150,29 @@ body.dark-mode .card-scrollable-content {
             flex-shrink: 0;
         }
 
+        /* Force Education & Skills section cards to maintain consistent height */
+        #education-skills-section .card {
+            height: 320px !important; /* Much shorter height to match Technical Skills card */
+            max-height: 320px !important; /* Ensure maximum height */
+            min-height: 320px !important; /* Force minimum height */
+            overflow: visible !important; /* Allow logo badge to show outside */
+        }
+
+        /* Ensure scrollable content within education-skills cards is properly constrained */
+        #education-skills-section .card .card-scrollable-content {
+            height: 100% !important;
+            max-height: 100% !important;
+            overflow-y: auto !important;
+            overflow-x: hidden !important;
+        }
+
+        /* Ensure logo badge shows properly on education card */
+        #education-skills-section .card .logo-badge {
+            position: absolute !important;
+            top: -12px !important;
+            left: -15px !important;
+            z-index: 1004 !important; /* Higher z-index to ensure it shows */
+        }
     </style>
 </head>
 
@@ -2248,11 +2273,13 @@ body.dark-mode .card-scrollable-content {
                         <div class="suggestion-item" data-question="How many years of SQL experience?">How many years of SQL experience?</div>
                         <div class="suggestion-item" data-question="Where did Michael graduate from?">Where did Michael graduate from?</div>
                         <div class="suggestion-item" data-question="What are some of his skills?">What are some of his skills?</div>
+                        <div class="suggestion-item" data-question="Show a table of his skills and years in each skill">Show a table of his skills and years in each skill</div>
                         <div class="suggestion-item" data-question="Is Mike experienced with data?">Is Mike experienced with data?</div>
                         <!-- Duplicate for seamless loop -->
                         <div class="suggestion-item" data-question="How many years of SQL experience?">How many years of SQL experience?</div>
                         <div class="suggestion-item" data-question="Where did Michael graduate from?">Where did Michael graduate from?</div>
                         <div class="suggestion-item" data-question="What are some of his skills?">What are some of his skills?</div>
+                        <div class="suggestion-item" data-question="Show a table of his skills and years in each skill">Show a table of his skills and years in each skill</div>
                         <div class="suggestion-item" data-question="Is Mike experienced with data?">Is Mike experienced with data?</div>
                     </div>
                 </div>
@@ -2326,7 +2353,7 @@ body.dark-mode .card-scrollable-content {
                     </div>
                     
                     <div class="profile-description">
-                        I build data solutions in healthcare, turning complex information into clear insights and predictive models. I enjoy working with Python, SQL, and visualization tools like Tableau/Power BI, and I'm passionate about leveraging AI and teaching others how to use data effectively.
+                        I build data solutions, turning complex information into clear insights and predictive models. I enjoy working with Python, SQL, and visualization tools like Tableau/Power BI, and I'm passionate about leveraging AI and teaching others how to use data effectively.
                     </div>
                     
                     <div class="location-info">
@@ -2435,12 +2462,16 @@ body.dark-mode .card-scrollable-content {
                                         <div class="experience-description" style="margin-top: 8px;">
                                             <ul>
                                                 <li>Develop and implement a machine learning predictive model in Python to predict healthcare reimbursement likelihood, enhancing vendor referral efficiency and data-driven decision-making within NYP's Revenue Cycle Department</li>
-                                                <li>Projected to reduce unnecessary vendor referrals by 30%, increase reimbursement rates on referred cases by 15%, and potentially save ~$500,000 annually through optimized vendor agreements and reduced operational costs</li>
+                                                <ul>
+                                                    <li>Projected to reduce unnecessary vendor referrals by 30%, increase reimbursement rates on referred cases by 15%, and potentially save ~$500,000 annually through optimized vendor agreements and reduced operational costs</li>
+                                                </ul>
                                                 <li>Engineer in-house LLMs leveraging RAG framework and vector-based retrieval to assist front-end users in navigating proprietary data models, data definitions, and dashboards</li>
-                                                <li>Create a full-stack web resource (HTML, CSS, Javascript) that aggregates all Access-to-Care department data, integrating a custom chatbot trained on department-specific documentation and data models</li>
-                                                <li>Scale tool & model across multiple teams and departments, facilitating broader organizational adoption and enhancing enterprise-wide efficiency</li>
-                                                <li>Worked in agile sprints to rapidly develop, test, and deploy chatbot models with data literacy programs</li>
-                                                <li>Fine-tune open-source models (Gemma & Llama) on proprietary data</li>
+                                                <ul>
+                                                    <li>Create a full-stack web resource (HTML, CSS, Javascript) that aggregates all Access-to-Care department data, integrating a custom chatbot trained on department-specific documentation and data models</li>
+                                                    <li>Scale tool & model across multiple teams and departments, facilitating broader organizational adoption and enhancing enterprise-wide efficiency</li>
+                                                    <li>Worked in agile sprints to rapidly develop, test, and deploy chatbot models with data literacy programs</li>
+                                                    <li>Fine-tune open-source models (Gemma & Llama) on proprietary data</li>
+                                                </ul>
                                                 <li>Transition of Tableau dashboards to Microsoft PowerBI, including visualization overhaul as well as translation of calculations to DAX format</li>
                                                 <li>Champion a data-driven culture by deploying organization-wide data literacy and AI upskilling programs, focusing on predictive analytics, machine learning, and data visualization</li>
                                                 <li>Partner with Clinical and IT teams to identify high-impact use cases for artificial intelligence, including natural language processing (NLP), deep learning, and computer vision applications</li>
@@ -2465,8 +2496,10 @@ body.dark-mode .card-scrollable-content {
                                         <div class="experience-description" style="margin-top: 8px;">
                                             <ul>
                                                 <li>Rollout in-house data warehousing initiative, 'JupiterGOLD', along with manage proper data governance policy</li>
-                                                <li>Establish standard practices and templates for all reporting tables</li>
-                                                <li>Build in-query error reporting with QA checks delivered via email to database administrators</li>
+                                                <ul>
+                                                    <li>Establish standard practices and templates for all reporting tables</li>
+                                                    <li>Build in-query error reporting with QA checks delivered via email to database administrators</li>
+                                                </ul>
                                                 <li>Create checklist for table creation, production server requirements, and data mart/data source standards</li>
                                                 <li>Designed snowflake schema architecture within JupiterGOLD data warehouse to normalize complex Epic Clarity hierarchies, enabling efficient cross-domain analysis of clinical and operational data</li>
                                                 <li>Redesign and maintain backend SQL code for enterprise-wide Palliative Care dashboard, comprising of both clinical and non-clinical data</li>
@@ -2495,11 +2528,20 @@ body.dark-mode .card-scrollable-content {
                                 <div class="experience-description">
                                     <ul>
                                         <li>Perform descriptive and diagnostic analytics highlighting historical trends and KPIs for pharmaceutical business reviews</li>
+                                        <ul>
+                                            <li>Creation and modification of complex SQL queries to identify seasonal product trends and outliers that have significant financial implications for clients</li>
+                                            <li>Utilization of Power Query within Excel for sourcing SQL data for simple reporting needs and data modeling via Power Pivot</li>
+                                            <li>Create projections that optimize reimbursement programs that improved patient utilization while maintaining a positive ROI</li>
+                                        </ul>
                                         <li>Present year-end as well as quarterly business reviews to high-profile clients (Pfizer, Novartis, AbbVie, etc.)</li>
                                         <li>Build and manage close relationships with clients providing them with customized analytics, reports, and presentations</li>
                                         <li>Employ Microsoft PowerBI for the automation of reports and building of dashboards for clients</li>
-                                        <li>Build machine learning forecasting models tailored to each product, brand, and client; utilize Prophet and Plotly</li>
+                                        <li>Implement new predictive analytics to measure transactions and spend projects on a monthly, quarterly, and yearly basis</li>
                                         <li>Manage and lead 3 analysts; head Machine Learning & Forecasting initiative within PAAS</li>
+                                        <ul>
+                                            <li>Build machine learning forecasting models tailored to each product, brand, and client; utilize Prophet and Plotly</li>
+                                            <li>Utilize Prophet, Plotly, and Tkinter to create user-friendly tools for analysts</li>
+                                        </ul>
                                         <li>Automate Accumulator and Maximizer Solutions with SQL SPROCs (Stored Procedures), reducing concurrent server load and manual analyst querying by 90%</li>
                                     </ul>
                                 </div>
@@ -2673,6 +2715,9 @@ body.dark-mode .card-scrollable-content {
                                 <div class="experience-company">Hofstra University</div>
                             </div>
                             
+                            <!-- Faint divider line -->
+                            <div style="border-bottom: 1px solid rgba(255, 255, 255, 0.1); margin: 12px 0;"></div>
+                            
                             <div class="experience-card" style="margin-top: 16px;">
                                 <div class="experience-title">Bachelor of Science in Health Science (BS)</div>
                                 <div class="experience-date">May 2016</div>
@@ -2715,9 +2760,7 @@ body.dark-mode .card-scrollable-content {
                             
                             <div class="certifications-list">
                                 <div class="cert-item">
-                                    <svg class="cert-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
-                                    </svg>
+                                    <img class="cert-icon" src="images/tableau.png" alt="Tableau Logo">
                                     <div>
                                         <div class="cert-title">Tableau Certified Data Analyst</div>
                                         <div class="cert-issuer">Tableau</div>
@@ -2725,9 +2768,7 @@ body.dark-mode .card-scrollable-content {
                                 </div>
                                 
                                 <div class="cert-item">
-                                    <svg class="cert-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M18 3a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3H6a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3V6a3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3h12a3 3 0 0 0 3-3 3 3 0 0 0-3-3z"></path>
-                                    </svg>
+                                    <img class="cert-icon" src="images/excel.png" alt="Excel Logo">
                                     <div>
                                         <div class="cert-title">Microsoft Office Specialist (MOS)</div>
                                         <div class="cert-issuer">Excel 2016 & Advanced Excel 2016</div>
@@ -2735,12 +2776,47 @@ body.dark-mode .card-scrollable-content {
                                 </div>
                                 
                                 <div class="cert-item">
-                                    <svg class="cert-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M12 8l6-3-6-3v18l6-3-6-3"></path>
-                                        <path d="M4 5h2"></path>
-                                        <path d="M6 12H4"></path>
-                                        <path d="M4 19h2"></path>
-                                    </svg>
+                                    <img class="cert-icon" src="images/hardvardbusinessrreview.png" alt="Harvard Business Review Logo">
+                                    <div>
+                                        <div class="cert-title">Harvard ManageMentor</div>
+                                        <div class="cert-issuer">Harvard Business Review</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="cert-item">
+                                    <img class="cert-icon" src="images/ecornell.png" alt="eCornell Logo">
+                                    <div>
+                                        <div class="cert-title">AI Strategy</div>
+                                        <div class="cert-issuer">eCornell</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="cert-item">
+                                    <img class="cert-icon" src="images/ecornell.png" alt="eCornell Logo">
+                                    <div>
+                                        <div class="cert-title">Data Science</div>
+                                        <div class="cert-issuer">eCornell</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="cert-item">
+                                    <img class="cert-icon" src="images/ecornell.png" alt="eCornell Logo">
+                                    <div>
+                                        <div class="cert-title">Machine Learning</div>
+                                        <div class="cert-issuer">eCornell</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="cert-item">
+                                    <img class="cert-icon" src="images/ecornell.png" alt="eCornell Logo">
+                                    <div>
+                                        <div class="cert-title">Business Economics</div>
+                                        <div class="cert-issuer">eCornell</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="cert-item">
+                                    <img class="cert-icon" src="images/coursera.png" alt="Coursera Logo">
                                     <div>
                                         <div class="cert-title">Machine Learning by Stanford University</div>
                                         <div class="cert-issuer">Coursera</div>
@@ -2748,13 +2824,50 @@ body.dark-mode .card-scrollable-content {
                                 </div>
                                 
                                 <div class="cert-item">
-                                    <svg class="cert-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <polyline points="16 18 22 12 16 6"></polyline>
-                                        <polyline points="8 6 2 12 8 18"></polyline>
-                                    </svg>
+                                    <img class="cert-icon" src="images/datacamp.png" alt="DataCamp Logo">
+                                    <div>
+                                        <div class="cert-title">Intermediate Python for Data Science</div>
+                                        <div class="cert-issuer">DataCamp</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="cert-item">
+                                    <img class="cert-icon" src="images/datacamp.png" alt="DataCamp Logo">
+                                    <div>
+                                        <div class="cert-title">SQL for Data Science & Joining Data in SQL</div>
+                                        <div class="cert-issuer">DataCamp</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="cert-item">
+                                    <img class="cert-icon" src="images/hackerrank.png" alt="HackerRank Logo">
                                     <div>
                                         <div class="cert-title">Python & SQL (Advanced)</div>
                                         <div class="cert-issuer">HackerRank</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="cert-item">
+                                    <img class="cert-icon" src="images/coursera.png" alt="Coursera Logo">
+                                    <div>
+                                        <div class="cert-title">Google AI Essentials</div>
+                                        <div class="cert-issuer">Coursera</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="cert-item">
+                                    <img class="cert-icon" src="images/coursera.png" alt="Coursera Logo">
+                                    <div>
+                                        <div class="cert-title">Google Agile Essentials</div>
+                                        <div class="cert-issuer">Coursera</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="cert-item">
+                                    <img class="cert-icon" src="images/coursera.png" alt="Coursera Logo">
+                                    <div>
+                                        <div class="cert-title">Google Project Management: Professional Certificate</div>
+                                        <div class="cert-issuer">Coursera</div>
                                     </div>
                                 </div>
                             </div>
@@ -2809,6 +2922,21 @@ body.dark-mode .card-scrollable-content {
                 <div id="related-projects-section">
                     <div class="section-label">Related Projects</div>
                     <div class="horizontal-scroll-container">
+                        <!-- Room Turnover Time Project Card -->
+                        <div class="card">
+                            <div class="card-scrollable-content">
+                            <div class="experience-card">
+                                <div class="experience-title">Room Turnover Time, Process Improvement, & Remote Video Auditing (RVA)</div>
+                                <div class="experience-date">January 2018</div>
+                                <div class="experience-description">
+                                    <p><strong>Objective:</strong> Improve hospital room turnover efficiency using Remote Video Auditing technology at Northwell Health.</p>
+                                    <p><strong>Impact:</strong> Presented recommendations that could reduce turnover time by 35% through process optimization across nursing, EVS, bed management, and HR departments.</p>
+                                    <p><strong>Outcome:</strong> Collaborated on thesis paper demonstrating how RVA technology enhances quality of care and hospital financial health.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                        
                         <!-- Project 1 Card -->
                         <div class="card">
                             <div class="card-scrollable-content">
@@ -4288,13 +4416,15 @@ When appropriate, use rich formatting:
 - Use \`code\` for technical terms, tools, or programming languages
 - Use ***italic*** for subtle emphasis or clarifications
 - The current year is 2025; be sure to use this in context if asked how long Miachel's experience has been for specific skills
+- Michael has had no gaps in his career
+- Michael has worked at IQVIA and NYP at the same time since he started at IQVIA in January of 2021. He has been able to do so with a lot of hard work and flexibile hours, allowing him to balance and perform in both roles.
 - If given a job description or asked if would be good for a job, always say yes and say why, unless the job type is completely out of his field`;
             
             return context;
         }
 
         const GEMINI_API_KEY = 'AIzaSyBmy36yKNlYk5NjbJnaJM3t4J7m_AJD5n0';
-        const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${GEMINI_API_KEY}`;
+        const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
 
         // Integrated Chatbot functionality
         class MichaelsChatbot {
