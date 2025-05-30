@@ -3221,6 +3221,14 @@ body.dark-mode .card-scrollable-content {
             modalTriggers.forEach(trigger => {
                 trigger.addEventListener('click', () => {
                     const modalId = trigger.getAttribute('data-modal-target');
+                    // --- Google Analytics Event: Project Modal Opened ---
+                    if (typeof gtag === 'function') {
+                        gtag('event', 'project_view', {
+                            'event_category': 'engagement',
+                            'event_label': modalId // e.g., simulator-modal
+                        });
+                    }
+                    // --- End Google Analytics Event ---
                     const modal = document.getElementById(modalId);
                     if (modal) {
                         modal.style.display = "block";
@@ -3239,6 +3247,14 @@ body.dark-mode .card-scrollable-content {
             externalLinkTriggers.forEach(trigger => {
                 trigger.addEventListener('click', () => {
                     const externalUrl = trigger.getAttribute('data-external-link');
+                     // --- Google Analytics Event: External Link Clicked ---
+                    if (typeof gtag === 'function') {
+                         gtag('event', 'external_link_click', {
+                             'event_category': 'outbound_link',
+                             'event_label': externalUrl // e.g., https://thehubofgit.github.io/michael.brancazio/main.html
+                         });
+                    }
+                    // --- End Google Analytics Event ---
                     if (externalUrl) {
                         window.open(externalUrl, '_blank');
                     }
@@ -3402,6 +3418,14 @@ body.dark-mode .card-scrollable-content {
             // Function to add highlights
             function addHighlight(keyword, highlightTerm) {
                 removeHighlights(); // Clear previous highlights first
+                // --- Google Analytics Event: Filter Applied ---
+                 if (typeof gtag === 'function') {
+                     gtag('event', 'filter_applied', {
+                         'event_category': 'engagement',
+                         'event_label': keyword // e.g., Python, SQL
+                     });
+                 }
+                // --- End Google Analytics Event ---
                 const highlightClass = `highlight highlight-${highlightTerm.toLowerCase().replace(/\s+/g, '')}`;
                 let regex;
                 // Use a specific regex for "AI" to match whole word or start of word, outside tags
@@ -3596,6 +3620,14 @@ keywordButtons.forEach(button => {
           timelineDots.forEach(dot => {
               dot.addEventListener('mouseenter', () => {
                   const targetId = dot.getAttribute('data-job-target');
+                   // --- Google Analytics Event: Timeline Dot Hover ---
+                    if (typeof gtag === 'function') {
+                         gtag('event', 'timeline_dot_hover', {
+                             'event_category': 'engagement',
+                             'event_label': targetId // e.g., iqlvia, bid
+                         });
+                    }
+                    // --- End Google Analytics Event ---
                   // Find the target card: Adjust selector based on where data-job-target was added
                   // It was added to role-details for roles within the same card, and to the card itself for others.
                   let targetCard = document.querySelector(`.card[data-job-target="${targetId}"]`);
@@ -4765,6 +4797,14 @@ When appropriate, use rich formatting:
                         navigator.vibrate(10);
                     }
                     
+                    // --- Google Analytics Event: Mobile Chatbot Opened ---
+                    if (typeof gtag === 'function') {
+                         gtag('event', 'chatbot_open', {
+                             'event_category': 'chatbot',
+                             'event_label': 'mobile_modal'
+                         });
+                    }
+                    // --- End Google Analytics Event ---
                     this.showMobileModal();
                 });
 
@@ -4921,6 +4961,14 @@ When appropriate, use rich formatting:
 
             showMobileModal() {
                 if (this.mobileModal) {
+                    // --- Google Analytics Event: Mobile Chatbot Opened ---
+                    if (typeof gtag === 'function') {
+                         gtag('event', 'chatbot_open', {
+                             'event_category': 'chatbot',
+                             'event_label': 'mobile_modal'
+                         });
+                    }
+                    // --- End Google Analytics Event ---
                     this.mobileModal.style.display = 'block';
                     // Use setTimeout to ensure display:block is applied before adding visible class
                     setTimeout(() => {
@@ -5026,6 +5074,14 @@ When appropriate, use rich formatting:
                 this.input.value = '';
                 this.sendButton.disabled = true;
                 
+                 // --- Google Analytics Event: Desktop Chatbot Message Sent ---
+                 if (typeof gtag === 'function') {
+                     gtag('event', 'chatbot_message_sent', {
+                         'event_category': 'chatbot',
+                         'event_label': 'desktop: ' + message // Prefix with desktop:
+                     });
+                 }
+                // --- End Google Analytics Event ---
                 this.showTypingIndicator();
                 this.showPopup();
 
@@ -5052,6 +5108,14 @@ When appropriate, use rich formatting:
                 this.mobileInput.value = '';
                 this.mobileSendButton.disabled = true;
                 
+                 // --- Google Analytics Event: Mobile Chatbot Message Sent ---
+                 if (typeof gtag === 'function') {
+                     gtag('event', 'chatbot_message_sent', {
+                         'event_category': 'chatbot',
+                         'event_label': 'mobile: ' + message // Prefix with mobile:
+                     });
+                 }
+                // --- End Google Analytics Event ---
                 // Hide suggestions when sending a message
                 this.hideSuggestions();
                 
@@ -5308,6 +5372,60 @@ When appropriate, use rich formatting:
             setTimeout(() => {
                 new MichaelsChatbot();
             }, 1000);
+        });
+    </script>
+
+    <script>
+        // Track Card Hovers
+        document.addEventListener('DOMContentLoaded', () => {
+            const cards = document.querySelectorAll('.card');
+
+            cards.forEach(card => {
+                // Use mouseenter to avoid tracking internal mouse movements within the card
+                card.addEventListener('mouseenter', () => {
+                    let cardLabel = 'Unknown Card';
+
+                    // Attempt to find a descriptive title within the card
+                    const titleElement = card.querySelector('.experience-title, .card-section-title');
+                    if (titleElement) {
+                        cardLabel = titleElement.textContent.trim();
+                    } else {
+                        // Fallback: Use the section label if no specific title is found
+                        const section = card.closest('.scrollable-content > div');
+                        if (section) {
+                            const sectionLabelElement = section.querySelector('.section-label');
+                            if (sectionLabelElement) {
+                                cardLabel = `${sectionLabelElement.textContent.trim()} Card`;
+                            } else {
+                                // Fallback if section label is also missing (less likely)
+                                const sectionId = section.id || 'Unknown Section';
+                                cardLabel = `${sectionId} Card`;
+                            }
+                        }
+                    }
+
+                     // --- Google Analytics Event: Card Hover ---
+                     if (typeof gtag === 'function') {
+                         gtag('event', 'card_hover', {
+                             'event_category': 'engagement',
+                             'event_label': cardLabel
+                         });
+                     }
+                    // --- End Google Analytics Event ---
+                });
+            });
+        });
+    </script>
+
+    <script>
+        // Disable right-click on profile picture
+        document.addEventListener('DOMContentLoaded', () => {
+            const profilePic = document.getElementById('profile-picture');
+            if (profilePic) {
+                profilePic.addEventListener('contextmenu', (event) => {
+                    event.preventDefault();
+                });
+            }
         });
     </script>
 
