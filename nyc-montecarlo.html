@@ -36,6 +36,10 @@
             display: none; /* Hidden by default */
             z-index: 10; /* Ensure tooltip is on top */
         }
+        /* Smooth animation for highlight rectangle */
+        .animated-highlight {
+            transition: x 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
         /* Ensure SVG paths are visible when 'block' */
         svg path { display: none; } /* Hide all by default */
         svg path[style*="display: block"] { display: block !important; } /* Make sure style overrides */
@@ -55,6 +59,16 @@
             <div class="w-full overflow-x-auto">
                  <svg viewBox="0 0 700 350" width="100%" height="350" aria-labelledby="chartTitle" role="img">
                     <title id="chartTitle">Comparison of Walking Route Times</title>
+
+                    <!-- Gradient for highlight background -->
+                    <defs>
+                      <linearGradient id="highlight-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stop-color="#ffe082" stop-opacity="0"/>
+                        <stop offset="15%" stop-color="#ffe082" stop-opacity="0.5"/>
+                        <stop offset="85%" stop-color="#ffe082" stop-opacity="0.5"/>
+                        <stop offset="100%" stop-color="#ffe082" stop-opacity="0"/>
+                      </linearGradient>
+                    </defs>
 
                     <!-- Chart Data (Pre-calculated from React component) -->
                     <script type="application/json" id="chartData">
@@ -95,6 +109,9 @@
                         <!-- Group Width: 630 / 5 = 126 -->
                         <!-- Bar Width: ~25 -->
                         <g class="bars">
+                            <!-- Highlight backgrounds for each route group (hidden by default) -->
+                            <!-- Single animated highlight background -->
+                            <rect id="animated-highlight" x="5" y="0" width="120" height="280" fill="url(#highlight-gradient)" opacity="1" class="animated-highlight" rx="10"/>
                             <!-- Route 1: Adaptive Broadway -->
                             <rect x="25" y="73" width="25" height="207" fill="#82ca9d" class="chart-bar" data-tooltip="Min: 42.1"/>
                             <rect x="51" y="63" width="25" height="217" fill="#8884d8" class="chart-bar" data-tooltip="Avg: 51.0"/>
@@ -404,6 +421,18 @@
             southEast: document.getElementById('path-southEast')
         };
 
+        // Highlight rectangles for each route group in the bar chart
+        const animatedHighlight = document.getElementById('animated-highlight');
+        
+        // X positions for each route's highlight
+        const highlightPositions = {
+            adaptiveWithBroadway: 5,
+            adaptive: 131,
+            broadwayRoute: 257,
+            eastSouth: 383,
+            southEast: 509
+        };
+
         // --- Function to Update UI ---
         function updateRouteDisplay(selectedRouteKey) {
             const routeInfo = routeData[selectedRouteKey];
@@ -441,6 +470,11 @@
                 selectedPathElement.style.display = 'block';
             } else {
                  console.warn("SVG path element not found for key:", selectedRouteKey);
+            }
+
+            // 3. Update Bar Chart Highlight
+            if (animatedHighlight && highlightPositions[selectedRouteKey] !== undefined) {
+                animatedHighlight.setAttribute('x', highlightPositions[selectedRouteKey]);
             }
         }
 
