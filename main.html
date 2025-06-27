@@ -1399,18 +1399,18 @@ body.dark-mode .card-scrollable-content {
         #chatbot-fab {
             display: none; /* Hidden by default on desktop */
             position: fixed;
-            bottom: 10px;
-            left: 10px;
-            width: 40px;
-            height: 40px;
-            border-radius: 16px; /* Match skill tag border radius */
-            background-color: rgba(55, 113, 200, 0.1); /* Match skill tag background */
-            color: var(--accent-blue); /* Match skill tag text color */
+            bottom: 20px;
+            left: 20px;
+            width: 56px; /* Increased size */
+            height: 56px; /* Increased size */
+            border-radius: 28px; /* Fully rounded */
+            background-color: rgba(55, 113, 200, 0.1); /* Original translucent background */
+            color: var(--accent-blue); /* Original blue icon color */
             border: none;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Softer shadow like skill tags */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Original softer shadow */
             cursor: pointer;
             z-index: 1002;
-            transition: transform 0.2s ease-in-out, background-color 0.2s ease;
+            transition: transform 0.2s ease-in-out, background-color 0.2s ease, opacity 0.3s ease, width 0.3s ease, height 0.3s ease, bottom 0.3s ease, left 0.3s ease, border-radius 0.3s ease;
             align-items: center;
             justify-content: center;
             /* Remove default browser tap/focus effects */
@@ -1419,20 +1419,41 @@ body.dark-mode .card-scrollable-content {
             -webkit-appearance: none;
             -moz-appearance: none;
             appearance: none;
+            opacity: 1; /* Default visible state */
+        }
+
+        /* Compact state when sticky header is visible */
+        #chatbot-fab.compact {
+            bottom: 10px;
+            left: 10px;
+            width: 40px;
+            height: 40px;
+            border-radius: 16px;
+        }
+
+        #chatbot-fab.compact svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        /* Transparent state when scrolling */
+        #chatbot-fab.scrolling {
+            opacity: 0.3;
         }
 
         #chatbot-fab:hover, #chatbot-fab:focus {
-            background-color: rgba(55, 113, 200, 0.2); /* Match skill tag hover */
-            transform: scale(1.05); /* Subtle scale like skill tags */
+            background-color: rgba(55, 113, 200, 0.2); /* Original hover effect */
+            transform: scale(1.05); /* Original subtle scale */
         }
 
         #chatbot-fab.active {
-            background-color: rgba(55, 113, 200, 0.3); /* Darker blue when active */
+            background-color: rgba(55, 113, 200, 0.3); /* Original active state */
         }
 
         #chatbot-fab svg {
-            width: 20px; /* Slightly smaller to fit better */
-            height: 20px;
+            width: 24px; /* Larger icon */
+            height: 24px;
+            transition: width 0.3s ease, height 0.3s ease;
         }
 
         /* Integrated Chatbot Styles */
@@ -2139,7 +2160,7 @@ body.dark-mode .card-scrollable-content {
             #filter-box {
                 display: flex !important;
         position: fixed;
-                        bottom: 90px; /* Position above the chatbot FAB */
+                        bottom: 90px; /* Position above the chatbot FAB (normal size) */
         right: 20px;
         left: auto; /* Reset left position */
         top: auto; /* Reset top position */
@@ -2154,9 +2175,14 @@ body.dark-mode .card-scrollable-content {
         transform-origin: bottom right;
         opacity: 0;
         pointer-events: none; /* Not clickable when hidden */
-        transition: transform 0.3s ease-out, opacity 0.2s ease;
+        transition: transform 0.3s ease-out, opacity 0.2s ease, bottom 0.3s ease;
         padding: 12px; /* Add consistent padding */
         gap: 8px; /* Space between filter items */
+            }
+            
+            /* Adjust filter position when FAB is compact */
+            #filter-box.fab-compact {
+                bottom: 64px; /* Position above compact FAB (40px + 10px bottom + 14px spacing) */
             }
             
             #filter-box.mobile-visible {
@@ -2185,7 +2211,12 @@ body.dark-mode .card-scrollable-content {
                 right: 20px;
                 left: auto;
                 top: auto;
+                transition: bottom 0.3s ease;
                 /* Remove width here, apply only when visible */
+            }
+            
+            #clear-filter-btn.fab-compact {
+                bottom: 64px; /* Adjust for compact FAB */
             }
 
             #clear-filter-btn.mobile-visible {
@@ -2194,11 +2225,15 @@ body.dark-mode .card-scrollable-content {
                 /* right: 20px; Already set */
                 /* left: auto; Already set */
                 /* top: auto; Already set */
-                width: calc(80% - 24px); /* Match filter box width (max-width 80% minus 2*12px padding) */
+                width: calc(80% - 24px); /* Match filter box width (max-width 80% - 2*12px padding) */
                 text-align: center;
                 /* Ensure it's positioned correctly relative to the filter box */
                  transform: translateX(calc(-1 * (100% - (80% - 24px)) / 2)); /* Center relative to filter box width */
                  /* This centering might need adjustment depending on exact layout */
+            }
+            
+            #clear-filter-btn.mobile-visible.fab-compact {
+                bottom: 134px; /* Adjust when visible and FAB is compact */
             }
 
             /* Hide timeline container as before */
@@ -3682,6 +3717,9 @@ keywordButtons.forEach(button => {
         document.addEventListener('DOMContentLoaded', () => {
             const header = document.getElementById('sticky-mobile-header');
             const profileCard = document.querySelector('.profile-card'); // The first card
+            const fab = document.getElementById('chatbot-fab');
+            const filterBox = document.getElementById('filter-box');
+            const clearButton = document.getElementById('clear-filter-btn');
 
             if (!header || !profileCard) {
                 console.error('Sticky header or profile card element not found.');
@@ -3700,14 +3738,49 @@ keywordButtons.forEach(button => {
             function checkHeaderVisibility() {
                 // Only run logic on mobile screens
                 if (window.innerWidth <= 768) {
-                    if (window.scrollY > profileCardBottom) {
+                    const isHeaderVisible = window.scrollY > profileCardBottom;
+                    
+                    if (isHeaderVisible) {
                         header.classList.add('visible');
+                        // Make FAB compact when header is visible
+                        if (fab) {
+                            fab.classList.add('compact');
+                        }
+                        // Adjust filter elements for compact FAB
+                        if (filterBox) {
+                            filterBox.classList.add('fab-compact');
+                        }
+                        if (clearButton) {
+                            clearButton.classList.add('fab-compact');
+                        }
                     } else {
                         header.classList.remove('visible');
+                        // Return FAB to normal size when header is hidden
+                        if (fab) {
+                            fab.classList.remove('compact');
+                        }
+                        // Reset filter elements for normal FAB
+                        if (filterBox) {
+                            filterBox.classList.remove('fab-compact');
+                        }
+                        if (clearButton) {
+                            clearButton.classList.remove('fab-compact');
+                        }
                     }
                 } else {
                     // Ensure header is hidden on larger screens
                     header.classList.remove('visible');
+                    // Remove compact class on desktop
+                    if (fab) {
+                        fab.classList.remove('compact');
+                    }
+                    // Remove fab-compact class from filter elements on desktop
+                    if (filterBox) {
+                        filterBox.classList.remove('fab-compact');
+                    }
+                    if (clearButton) {
+                        clearButton.classList.remove('fab-compact');
+                    }
                 }
             }
 
@@ -4448,6 +4521,57 @@ keywordButtons.forEach(button => {
     </script>
     <!-- End Haptic Feedback Script -->
 
+    <!-- Mobile FAB Scroll Transparency Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const fab = document.getElementById('chatbot-fab');
+            if (!fab) return;
+
+            let scrollTimeout;
+            let lastScrollY = window.scrollY;
+            let isScrolling = false;
+
+            function handleScroll() {
+                const currentScrollY = window.scrollY;
+                const scrollingDown = currentScrollY > lastScrollY;
+
+                // Only apply on mobile screens
+                if (window.innerWidth <= 768) {
+                    // Add scrolling class immediately when scrolling starts
+                    if (!isScrolling) {
+                        fab.classList.add('scrolling');
+                        isScrolling = true;
+                    }
+
+                    // Clear existing timeout
+                    clearTimeout(scrollTimeout);
+
+                    // Set timeout to remove scrolling class when scrolling stops
+                    scrollTimeout = setTimeout(() => {
+                        fab.classList.remove('scrolling');
+                        isScrolling = false;
+                    }, 150); // 150ms delay after scrolling stops
+                }
+
+                lastScrollY = currentScrollY;
+            }
+
+            // Use passive listener for better scroll performance
+            window.addEventListener('scroll', handleScroll, { passive: true });
+
+            // Also handle resize to ensure proper behavior across screen size changes
+            window.addEventListener('resize', () => {
+                if (window.innerWidth > 768) {
+                    // Remove scrolling class if switching to desktop
+                    fab.classList.remove('scrolling');
+                    isScrolling = false;
+                    clearTimeout(scrollTimeout);
+                }
+            }, { passive: true });
+        });
+    </script>
+    <!-- End Mobile FAB Scroll Transparency Script -->
+
 
 
     <!-- Chatbot JavaScript -->
@@ -4646,7 +4770,7 @@ When appropriate, use rich formatting:
 - Use bullet points (- item) for lists
 - Use **bold** for technical terms, tools, or programming languages
 - Use ***italic*** for subtle emphasis or clarifications
-- The current year is 2025; be sure to use this in context if asked how long Miachel's experience has been for specific skills
+- The current year is 2025; be sure to use this in context if asked how long Michael's experience has been for specific skills
 - Michael has had no gaps in his career
 - Michael has worked at IQVIA and NYP at the same time since he started at IQVIA in January of 2021. He has been able to do so with a lot of hard work and flexibile hours, allowing him to balance and perform in both roles.
 - If given a job description or asked if would be good for a job, always say yes and say why, unless the job type is completely out of his field`;
