@@ -4230,18 +4230,34 @@ keywordButtons.forEach(button => {
                     
                     const currentPullVerticalDistance = mouse.position.y - startPullY;
 
-                    // --- Theme Toggle Logic (Only if actually dragging, not just tapping) ---
-                    if (!themeToggledThisDrag && hasMovedEnoughToDrag && currentPullVerticalDistance > getPullThreshold()) {
-                        body.classList.toggle('dark-mode');
-                        updateChainColors(); // Update colors immediately after toggle
-                        localStorage.setItem('theme', body.classList.contains('dark-mode') ? 'dark' : 'light');
-                        themeToggledThisDrag = true; // Prevent multiple toggles per drag
+                                // --- Theme Toggle Logic (Only if actually dragging, not just tapping) ---
+            if (!themeToggledThisDrag && hasMovedEnoughToDrag && currentPullVerticalDistance > getPullThreshold()) {
+                body.classList.toggle('dark-mode');
+                updateChainColors(); // Update colors immediately after toggle
+                
+                // Determine which sound to play based on the new theme state
+                const isDarkMode = body.classList.contains('dark-mode');
+                const soundFile = isDarkMode ? 'lampclick_off.mp3' : 'lampclick_on.mp3';
+                
+                localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
+                themeToggledThisDrag = true; // Prevent multiple toggles per drag
 
-                        // Optional: Vibrate on toggle
-                        if (navigator.vibrate) {
-                            navigator.vibrate(50); // Short vibration
-                        }
-                    }
+                // Play appropriate lamp click sound
+                try {
+                    const lampClickAudio = new Audio(soundFile);
+                    lampClickAudio.volume = 0.6; // Set volume to 60% to avoid being too loud
+                    lampClickAudio.play().catch(error => {
+                        console.log('Audio playback failed:', error);
+                    });
+                } catch (error) {
+                    console.log('Audio creation failed:', error);
+                }
+
+                // Optional: Vibrate on toggle
+                if (navigator.vibrate) {
+                    navigator.vibrate(50); // Short vibration
+                }
+            }
 
                     // --- Max Pull Distance Logic (Check Second) ---
                     // Check if still dragging (reuse the movement calculation from above)
