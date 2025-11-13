@@ -5,11 +5,6 @@
 
 export default {
   async fetch(request, env, ctx) {
-    // Only allow POST requests
-    if (request.method !== 'POST') {
-      return new Response('Method not allowed', { status: 405 });
-    }
-
     // CORS headers for the portfolio domain
     const corsHeaders = {
       'Access-Control-Allow-Origin': '*', // You can restrict this to your domain
@@ -20,6 +15,11 @@ export default {
     // Handle preflight requests
     if (request.method === 'OPTIONS') {
       return new Response(null, { headers: corsHeaders });
+    }
+
+    // Only allow POST requests
+    if (request.method !== 'POST') {
+      return new Response('Method not allowed', { status: 405 });
     }
 
     try {
