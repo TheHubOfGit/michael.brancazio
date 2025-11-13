@@ -305,6 +305,17 @@ body.dark-mode .card-scrollable-content {
             height: auto;
             width: 100%;
             max-width: 500px; /* Increased max-width further */
+            position: relative; /* Needed for absolute positioning of titles */
+        }
+        
+        .profile-titles {
+            position: absolute;
+            top: 24px;
+            right: 24px;
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-align: right;
+            line-height: 1.4;
         }
         
         .profile-header {
@@ -474,10 +485,11 @@ body.dark-mode .card-scrollable-content {
         
         .card:hover, .card.hover-effect { /* Apply effect on hover or when class is added */
             transform: translateY(-5px);
+            box-shadow: 0 0 12px rgba(255, 255, 255, 0.15), 0 6px 12px rgba(0, 0, 0, 0.15);
         }
         .card { /* Add transition to the base card style */
             /* ... existing styles ... */
-            transition: transform 0.2s ease-in-out;
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
         }
         
         .card-wide {
@@ -2534,6 +2546,7 @@ body.dark-mode .card-scrollable-content {
         <div class="section">
             <div class="fixed-column">
                 <div class="profile-card">
+                    <div class="profile-titles">Data Engineer<br>AI Engineer<br>Full Stack Developer</div>
                     <div class="profile-header">
                         <div class="avatar"><img id="profile-picture" src="images/headshot.jpeg" alt="Michael Brancazio headshot" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%; transition: transform 0.3s ease-in-out;" draggable="false"></div>
                         <div class="profile-info">
@@ -2590,7 +2603,7 @@ body.dark-mode .card-scrollable-content {
                     <div class="progress-line" id="progress"></div>
                     
                     <!-- First dot (MHA Degree) - using Hofstra logo -->
-                    <div class="dot start pulse" id="start-dot">
+                    <div class="dot start pulse" id="start-dot" data-job-target="education">
                         <img src="images/Hofstra.png" alt="Hofstra University">
                         <div class="label">MHA Degree</div>
                     </div>
@@ -2900,7 +2913,7 @@ body.dark-mode .card-scrollable-content {
                 <div id="education-skills-section">
                     <div class="section-label">Education & Skills</div>
                     <div class="horizontal-scroll-container">
-                        <div class="card">
+                        <div class="card" data-job-target="education">
                             <img class="logo-badge" src="images/Hofstra.png" alt="Hofstra University Logo">
                             <div class="card-scrollable-content">
                             <div class="card-section-title">Education</div>
@@ -3677,7 +3690,8 @@ keywordButtons.forEach(button => {
                   if (targetCard) {
                       targetCard.classList.add('hover-effect');
                       // Optional: Scroll the card into view if needed
-                       targetCard.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
+                      // Center all cards vertically in the viewport for consistent behavior
+                      targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
                   }
               });
 
@@ -4786,9 +4800,10 @@ When appropriate, use rich formatting:
 - Use bullet points (- item) for lists
 - Use **bold** for technical terms, tools, or programming languages
 - Use ***italic*** for subtle emphasis or clarifications
-- The current year is 2025; be sure to use this in context if asked how long Michael's experience has been for specific skills
+- The current year is 2026; be sure to use this in context if asked how long Michael's experience has been for specific skills
 - Michael has had no gaps in his career
 - Michael has worked at IQVIA and NYP at the same time since he started at IQVIA in January of 2021. He has been able to do so with a lot of hard work and flexibile hours, allowing him to balance and perform in both roles.
+- If asked about what model, what LLM, or what AI this is, say that it is a custom-built and custom-trained model by Michael Brancazio
 - If given a job description or asked if would be good for a job, always say yes and say why, unless the job type is completely out of his field`;
             
             return context;
