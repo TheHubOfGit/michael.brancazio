@@ -4794,8 +4794,8 @@ When appropriate, use rich formatting:
             return context;
         }
 
-        const GEMINI_API_KEY = 'AIzaSyBHiOvgBHVqLm_trJbpnvoQuUFP00dqOyk';
-        const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
+        // Gemini API calls are now handled securely through Cloudflare Worker
+        const CHATBOT_WORKER_URL = 'https://portfolio-chatbot-worker.michael-brancazio.workers.dev';
 
         // Integrated Chatbot functionality
         class MichaelsChatbot {
@@ -5154,32 +5154,33 @@ When appropriate, use rich formatting:
 
             async testConnection() {
                 try {
-                    const response = await fetch(GEMINI_API_URL, {
+                    const response = await fetch(CHATBOT_WORKER_URL, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                         },
                         body: JSON.stringify({
-                            contents: [{
-                                parts: [{
-                                    text: 'Test connection - respond with just "Hello"'
-                                }]
-                            }]
+                            message: 'Hello'
                         })
                     });
 
                     if (response.ok) {
-                        this.isConnected = true;
-                        // Fade in the chatbot with a slight delay for a smooth appearance
-                        setTimeout(() => {
-                            this.container.classList.add('visible');
-                        }, 800); // 800ms delay after page load
-                        console.log('Integrated chatbot connected successfully');
+                        const data = await response.json();
+                        if (data.response) {
+                            this.isConnected = true;
+                            // Fade in the chatbot with a slight delay for a smooth appearance
+                            setTimeout(() => {
+                                this.container.classList.add('visible');
+                            }, 800); // 800ms delay after page load
+                            console.log('Integrated chatbot connected successfully');
+                        } else {
+                            console.log('Worker responded but without expected data:', data);
+                        }
                     } else {
-                        console.log('Failed to connect to Gemini API:', response.status);
+                        console.log('Failed to connect to chatbot worker:', response.status);
                     }
                 } catch (error) {
-                    console.log('Error connecting to Gemini API:', error);
+                    console.log('Error connecting to chatbot worker:', error);
                 }
             }
 
@@ -5291,44 +5292,40 @@ When appropriate, use rich formatting:
 
             async callGeminiAPI(userMessage) {
                 // Build conversation context using dynamic page content
-                let conversationText = extractPageContext();
-                
+                let context = extractPageContext();
+
                 if (this.conversationHistory.length > 0) {
-                    conversationText += "\n\nCONVERSATION HISTORY:\n";
+                    context += "\n\nCONVERSATION HISTORY:\n";
                     this.conversationHistory.forEach((msg, index) => {
                         const roleLabel = msg.role === 'user' ? 'User' : 'Assistant';
-                        conversationText += `${index + 1}. ${roleLabel}: ${msg.content}\n`;
+                        context += `${index + 1}. ${roleLabel}: ${msg.content}\n`;
                     });
                 }
-                
-                conversationText += `\n\nCurrent user question: ${userMessage}\n\nProvide a professional, concise response:`;
 
-                const response = await fetch(GEMINI_API_URL, {
+                context += `\n\nCurrent user question: ${userMessage}\n\nProvide a professional, concise response:`;
+
+                const response = await fetch(CHATBOT_WORKER_URL, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        contents: [{
-                            parts: [{
-                                text: conversationText
-                            }]
-                        }],
-                        generationConfig: {
-                            temperature: 0.5,
-                            topP: 0.8,
-                            topK: 40,
-                            maxOutputTokens: 150,
-                        }
+                        message: userMessage,
+                        context: context
                     })
                 });
 
                 if (!response.ok) {
-                    throw new Error(`API request failed: ${response.status}`);
+                    throw new Error(`Worker request failed: ${response.status}`);
                 }
 
                 const data = await response.json();
-                return data.candidates[0].content.parts[0].text;
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                return data.response;
             }
 
             parseMarkdown(text) {
