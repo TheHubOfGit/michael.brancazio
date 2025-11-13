@@ -42,7 +42,7 @@ export default {
       }
 
       // Prepare the request to Gemini API
-      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`;
+      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
 
       const geminiPayload = {
         contents: [{
@@ -71,7 +71,11 @@ export default {
         const errorData = await geminiResponse.text();
         console.error('Gemini API error:', errorData);
         console.error('Gemini URL used:', geminiUrl.replace(/key=[^&]*/, 'key=***'));
-        return new Response(JSON.stringify({ error: 'Failed to get response from AI service' }), {
+        return new Response(JSON.stringify({
+          error: 'Failed to get response from AI service',
+          details: errorData,
+          status: geminiResponse.status
+        }), {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
