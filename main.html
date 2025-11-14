@@ -911,8 +911,15 @@ body.dark-mode .card-scrollable-content {
             .experience-title {
                 font-size: 16px; /* Was 18px */
             }
+            .experience-header {
+                position: relative;
+            }
             .experience-date {
                 font-size: 11px; /* Was 14px */
+                text-align: right;
+                position: absolute;
+                right: 0;
+                white-space: pre-line;
             }
             .experience-company {
                 font-size: 15px; /* Was 16px */
@@ -2698,7 +2705,7 @@ body.dark-mode .card-scrollable-content {
                                     <div class="role-details" data-job-target="eng"> <!-- Corrected target for Engineer -->
                                         <div class="experience-header">
                                             <div class="experience-title">Developer / Data Literacy Associate</div>
-                                            <div class="experience-date">Jan 2025 - Present</div>
+                                            <div class="experience-date">Jan 2025 -<br>Present</div>
                                         </div>
                                         <div class="experience-company" style="margin-top: 4px;">NewYork–Presbyterian Hospital</div>
                                         <div class="experience-description" style="margin-top: 8px;">
@@ -2732,7 +2739,7 @@ body.dark-mode .card-scrollable-content {
                                     <div class="role-details" data-job-target="bid"> <!-- Added target for BI Dev -->
                                         <div class="experience-header">
                                             <div class="experience-title">Business Intelligence Developer, Data Strategy</div>
-                                            <div class="experience-date">Apr 2022 - Jan 2025</div>
+                                            <div class="experience-date">Apr 2022 -<br>Jan 2025</div>
                                         </div>
                                         <div class="experience-company" style="margin-top: 4px;">NewYork–Presbyterian Hospital</div>
                                         <div class="experience-description" style="margin-top: 8px;">
@@ -2764,7 +2771,7 @@ body.dark-mode .card-scrollable-content {
                                 <div class="experience-card">
                                 <div class="experience-header">
                                     <div class="experience-title">Data Analyst / Consultant</div>
-                                    <div class="experience-date">Jan 2021 - Present</div>
+                                    <div class="experience-date">Jan 2021 -<br>Present</div>
                                 </div>
                                 <div class="experience-company">IQVIA, Boston MA (Remote)</div>
                                 <div class="experience-description">
@@ -2812,7 +2819,7 @@ body.dark-mode .card-scrollable-content {
                                     <div class="role-details" data-job-target="srca"> <!-- Added target for Sr RCA -->
                                         <div class="experience-header">
                                             <div class="experience-title">Senior Revenue Cycle Analyst</div>
-                                            <div class="experience-date">May 2021 - Apr 2022</div>
+                                            <div class="experience-date">May 2021 -<br>Apr 2022</div>
                                         </div>
                                         <div class="experience-company" style="margin-top: 4px;">NewYork–Presbyterian Hospital</div>
                                         <div class="experience-description" style="margin-top: 8px;">
@@ -2833,7 +2840,7 @@ body.dark-mode .card-scrollable-content {
                                     <div class="role-details" data-job-target="rca"> <!-- Added target for RCA -->
                                         <div class="experience-header">
                                             <div class="experience-title">Revenue Cycle Analyst</div>
-                                            <div class="experience-date">Jul 2019 - May 2021</div>
+                                            <div class="experience-date">Jul 2019 -<br>May 2021</div>
                                         </div>
                                         <div class="experience-company" style="margin-top: 4px;">NewYork–Presbyterian Hospital</div>
                                         <div class="experience-description" style="margin-top: 8px;">
@@ -2856,7 +2863,7 @@ body.dark-mode .card-scrollable-content {
                                 <div class="experience-card">
                                 <div class="experience-header">
                                     <div class="experience-title">Administrative Manager</div>
-                                    <div class="experience-date">Oct 2018 - Jul 2019</div>
+                                    <div class="experience-date">Oct 2018 -<br>Jul 2019</div>
                                 </div>
                                 <div class="experience-company">ICL, Brooklyn NY</div>
                                 <div class="experience-description">
@@ -2884,7 +2891,7 @@ body.dark-mode .card-scrollable-content {
                                 <div class="experience-card">
                                 <div class="experience-header">
                                     <div class="experience-title">Analytics Consultant</div>
-                                    <div class="experience-date">Nov 2022 - Jun 2023</div>
+                                    <div class="experience-date">Nov 2022 -<br>Jun 2023</div>
                                 </div>
                                 <div class="experience-company">Beezwax Datatools Inc.</div>
                                 <div class="experience-description">
@@ -2904,7 +2911,7 @@ body.dark-mode .card-scrollable-content {
                                 <div class="experience-card">
                                 <div class="experience-header">
                                     <div class="experience-title">Tableau Developer</div>
-                                    <div class="experience-date">Jun 2022 - Dec 2022</div>
+                                    <div class="experience-date">Jun 2022 -<br>Dec 2022</div>
                                 </div>
                                 <div class="experience-company">Temple University (Contract)</div>
                                 <div class="experience-description">
@@ -2925,7 +2932,7 @@ body.dark-mode .card-scrollable-content {
                                 <div class="experience-card">
                                 <div class="experience-header">
                                     <div class="experience-title">Consultant</div>
-                                    <div class="experience-date">Mar 2021 - Present</div>
+                                    <div class="experience-date">Mar 2021 -<br>Present</div>
                                 </div>
                                 <div class="experience-company">maginative, Boston MA</div>
                                 <div class="experience-description">
@@ -3169,7 +3176,7 @@ body.dark-mode .card-scrollable-content {
                             <div class="card-scrollable-content">
                             <div class="experience-card">
                                 <div class="experience-title project-link" data-modal-target="claims-cubid-modal">Claims Cubid</div>
-                                <div class="experience-date">November 2025 - Google Hackathon Winner</div>
+                                <div class="experience-date">November 2025 -<br>Google Hackathon Winner</div>
                                 <div class="experience-description">
                                     <p><strong>Objective:</strong> Create an AI-powered healthcare denial management solution to help reclaim billions in annual spending on denied insurance claims.</p>
                                     <p><strong>Impact:</strong> Prototype application featuring XGBoost ML model for appeal success prediction, Google Gemini 2.5 Flash LLM integration, vendor recommendations, and reimbursement estimates.</p>
