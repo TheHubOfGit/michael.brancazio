@@ -2165,6 +2165,12 @@ body.dark-mode .card-scrollable-content {
                 display: flex; /* Show chatbot FAB on mobile */
             }
 
+            /* Add blurred background to mobile FAB when not compact, similar to desktop chatbot response */
+            #chatbot-fab:not(.compact) {
+                backdrop-filter: blur(20px);
+                -webkit-backdrop-filter: blur(20px); /* Safari support */
+            }
+
             /* Enhanced mobile touch performance for suggestions */
             .suggestions-carousel {
                 /* Improve touch scrolling on mobile */
