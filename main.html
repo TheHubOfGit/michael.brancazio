@@ -317,6 +317,20 @@ body.dark-mode .card-scrollable-content {
             text-align: right;
             line-height: 1.4;
         }
+
+        #est-time {
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-align: right;
+            line-height: 1.4;
+        }
+
+        .location-dash {
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-align: right;
+            line-height: 1.4;
+        }
         
         .profile-header {
             display: flex;
@@ -378,6 +392,14 @@ body.dark-mode .card-scrollable-content {
             gap: 4px;
             font-size: 14px;
             color: var(--text-secondary);
+            margin-top: 3px;
+        }
+
+        /* Mobile view: smaller font size for availability status */
+        @media (max-width: 768px) {
+            .profile-status {
+                font-size: 10px;
+            }
         }
         
         .status-indicator {
@@ -2566,7 +2588,7 @@ body.dark-mode .card-scrollable-content {
                     </div>
                     
                     <div class="location-info">
-                        <div class="location">New York, NY, USA 🇺🇸</div>
+                        <div class="location">New York, NY, USA 🇺🇸 <span class="location-dash">—</span> <span id="est-time"></span></div>
                        <!--    <div class="timezone">UTC/GMT -5 hours</div> -->
                     </div>
                 </div>
@@ -5578,7 +5600,27 @@ When appropriate, use rich formatting:
                     event.preventDefault();
                 });
             }
+
+            // Update EST time
+            updateESTTime();
+            setInterval(updateESTTime, 1000); // Update every second
         });
+
+        function updateESTTime() {
+            const estTimeElement = document.getElementById('est-time');
+            if (estTimeElement) {
+                const now = new Date();
+                // Convert to EST (UTC-5, no DST for simplicity)
+                const estTime = new Date(now.getTime() - (5 * 60 * 60 * 1000));
+                const timeString = now.toLocaleTimeString('en-US', {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true,
+                    timeZone: 'America/New_York'
+                });
+                estTimeElement.textContent = timeString + ' EST';
+            }
+        }
     </script>
 
 </body>
