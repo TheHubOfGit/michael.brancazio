@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive 3D Bouncing Balls - Physics Simulation</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+            background-color: #000;
+        }
+        #info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            background-color: rgba(0,0,0,0.5);
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 100;
+        }
+        #controls {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            color: white;
+            background-color: rgba(0,0,0,0.5);
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 100;
+        }
+        #instructions {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: white;
+            background-color: rgba(0,0,0,0.5);
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 100;
+            max-width: 300px;
+        }
+        #copyright {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            color: white;
+            background-color: rgba(0,0,0,0.5);
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 100;
+        }
+        select, button {
+            margin: 5px;
+            padding: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div id="info">Bouncing Balls Physics Simulation</div>
+    <div id="instructions">
+        <strong>Controls:</strong>
+        <ul>
+            <li>Click/Tap + Drag: Move balls</li>
+            <li>Ctrl + Drag / Two-Finger Drag: Rotate view</li>
+            <li>Shift + Click / Double Click/Tap: Explode ball</li>
+            <li>Mouse wheel / Pinch: Zoom in/out</li>
+        </ul>
+    </div>
+    <div id="controls">
+        <select id="gravity">
+            <option value="9.8">Earth (9.8 m/s²)</option>
+            <option value="1.62">Moon (1.62 m/s²)</option>
+            <option value="3.7">Mars (3.7 m/s²)</option>
+            <option value="24.8">Jupiter (24.8 m/s²)</option>
+        </select>
+        <button id="add-ball">Add Ball</button>
+        <button id="reset">Reset Simulation</button>
+    </div>
+    <div id="copyright">© 2022 Michael Brancazio. All rights reserved.</div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // Physics constants and globals
+        let gravityValue = 9.8;
+        const elasticity = 0.8; // Energy retained after collision
+        const friction = 0.995; // Air resistance
+        let balls = [];
+        let particles = [];
+        let selectedBall = null;
+        let raycaster = new THREE.Raycaster();
+        let mouse = new THREE.Vector2();
+        let ctrlPressed = false;
+        let shiftPressed = false;
+        let isMouseDown = false;
+        let previousMousePosition = { x: 0, y: 0 };
+        let cameraRotation = { x: 0, y: 0 };
+        let cameraDistance = 30;
+        let touch = new THREE.Vector2(); // For touch events
+        let isTouch = false; // Flag to check if it's a touch device
+
+        // Scene setup
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 15, cameraDistance);
+        camera.lookAt(0, 0, 0);
+
+        // Renderer setup with anti-aliasing
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        document.body.appendChild(renderer.domElement);
+
+        // Lighting setup for realistic rendering
+        function setupLighting() {
+            // Ambient light for base illumination
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
+            scene.add(ambientLight);
+
+            // Main directional light (sun-like)
+            const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+            dirLight.position.set(10, 20, 10);
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 2048;
+            dirLight.shadow.mapSize.height = 2048;
+            dirLight.shadow.camera.near = 0.5;
+            dirLight.shadow.camera.far = 500;
+            dirLight.shadow.camera.left = -20;
+            dirLight.shadow.camera.right = 20;
+            dirLight.shadow.camera.top = 20;
+            dirLight.shadow.camera.bottom = -20;
+            scene.add(dirLight);
+
+            // Additional point lights for interesting reflections
+            const colors = [0xff0000, 0x00ff00, 0x0000ff, 0xffff00];
+            const positions = [
+                [-15, 10, -15],
+                [15, 10, -15],
+                [-15, 10, 15],
+                [15, 10, 15]
+            ];
+
+            for (let i = 0; i < colors.length; i++) {
+                const pointLight = new THREE.PointLight(colors[i], 0.5);
+                pointLight.position.set(...positions[i]);
+                scene.add(pointLight);
+            }
+        }
+
+        // Create box environment
+        function createEnvironment() {
+            // Floor
+            const floorGeometry = new THREE.PlaneGeometry(50, 50);
+            const floorMaterial = new THREE.MeshStandardMaterial({
+                color: 0x444444,
+                roughness: 0.1,
+                metalness: 0.2
+            });
+            const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+            floor.rotation.x = -Math.PI / 2;
+            floor.receiveShadow = true;
+            scene.add(floor);
+
+            // Walls
+            const wallMaterial = new THREE.MeshStandardMaterial({
+                color: 0x666666,
+                transparent: true,
+                opacity: 0.3,
+                roughness: 0.1,
+                metalness: 0.2
+            });
+
+            // Back wall
+            const backWall = new THREE.Mesh(
+                new THREE.PlaneGeometry(50, 30),
+                wallMaterial
+            );
+            backWall.position.z = -25;
+            backWall.position.y = 15;
+            backWall.receiveShadow = true;
+            scene.add(backWall);
+
+            // Left wall
+            const leftWall = new THREE.Mesh(
+                new THREE.PlaneGeometry(50, 30),
+                wallMaterial
+            );
+            leftWall.position.x = -25;
+            leftWall.position.y = 15;
+            leftWall.rotation.y = Math.PI / 2;
+            leftWall.receiveShadow = true;
+            scene.add(leftWall);
+
+            // Right wall
+            const rightWall = new THREE.Mesh(
+                new THREE.PlaneGeometry(50, 30),
+                wallMaterial
+            );
+            rightWall.position.x = 25;
+            rightWall.position.y = 15;
+            rightWall.rotation.y = -Math.PI / 2;
+            rightWall.receiveShadow = true;
+            scene.add(rightWall);
+        }
+
+        // Ball class
+        class Ball {
+            constructor(radius, color, position, velocity) {
+                this.radius = radius;
+                this.mass = radius * radius * radius;
+                this.position = position || new THREE.Vector3(0, 15, 0);
+                this.velocity = velocity || new THREE.Vector3(
+                    (Math.random() - 0.5) * 10,
+                    0,
+                    (Math.random() - 0.5) * 10
+                );
+                this.color = color || this.getRandomColor();
+
+                // Create mesh with physically-based rendering materials
+                const geometry = new THREE.SphereGeometry(radius, 32, 32);
+                const material = new THREE.MeshStandardMaterial({
+                    color: this.color,
+                    roughness: 0.2,
+                    metalness: 0.8,
+                    envMapIntensity: 1
+                });
+
+                this.mesh = new THREE.Mesh(geometry, material);
+                this.mesh.position.copy(this.position);
+                this.mesh.castShadow = true;
+                this.mesh.receiveShadow = true;
+                this.mesh.userData.object = this; // Reference back to this ball
+
+                scene.add(this.mesh);
+            }
+
+            getRandomColor() {
+                return Math.floor(Math.random() * 0xffffff);
+            }
+
+            update(deltaTime) {
+                // Skip physics update if ball is being dragged
+                if (this === selectedBall && isMouseDown && !ctrlPressed && !shiftPressed) {
+                    return;
+                }
+
+                // Apply gravity
+                this.velocity.y -= gravityValue * deltaTime;
+
+                // Apply air friction
+                this.velocity.multiplyScalar(friction);
+
+                // Update position
+                this.position.x += this.velocity.x * deltaTime;
+                this.position.y += this.velocity.y * deltaTime;
+                this.position.z += this.velocity.z * deltaTime;
+
+                // Floor collision
+                if (this.position.y < this.radius) {
+                    this.position.y = this.radius;
+                    this.velocity.y = -this.velocity.y * elasticity;
+
+                    // Apply some horizontal damping on floor impact
+                    this.velocity.x *= 0.95;
+                    this.velocity.z *= 0.95;
+                }
+
+                // Wall collisions
+                const bounds = 25 - this.radius;
+
+                // X-axis walls
+                if (Math.abs(this.position.x) > bounds) {
+                    this.position.x = Math.sign(this.position.x) * bounds;
+                    this.velocity.x = -this.velocity.x * elasticity;
+                }
+
+                // Z-axis walls
+                if (Math.abs(this.position.z) > bounds) {
+                    this.position.z = Math.sign(this.position.z) * bounds;
+                    this.velocity.z = -this.velocity.z * elasticity;
+                }
+
+                // Update mesh position
+                this.mesh.position.copy(this.position);
+            }
+
+            explode() {
+                // Create explosion particles
+                const particleCount = 50 + Math.floor(this.radius * 20);
+                const particleSize = this.radius / 10;
+
+                for (let i = 0; i < particleCount; i++) {
+                    // Random direction for particle
+                    const direction = new THREE.Vector3(
+                        Math.random() * 2 - 1,
+                        Math.random() * 2 - 1,
+                        Math.random() * 2 - 1
+                    ).normalize();
+
+                    // Random speed
+                    const speed = 5 + Math.random() * 10;
+
+                    // Create particle
+                    const particle = new Particle(
+                        particleSize * (0.5 + Math.random()),
+                        this.color,
+                        this.position.clone(),
+                        direction.clone().multiplyScalar(speed),
+                        1 + Math.random() * 2 // Random lifetime
+                    );
+
+                    particles.push(particle);
+                }
+
+                // Create light flash
+                const flash = new THREE.PointLight(this.color, 5, 10);
+                flash.position.copy(this.position);
+                scene.add(flash);
+
+                // Remove flash after a short delay
+                setTimeout(() => {
+                    scene.remove(flash);
+                }, 100);
+
+                // Remove the ball
+                scene.remove(this.mesh);
+                balls = balls.filter(b => b !== this);
+            }
+        }
+
+        // Particle class for explosions
+        class Particle {
+            constructor(radius, color, position, velocity, lifetime) {
+                this.radius = radius;
+                this.position = position;
+                this.velocity = velocity;
+                this.lifetime = lifetime;
+                this.age = 0;
+                this.color = color;
+
+                // Create mesh
+                const geometry = new THREE.SphereGeometry(radius, 8, 8);
+                const material = new THREE.MeshStandardMaterial({
+                    color: color,
+                    emissive: color,
+                    emissiveIntensity: 0.5,
+                    transparent: true,
+                    opacity: 1
+                });
+
+                this.mesh = new THREE.Mesh(geometry, material);
+                this.mesh.position.copy(this.position);
+                this.mesh.castShadow = false;
+                this.mesh.receiveShadow = false;
+
+                scene.add(this.mesh);
+            }
+
+            update(deltaTime) {
+                // Update age and check if particle should be removed
+                this.age += deltaTime;
+                if (this.age >= this.lifetime) {
+                    scene.remove(this.mesh);
+                    return true; // Particle should be removed
+                }
+
+                // Apply gravity (less than balls to make it look better)
+                this.velocity.y -= gravityValue * 0.3 * deltaTime;
+
+                // Update position
+                this.position.x += this.velocity.x * deltaTime;
+                this.position.y += this.velocity.y * deltaTime;
+                this.position.z += this.velocity.z * deltaTime;
+
+                // Update mesh position
+                this.mesh.position.copy(this.position);
+
+                // Fade out
+                const normalizedAge = this.age / this.lifetime;
+                this.mesh.material.opacity = 1 - normalizedAge;
+
+                // Shrink slightly
+                const scale = 1 - normalizedAge * 0.5;
+                this.mesh.scale.set(scale, scale, scale);
+
+                return false; // Particle should not be removed yet
+            }
+        }
+
+        // Ball-to-ball collision detection and response
+        function checkBallCollisions(deltaTime) {
+            for (let i = 0; i < balls.length; i++) {
+                const ball1 = balls[i];
+
+                for (let j = i + 1; j < balls.length; j++) {
+                    const ball2 = balls[j];
+
+                    // Calculate distance between balls
+                    const diff = new THREE.Vector3().subVectors(ball2.position, ball1.position);
+                    const distance = diff.length();
+                    const minDistance = ball1.radius + ball2.radius;
+
+                    // Check for collision
+                    if (distance < minDistance) {
+                        // Skip collision resolution if either ball is being dragged
+                        if ((ball1 === selectedBall || ball2 === selectedBall) &&
+                            isMouseDown && !ctrlPressed && !shiftPressed) {
+                            continue;
+                        }
+
+                        // Normalize collision vector
+                        const collisionNormal = diff.clone().normalize();
+
+                        // Calculate relative velocity
+                        const relativeVelocity = new THREE.Vector3().subVectors(
+                            ball2.velocity, ball1.velocity
+                        );
+
+                        // Calculate relative velocity along collision normal
+                        const velocityAlongNormal = relativeVelocity.dot(collisionNormal);
+
+                        // Don't resolve if balls are moving away from each other
+                        if (velocityAlongNormal > 0) continue;
+
+                        // Calculate impulse scalar
+                        const restitution = elasticity; // Coefficient of restitution
+                        const impulseScalar = -(1 + restitution) * velocityAlongNormal;
+                        const impulseScalar1 = impulseScalar / (1/ball1.mass + 1/ball2.mass);
+
+                        // Apply impulse
+                        const impulse = collisionNormal.clone().multiplyScalar(impulseScalar1);
+                        ball1.velocity.sub(impulse.clone().divideScalar(ball1.mass));
+                        ball2.velocity.add(impulse.clone().divideScalar(ball2.mass));
+
+                        // Resolve penetration
+                        const penetrationDepth = minDistance - distance;
+                        const penetrationResolution = collisionNormal.clone().multiplyScalar(penetrationDepth * 0.5);
+                        ball1.position.sub(penetrationResolution);
+                        ball2.position.add(penetrationResolution);
+                    }
+                }
+            }
+        }
+
+        // Add random ball
+        function addRandomBall() {
+            const radius = 1 + Math.random() * 2;
+            const x = (Math.random() - 0.5) * 30;
+            const y = 10 + Math.random() * 10;
+            const z = (Math.random() - 0.5) * 30;
+
+            const ball = new Ball(
+                radius,
+                null, // Random color
+                new THREE.Vector3(x, y, z),
+                new THREE.Vector3(
+                    (Math.random() - 0.5) * 15,
+                    (Math.random() - 0.5) * 5,
+                    (Math.random() - 0.5) * 15
+                )
+            );
+
+            balls.push(ball);
+        }
+
+        // Mouse interaction functions
+        function onMouseDown(event) {
+            isMouseDown = true;
+
+            let clientX, clientY;
+            if (event.type === 'touchstart') {
+                isTouch = true;
+                clientX = event.touches[0].clientX;
+                clientY = event.touches[0].clientY;
+            } else {
+                clientX = event.clientX;
+                clientY = event.clientY;
+            }
+
+            // Try to select a ball
+            const intersects = getIntersects({ clientX: clientX, clientY: clientY });
+            for (const intersect of intersects) {
+                if (intersect.object.userData.object instanceof Ball) {
+                    selectedBall = intersect.object.userData.object;
+
+                    // If shift is pressed, explode the ball immediately
+                    if (shiftPressed) {
+                        selectedBall.explode();
+                        selectedBall = null;
+                        return;
+                    }
+
+                    // Stop the ball's motion when grabbed
+                    if (!ctrlPressed && !shiftPressed) {
+                        selectedBall.velocity.set(0, 0, 0);
+                    }
+                    break;
+                }
+            }
+
+            previousMousePosition.x = clientX;
+            previousMousePosition.y = clientY;
+        }
+
+        function onMouseUp(event) {
+            isMouseDown = false;
+            selectedBall = null;
+        }
+
+        function onMouseMove(event) {
+            let clientX, clientY;
+            if (event.type === 'touchmove') {
+                clientX = event.touches[0].clientX;
+                clientY = event.touches[0].clientY;
+            } else {
+                clientX = event.clientX;
+                clientY = event.clientY;
+            }
+
+            // Update normalized mouse coordinates for raycaster
+            mouse.x = (clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(clientY / window.innerHeight) * 2 + 1;
+
+            if (isMouseDown) {
+                const deltaX = clientX - previousMousePosition.x;
+                const deltaY = clientY - previousMousePosition.y;
+
+                if (ctrlPressed || (isTouch && event.touches.length > 1)) { // Two-finger touch for rotation on mobile
+                    // Rotate camera
+                    cameraRotation.y += deltaX * 0.01;
+                    cameraRotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, cameraRotation.x + deltaY * 0.01));
+                    updateCameraPosition();
+                } else if (selectedBall && !shiftPressed) {
+                    // Move the selected ball
+                    moveBallWithMouse({ clientX: clientX, clientY: clientY });
+                } else if (!selectedBall && isTouch) { // Rotate view if no ball selected on touch drag
+                    cameraRotation.y += deltaX * 0.01;
+                    cameraRotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, cameraRotation.x + deltaY * 0.01));
+                    updateCameraPosition();
+                }
+
+                previousMousePosition.x = clientX;
+                previousMousePosition.y = clientY;
+            }
+        }
+
+        function onWheel(event) {
+            // Zoom in/out
+            cameraDistance += event.deltaY * 0.05;
+            cameraDistance = Math.max(10, Math.min(100, cameraDistance));
+            updateCameraPosition();
+        }
+
+        function updateCameraPosition() {
+            // Update camera position based on rotation and distance
+            camera.position.x = Math.sin(cameraRotation.y) * Math.cos(cameraRotation.x) * cameraDistance;
+            camera.position.y = Math.sin(cameraRotation.x) * cameraDistance + 5; // Add a slight offset to look a bit from above
+            camera.position.z = Math.cos(cameraRotation.y) * Math.cos(cameraRotation.x) * cameraDistance;
+            camera.lookAt(0, 5, 0); // Look at the center of the scene
+        }
+
+        function getIntersects(event) {
+            // Calculate mouse/touch position in normalized device coordinates
+            const rect = renderer.domElement.getBoundingClientRect();
+            let x, y;
+            if (event.type === 'touchstart' || event.type === 'touchmove' || event.type === 'dblclick') { // Include dblclick for touch
+                x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+                y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+            } else {
+                x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+                y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+            }
+
+
+            mouse.x = x;
+            mouse.y = y;
+
+            // Update raycaster
+            raycaster.setFromCamera(mouse, camera);
+
+            // Get intersected objects
+            return raycaster.intersectObjects(scene.children, true);
+        }
+
+        function moveBallWithMouse(event) {
+            if (!selectedBall) return;
+
+            // Project mouse position to 3D space
+            raycaster.setFromCamera(mouse, camera);
+
+            // Define a plane based on the camera's view
+            const planeNormal = new THREE.Vector3(0, 0, 1).applyQuaternion(camera.quaternion);
+            const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(
+                planeNormal,
+                selectedBall.position
+            );
+
+            // Find intersection point with the plane
+            const intersection = new THREE.Vector3();
+            raycaster.ray.intersectPlane(plane, intersection);
+
+            // Update ball position
+            const newPos = intersection.clone();
+
+            // Constrain to bounds
+            const bounds = 25 - selectedBall.radius;
+            newPos.x = Math.max(-bounds, Math.min(bounds, newPos.x));
+            newPos.y = Math.max(selectedBall.radius, newPos.y);
+            newPos.z = Math.max(-bounds, Math.min(bounds, newPos.z));
+
+            // Apply new position
+            selectedBall.position.copy(newPos);
+            selectedBall.mesh.position.copy(newPos);
+        }
+
+        // Keyboard event handlers
+        function onKeyDown(event) {
+            if (event.key === 'Control') {
+                ctrlPressed = true;
+            } else if (event.key === 'Shift') {
+                shiftPressed = true;
+            }
+        }
+
+        function onKeyUp(event) {
+            if (event.key === 'Control') {
+                ctrlPressed = false;
+            } else if (event.key === 'Shift') {
+                shiftPressed = false;
+            }
+        }
+
+        // Click handler with Shift+Click support
+        function onClick(event) {
+            if (!shiftPressed) return;
+
+            // Try to select a ball to explode
+            const intersects = getIntersects(event);
+            for (const intersect of intersects) {
+                if (intersect.object.userData.object instanceof Ball) {
+                    const ball = intersect.object.userData.object;
+                    ball.explode();
+                    break;
+                }
+            }
+        }
+
+        function onDoubleClick(event) {
+            // Try to select a ball to explode on double click/tap
+            const intersects = getIntersects(event);
+            for (const intersect of intersects) {
+                if (intersect.object.userData.object instanceof Ball) {
+                    const ball = intersect.object.userData.object;
+                    ball.explode();
+                    break;
+                }
+            }
+        }
+
+        // Initialize scene
+        function init() {
+            setupLighting();
+            createEnvironment();
+
+            // Add initial balls
+            for (let i = 0; i < 10; i++) {
+                addRandomBall();
+            }
+
+            // Add event listeners
+            document.getElementById('add-ball').addEventListener('click', addRandomBall);
+            document.getElementById('reset').addEventListener('click', resetSimulation);
+            document.getElementById('gravity').addEventListener('change', function() {
+                gravityValue = parseFloat(this.value);
+            });
+
+            // Add mouse and touch event listeners
+            renderer.domElement.addEventListener('mousedown', onMouseDown, false);
+            renderer.domElement.addEventListener('mouseup', onMouseUp, false);
+            renderer.domElement.addEventListener('mousemove', onMouseMove, false);
+            renderer.domElement.addEventListener('click', onClick, false);
+            renderer.domElement.addEventListener('dblclick', onDoubleClick, false); // Double click explode
+            renderer.domElement.addEventListener('wheel', onWheel, false);
+
+            renderer.domElement.addEventListener('touchstart', onMouseDown, false);
+            renderer.domElement.addEventListener('touchend', onMouseUp, false);
+            renderer.domElement.addEventListener('touchmove', onMouseMove, false);
+            renderer.domElement.addEventListener('dblclick', onDoubleClick, false); // Double tap explode - dblclick works on touch too
+
+            window.addEventListener('keydown', onKeyDown, false); // Changed from document to window
+            window.addEventListener('keyup', onKeyUp, false);   // Changed from document to window
+
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        function resetSimulation() {
+            // Remove all balls
+            for (const ball of balls) {
+                scene.remove(ball.mesh);
+            }
+
+            // Remove all particles
+            for (const particle of particles) {
+                scene.remove(particle.mesh);
+            }
+
+            balls = [];
+            particles = [];
+            selectedBall = null;
+
+            // Add new balls
+            for (let i = 0; i < 10; i++) {
+                addRandomBall();
+            }
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // Animation loop
+        let lastTime = 0;
+        function animate(currentTime) {
+            requestAnimationFrame(animate);
+
+            // Calculate delta time in seconds
+            const deltaTime = Math.min((currentTime - lastTime) / 1000, 0.05); // Cap at 50ms to avoid large jumps
+            lastTime = currentTime;
+
+            // Skip first frame
+            if (deltaTime === 0) return;
+
+            // Update physics for balls
+            for (const ball of balls) {
+                ball.update(deltaTime);
+            }
+
+            // Update particles and remove dead ones
+            particles = particles.filter(particle => !particle.update(deltaTime));
+
+            // Check for collisions
+            checkBallCollisions(deltaTime);
+
+            // Render scene
+            renderer.render(scene, camera);
+        }
+
+        // Start everything
+        init();
+        animate(0);
+    </script>
+</body>
+</html>

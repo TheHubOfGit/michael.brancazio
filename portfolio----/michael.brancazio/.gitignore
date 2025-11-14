@@ -1,0 +1,93 @@
+.DS_Store
+
+# Exclude other projects from the portfolio repository
+Android App - Stock Widget/
+Alpaca/
+Alpaca Backtest - ONGOING/
+AndroidWidget/
+Aya Mindmap/
+BACKTEST/
+Baseball Card Scanner/
+Benji Scripts/
+BrightMile/
+CLI_Test/
+CNN_CLone/
+CascadeProjects/
+Coffee Website/
+CoffeeBrew/
+CoffeeInfographic/
+ComplexSite/
+DailyAverageTest/
+DeepFace/
+FPSShooter/
+Filtru/
+FinanceScript_Earnings/
+FrontEndStockTestGPT4/
+GOOG Earnings Impact/
+Github_Portfolio/
+Hackathon/
+HRV.py
+JobApplier/
+JustAnotherBacktest/
+KimiTest/
+Lunar/
+MCPs/
+MSSQL Documentation Tool/
+Maps_Reviews/
+Meeting Summary Application/
+Mike/
+Monarch Money Widget/
+MonarchPipeline/
+NYC/
+NYP Google Hackathon/
+NYP Hospital Training/
+NewTest/
+Optimization4Slippage/
+Options/
+Over:Undervalued/
+Overcomplicaed Example of PLAN:ACT/
+Plane Delays/
+Portfoliobacktest/
+Projection Lab - Theme Reset/
+ResearchNotebook/
+Robinhood API/
+Robinhood Queries/
+Robinhood Stock True Return/
+Seasonality/
+Sightline Studio/
+Stock Dashboard/
+Stock Dashboard - NoPython/
+Stock Dashboard.zip
+Streeteasy/
+SUPERBASE/
+TQQQ_hosted/
+TQQQbacktest/
+UKG Clockin Utility/
+Uwe_Calendar/
+Warpbacktest/
+Wellfound_Automation/
+Workflow Diagram - NYP/
+XDR/
+YFinance/
+__pycache__/
+alexa/
+aya-eweis-resume/
+book test/
+chatbot_app/
+claudebacktest/
+clinical-trial-matcher/
+finance-loan-analysis/
+ghosty/
+new/
+newwww/
+pinkus/
+quick/
+quickcopy/
+realistSubwayextension/
+realtimerail.nyc-master/
+stock_chart_project/
+temp/
+test/
+test2/
+worktrees/
+yfinanceClaudebacktest/
