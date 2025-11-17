@@ -48,9 +48,7 @@ export default {
         });
       }
 
-      // Prepare the request to Gemini API
-      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
-
+      // Prepare the request payload
       const geminiPayload = {
         contents: [{
           parts: [{
@@ -65,8 +63,9 @@ export default {
         }
       };
 
-      // Make request to Gemini API
-      const geminiResponse = await fetch(geminiUrl, {
+      // Try primary model first (gemini-2.5-flash)
+      let geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+      let geminiResponse = await fetch(geminiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -74,18 +73,36 @@ export default {
         body: JSON.stringify(geminiPayload)
       });
 
+      // If primary model fails, fallback to lite model
       if (!geminiResponse.ok) {
+        console.error('Primary model (gemini-2.5-flash) failed, trying fallback (gemini-2.5-flash-lite)...');
         const errorData = await geminiResponse.text();
-        console.error('Gemini API error:', errorData);
-        console.error('Gemini URL used:', geminiUrl.replace(/key=[^&]*/, 'key=***'));
-        return new Response(JSON.stringify({
-          error: 'Failed to get response from AI service',
-          details: errorData,
-          status: geminiResponse.status
-        }), {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        console.error('Primary model error:', errorData);
+        
+        // Try fallback model
+        geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${GEMINI_API_KEY}`;
+        geminiResponse = await fetch(geminiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(geminiPayload)
         });
+
+        // If fallback also fails, return error
+        if (!geminiResponse.ok) {
+          const fallbackErrorData = await geminiResponse.text();
+          console.error('Fallback model (gemini-2.5-flash-lite) also failed:', fallbackErrorData);
+          console.error('Gemini URL used:', geminiUrl.replace(/key=[^&]*/, 'key=***'));
+          return new Response(JSON.stringify({
+            error: 'Failed to get response from AI service',
+            details: fallbackErrorData,
+            status: geminiResponse.status
+          }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
       }
 
       const geminiData = await geminiResponse.json();
