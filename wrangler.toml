@@ -2,14 +2,6 @@ name = "portfolio-chatbot-worker"
 main = "worker.js"
 compatibility_date = "2024-01-01"
 
-[[migrations]]
-tag = "v1"
-new_classes = []
-
-[[migrations]]
-tag = "v2"
-deleted_classes = ["GeminiLiveProxy"]
-
 [vars]
 # Add your environment variables here if needed
 
