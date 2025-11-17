@@ -1677,6 +1677,68 @@ body.dark-mode .card-scrollable-content {
             opacity: 0.6;
         }
 
+        .chat-voice {
+            width: 32px;
+            height: 32px;
+            border-radius: 16px;
+            background-color: rgba(55, 113, 200, 0.1);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--accent-blue);
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            flex-shrink: 0;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            outline: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .chat-voice:hover {
+            background-color: rgba(55, 113, 200, 0.2);
+            transform: scale(1.05);
+        }
+
+        .chat-voice.recording {
+            background-color: rgba(220, 53, 69, 0.2);
+            color: #dc3545;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .mobile-chat-voice {
+            width: 36px;
+            height: 36px;
+            border-radius: 16px;
+            background-color: rgba(55, 113, 200, 0.1);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--accent-blue);
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            flex-shrink: 0;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            outline: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .mobile-chat-voice:hover {
+            background-color: rgba(55, 113, 200, 0.2);
+        }
+
+        .mobile-chat-voice.recording {
+            background-color: rgba(220, 53, 69, 0.2);
+            color: #dc3545;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
         .chat-response-popup {
             position: absolute;
             bottom: 80px;
@@ -2538,6 +2600,12 @@ body.dark-mode .card-scrollable-content {
             <div class="mobile-chat-input-area">
                 <div class="mobile-chat-input-container">
                     <input type="text" class="mobile-chat-input" id="mobile-chat-input" placeholder="Ask about Michael's experience...">
+                    <button class="mobile-chat-voice" id="mobile-chat-voice" title="Voice interaction">
+                        <svg viewBox="0 0 24 24" width="20" height="20" id="mobile-chat-voice-icon">
+                            <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" fill="currentColor"/>
+                            <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" fill="currentColor"/>
+                        </svg>
+                    </button>
                     <button class="mobile-chat-send" id="mobile-chat-send">
                         <svg viewBox="0 0 24 24" width="20" height="20">
                             <path d="M2 21l21-9L2 3v7l15 2-15 2v7z" fill="currentColor"/>
@@ -2562,6 +2630,12 @@ body.dark-mode .card-scrollable-content {
                 Looking to hire Michael? Paste your job description and ask if he'd be good for the role!
             </span>
             <input type="text" class="chat-input" id="chat-input" placeholder="Ask about Michael's experience...">
+            <button class="chat-voice" id="chat-voice" title="Voice interaction">
+                <svg viewBox="0 0 24 24" width="16" height="16" id="chat-voice-icon">
+                    <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" fill="currentColor"/>
+                    <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" fill="currentColor"/>
+                </svg>
+            </button>
             <button class="chat-send" id="chat-send">
                 <svg viewBox="0 0 24 24" width="16" height="16">
                     <path d="M2 21l21-9L2 3v7l15 2-15 2v7z" fill="currentColor"/>
@@ -4915,6 +4989,7 @@ When appropriate, use rich formatting:
                 this.container = document.getElementById('integrated-chatbot');
                 this.input = document.getElementById('chat-input');
                 this.sendButton = document.getElementById('chat-send');
+                this.voiceButton = document.getElementById('chat-voice');
                 this.popup = document.getElementById('chat-response-popup');
                 this.responseContent = document.getElementById('response-content');
                 this.typingIndicator = document.getElementById('typing-indicator-new');
@@ -4924,9 +4999,19 @@ When appropriate, use rich formatting:
                 this.mobileFab = document.getElementById('chatbot-fab');
                 this.mobileInput = document.getElementById('mobile-chat-input');
                 this.mobileSendButton = document.getElementById('mobile-chat-send');
+                this.mobileVoiceButton = document.getElementById('mobile-chat-voice');
                 this.mobileResponseContent = document.getElementById('mobile-response-content');
                 this.mobileTypingIndicator = document.getElementById('mobile-typing-indicator');
                 this.mobileCloseButton = document.querySelector('.mobile-chat-close');
+
+                // Voice interaction state
+                this.isRecording = false;
+                this.audioContext = null;
+                this.mediaStream = null;
+                this.audioProcessor = null;
+                this.liveWs = null;
+                this.audioQueue = [];
+                this.isPlayingAudio = false;
 
                 if (!this.container && !this.mobileModal) {
                     console.error('No chatbot elements found');
@@ -4946,6 +5031,11 @@ When appropriate, use rich formatting:
                         this.sendMessage();
                     }
                 });
+                
+                // Voice button listeners
+                if (this.voiceButton) {
+                    this.voiceButton.addEventListener('click', () => this.toggleVoiceRecording());
+                }
 
                 // Mouse enter/leave handling for the entire chatbot area
                 this.container.addEventListener('mouseenter', () => {
@@ -5072,6 +5162,11 @@ When appropriate, use rich formatting:
                             this.sendMobileMessage();
                         }
                     });
+                }
+
+                // Mobile voice button listener
+                if (this.mobileVoiceButton) {
+                    this.mobileVoiceButton.addEventListener('click', () => this.toggleVoiceRecording(true));
                 }
 
                 // Handle suggestion item clicks
@@ -5597,6 +5692,236 @@ When appropriate, use rich formatting:
                 if (this.mobileTypingIndicator && this.mobileResponseContent) {
                     this.mobileTypingIndicator.style.display = 'none';
                     this.mobileResponseContent.style.display = 'block';
+                }
+            }
+
+            // Voice interaction methods
+            async toggleVoiceRecording(isMobile = false) {
+                if (this.isRecording) {
+                    await this.stopVoiceRecording();
+                } else {
+                    await this.startVoiceRecording(isMobile);
+                }
+            }
+
+            async startVoiceRecording(isMobile = false) {
+                try {
+                    // Request microphone access
+                    this.mediaStream = await navigator.mediaDevices.getUserMedia({ 
+                        audio: {
+                            channelCount: 1,
+                            sampleRate: 16000,
+                            echoCancellation: true,
+                            noiseSuppression: true
+                        } 
+                    });
+
+                    // Create AudioContext for processing
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)({
+                        sampleRate: 16000
+                    });
+
+                    const source = this.audioContext.createMediaStreamSource(this.mediaStream);
+                    
+                    // Create ScriptProcessorNode for audio processing (16kHz, mono)
+                    const bufferSize = 4096;
+                    this.audioProcessor = this.audioContext.createScriptProcessor(bufferSize, 1, 1);
+                    
+                    this.audioProcessor.onaudioprocess = (e) => {
+                        if (!this.isRecording || !this.liveWs || this.liveWs.readyState !== WebSocket.OPEN) {
+                            return;
+                        }
+
+                        const inputData = e.inputBuffer.getChannelData(0);
+                        // Convert Float32 to Int16 PCM
+                        const pcmData = new Int16Array(inputData.length);
+                        for (let i = 0; i < inputData.length; i++) {
+                            const s = Math.max(-1, Math.min(1, inputData[i]));
+                            pcmData[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+                        }
+
+                        // Send audio data to Live API
+                        // Convert to base64 for transmission (handle large arrays efficiently)
+                        const uint8Array = new Uint8Array(pcmData.buffer);
+                        let binary = '';
+                        const chunkSize = 8192;
+                        for (let i = 0; i < uint8Array.length; i += chunkSize) {
+                            const chunk = uint8Array.subarray(i, i + chunkSize);
+                            binary += String.fromCharCode.apply(null, chunk);
+                        }
+                        const base64 = btoa(binary);
+                        
+                        const audioBlob = {
+                            realtimeInput: {
+                                mediaChunks: [{
+                                    mimeType: 'audio/pcm;rate=16000',
+                                    data: base64
+                                }]
+                            }
+                        };
+                        
+                        this.liveWs.send(JSON.stringify(audioBlob));
+                    };
+
+                    source.connect(this.audioProcessor);
+                    this.audioProcessor.connect(this.audioContext.destination);
+
+                    // Connect to Live API via WebSocket
+                    await this.connectToLiveAPI();
+
+                    this.isRecording = true;
+                    this.updateVoiceButtonState(true, isMobile);
+
+                } catch (error) {
+                    console.error('Error starting voice recording:', error);
+                    alert('Failed to access microphone. Please check permissions.');
+                }
+            }
+
+            async stopVoiceRecording() {
+                this.isRecording = false;
+
+                // Stop audio processing
+                if (this.audioProcessor) {
+                    this.audioProcessor.disconnect();
+                    this.audioProcessor = null;
+                }
+
+                // Stop media stream
+                if (this.mediaStream) {
+                    this.mediaStream.getTracks().forEach(track => track.stop());
+                    this.mediaStream = null;
+                }
+
+                // Close audio context
+                if (this.audioContext) {
+                    await this.audioContext.close();
+                    this.audioContext = null;
+                }
+
+                // Close WebSocket connection
+                if (this.liveWs) {
+                    this.liveWs.close();
+                    this.liveWs = null;
+                }
+
+                this.updateVoiceButtonState(false, false);
+                this.updateVoiceButtonState(false, true);
+            }
+
+            async connectToLiveAPI() {
+                return new Promise((resolve, reject) => {
+                    // Generate session ID
+                    const sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                    
+                    // Connect to worker WebSocket (which proxies to Gemini)
+                    const wsUrl = CHATBOT_WORKER_URL.replace('https://', 'wss://').replace('http://', 'ws://') + '?session=' + sessionId;
+                    this.liveWs = new WebSocket(wsUrl);
+
+                    this.liveWs.addEventListener('open', () => {
+                        // Send setup message
+                        const setupMessage = {
+                            setup: {
+                                model: 'gemini-2.5-flash-native-audio-preview-09-2025',
+                                generation_config: {
+                                    response_modalities: ['AUDIO'],
+                                    input_audio_transcription: {},
+                                    output_audio_transcription: {}
+                                }
+                            }
+                        };
+                        this.liveWs.send(JSON.stringify(setupMessage));
+                        resolve();
+                    });
+
+                    this.liveWs.addEventListener('message', (event) => {
+                        this.handleLiveAPIResponse(event.data);
+                    });
+
+                    this.liveWs.addEventListener('error', (error) => {
+                        console.error('Live API WebSocket error:', error);
+                        reject(error);
+                    });
+
+                    this.liveWs.addEventListener('close', () => {
+                        if (this.isRecording) {
+                            // Reconnect if still recording
+                            setTimeout(() => this.connectToLiveAPI(), 1000);
+                        }
+                    });
+                });
+            }
+
+            handleLiveAPIResponse(data) {
+                try {
+                    const response = JSON.parse(data);
+                    
+                    // Handle server content with audio
+                    if (response.serverContent && response.serverContent.modelTurn) {
+                        const parts = response.serverContent.modelTurn.parts;
+                        if (parts) {
+                            parts.forEach(part => {
+                                if (part.inlineData && part.inlineData.mimeType === 'audio/pcm') {
+                                    // Decode base64 audio data
+                                    const audioData = Uint8Array.from(atob(part.inlineData.data), c => c.charCodeAt(0));
+                                    this.playAudioResponse(audioData);
+                                }
+                                
+                                // Handle transcriptions
+                                if (response.serverContent.inputTranscription) {
+                                    const transcription = response.serverContent.inputTranscription.text;
+                                    if (transcription && this.input) {
+                                        this.input.value = transcription;
+                                    }
+                                }
+                                
+                                if (response.serverContent.outputTranscription) {
+                                    const transcription = response.serverContent.outputTranscription.text;
+                                    if (transcription) {
+                                        this.displayResponse(transcription);
+                                    }
+                                }
+                            });
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error handling Live API response:', error);
+                }
+            }
+
+            async playAudioResponse(audioData) {
+                // Convert 24kHz PCM to AudioBuffer and play
+                if (!this.audioContext || this.audioContext.state === 'closed') {
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)({
+                        sampleRate: 24000
+                    });
+                }
+
+                // Convert Int16 PCM to Float32
+                const pcm16 = new Int16Array(audioData.buffer);
+                const float32 = new Float32Array(pcm16.length);
+                for (let i = 0; i < pcm16.length; i++) {
+                    float32[i] = pcm16[i] / 32768.0;
+                }
+
+                // Create AudioBuffer and play
+                const audioBuffer = this.audioContext.createBuffer(1, float32.length, 24000);
+                audioBuffer.getChannelData(0).set(float32);
+
+                const source = this.audioContext.createBufferSource();
+                source.buffer = audioBuffer;
+                source.connect(this.audioContext.destination);
+                source.start();
+            }
+
+            updateVoiceButtonState(recording, isMobile) {
+                const button = isMobile ? this.mobileVoiceButton : this.voiceButton;
+                if (!button) return;
+
+                if (recording) {
+                    button.classList.add('recording');
+                } else {
+                    button.classList.remove('recording');
                 }
             }
         }

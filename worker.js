@@ -1,7 +1,11 @@
 /**
  * Cloudflare Worker for handling Gemini API calls securely
  * This keeps the API key server-side and prevents exposure to the frontend
+ * Also handles WebSocket connections for Gemini Live API via Durable Objects
  */
+
+// Export Durable Object class
+export { GeminiLiveProxy } from './durable-object';
 
 export default {
   async fetch(request, env, ctx) {
@@ -14,8 +18,9 @@ export default {
     const origin = request.headers.get('Origin');
     const corsHeaders = {
       'Access-Control-Allow-Origin': allowedOrigins.includes(origin) ? origin : allowedOrigins[0],
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS, GET',
+      'Access-Control-Allow-Headers': 'Content-Type, Upgrade, Connection',
+      'Access-Control-Expose-Headers': 'Upgrade, Connection',
     };
 
     // Handle preflight requests
@@ -23,7 +28,13 @@ export default {
       return new Response(null, { headers: corsHeaders });
     }
 
-    // Only allow POST requests
+    // Handle WebSocket upgrade for Live API via Durable Object
+    const upgradeHeader = request.headers.get('Upgrade');
+    if (upgradeHeader === 'websocket') {
+      return handleWebSocketUpgrade(request, env, ctx, corsHeaders);
+    }
+
+    // Only allow POST requests for regular API calls
     if (request.method !== 'POST') {
       return new Response('Method not allowed', { status: 405 });
     }
@@ -105,3 +116,21 @@ export default {
     }
   }
 };
+
+/**
+ * Handle WebSocket upgrade for Gemini Live API
+ * Routes to Durable Object for WebSocket proxying
+ */
+async function handleWebSocketUpgrade(request, env, ctx, corsHeaders) {
+  // Get or create Durable Object instance
+  // Use a session ID from query params or generate one
+  const url = new URL(request.url);
+  const sessionId = url.searchParams.get('session') || 'default';
+  
+  // Get the Durable Object namespace
+  const id = env.GEMINI_LIVE_PROXY.idFromName(sessionId);
+  const stub = env.GEMINI_LIVE_PROXY.get(id);
+  
+  // Forward the request to the Durable Object
+  return stub.fetch(request);
+}
