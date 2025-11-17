@@ -6,8 +6,14 @@
 export default {
   async fetch(request, env, ctx) {
     // CORS headers for the portfolio domain
+    const allowedOrigins = [
+      'https://thehubofgit.github.io',
+      'https://michael.brancazio'
+    ];
+    
+    const origin = request.headers.get('Origin');
     const corsHeaders = {
-      'Access-Control-Allow-Origin': '*', // You can restrict this to your domain
+      'Access-Control-Allow-Origin': allowedOrigins.includes(origin) ? origin : allowedOrigins[0],
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
     };
