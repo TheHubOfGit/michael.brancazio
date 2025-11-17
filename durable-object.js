@@ -35,31 +35,48 @@ export class GeminiLiveProxy {
       return new Response(null, { status: 500 });
     }
 
-    const geminiWsUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService/BidiGenerateContent?key=${GEMINI_API_KEY}`;
+    // Correct endpoint: v1beta (not v1alpha) and dot notation (not slash)
+    const geminiWsUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=${GEMINI_API_KEY}`;
     
     let isSetup = false;
     let pendingMessages = [];
 
     // Create connection to Gemini
+    // Note: Cloudflare Durable Objects don't support creating outbound WebSocket clients
+    // We need to use fetch with upgrade headers instead
     try {
-      // In Durable Objects, we can use the WebSocket API
-      // Note: This might need adjustment based on actual Cloudflare Durable Objects WebSocket support
-      // For now, we'll use fetch with upgrade header
+      // Use fetch to create WebSocket connection
+      const upgradeRequest = new Request(geminiWsUrl, {
+        headers: {
+          'Upgrade': 'websocket',
+          'Connection': 'Upgrade',
+        }
+      });
       
-      // Actually, Durable Objects might need a different approach
-      // Let's use the standard WebSocket constructor if available
-      this.geminiWs = new WebSocket(geminiWsUrl);
+      // Try to upgrade the fetch request to WebSocket
+      // This may not work - Durable Objects have limitations with outbound WebSockets
+      const response = await fetch(upgradeRequest);
+      
+      if (response.status === 101 && response.webSocket) {
+        // WebSocket upgrade successful
+        this.geminiWs = response.webSocket;
+        this.geminiWs.accept();
+      } else {
+        // Fallback: Try using WebSocket constructor (may not work in Durable Objects)
+        // This is a limitation - Durable Objects may not support outbound WebSocket clients
+        throw new Error('WebSocket upgrade not supported. Durable Objects may not support outbound WebSocket connections.');
+      }
 
       this.geminiWs.addEventListener('open', () => {
         // Send setup message
         const setupMessage = {
           setup: {
-            model: 'gemini-2.5-flash-native-audio-preview-09-2025',
-            generation_config: {
-              response_modalities: ['AUDIO'],
-              input_audio_transcription: {},
-              output_audio_transcription: {}
-            }
+            model: 'models/gemini-2.5-flash-native-audio-preview-09-2025',
+            generationConfig: {
+              responseModalities: ['AUDIO']
+            },
+            inputAudioTranscription: {},
+            outputAudioTranscription: {}
           }
         };
         this.geminiWs.send(JSON.stringify(setupMessage));

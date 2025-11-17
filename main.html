@@ -5822,12 +5822,12 @@ When appropriate, use rich formatting:
                         // Send setup message
                         const setupMessage = {
                             setup: {
-                                model: 'gemini-2.5-flash-native-audio-preview-09-2025',
-                                generation_config: {
-                                    response_modalities: ['AUDIO'],
-                                    input_audio_transcription: {},
-                                    output_audio_transcription: {}
-                                }
+                                model: 'models/gemini-2.5-flash-native-audio-preview-09-2025',
+                                generationConfig: {
+                                    responseModalities: ['AUDIO']
+                                },
+                                inputAudioTranscription: {},
+                                outputAudioTranscription: {}
                             }
                         };
                         this.liveWs.send(JSON.stringify(setupMessage));
