@@ -8,7 +8,8 @@ export default {
     // CORS headers for the portfolio domain
     const allowedOrigins = [
       'https://thehubofgit.github.io',
-      'https://michael.brancazio'
+      'https://michael.brancazio',
+      'https://michaelbrancazio.pages.dev'
     ];
     
     const origin = request.headers.get('Origin');
