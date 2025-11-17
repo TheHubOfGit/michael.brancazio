@@ -1677,6 +1677,72 @@ body.dark-mode .card-scrollable-content {
             opacity: 0.6;
         }
 
+        /* Voice button styles */
+        .chat-voice {
+            width: 32px;
+            height: 32px;
+            border-radius: 16px;
+            background-color: rgba(55, 113, 200, 0.1);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--accent-blue);
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            flex-shrink: 0;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            outline: none;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+
+        .chat-voice:hover {
+            background-color: rgba(55, 113, 200, 0.2);
+            transform: scale(1.05);
+        }
+
+        .chat-voice.recording {
+            background-color: rgba(220, 53, 69, 0.2);
+            color: #dc3545;
+            animation: pulse-recording 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse-recording {
+            0%, 100% {
+                box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.4);
+            }
+            50% {
+                box-shadow: 0 0 0 8px rgba(220, 53, 69, 0);
+            }
+        }
+
+        .chat-voice:disabled {
+            background-color: rgba(128, 128, 128, 0.1);
+            color: var(--text-secondary);
+            cursor: not-allowed;
+            transform: none;
+            opacity: 0.6;
+        }
+
+        /* Voice status indicator */
+        .voice-status {
+            position: absolute;
+            bottom: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 11px;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            pointer-events: none;
+        }
+
+        .voice-status.active {
+            color: var(--accent-blue);
+        }
+
         .chat-response-popup {
             position: absolute;
             bottom: 80px;
@@ -2562,11 +2628,20 @@ body.dark-mode .card-scrollable-content {
                 Looking to hire Michael? Paste your job description and ask if he'd be good for the role!
             </span>
             <input type="text" class="chat-input" id="chat-input" placeholder="Ask about Michael's experience...">
+            <button class="chat-voice" id="chat-voice" title="Voice chat">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                    <line x1="12" y1="19" x2="12" y2="23"></line>
+                    <line x1="8" y1="23" x2="16" y2="23"></line>
+                </svg>
+            </button>
             <button class="chat-send" id="chat-send">
                 <svg viewBox="0 0 24 24" width="16" height="16">
                     <path d="M2 21l21-9L2 3v7l15 2-15 2v7z" fill="currentColor"/>
                 </svg>
             </button>
+            <div class="voice-status" id="voice-status"></div>
         </div>
         
         <div class="chat-response-popup" id="chat-response-popup">
@@ -5682,6 +5757,149 @@ When appropriate, use rich formatting:
                 estTimeElement.textContent = timeString + ' EST';
             }
         }
+    </script>
+
+    <!-- Voice Interaction Script -->
+    <script src="voice-interaction.js"></script>
+    <script>
+        // Voice interaction integration
+        document.addEventListener('DOMContentLoaded', () => {
+            const voiceButton = document.getElementById('chat-voice');
+            const voiceStatus = document.getElementById('voice-status');
+            
+            if (!voiceButton) return;
+
+            // Configuration
+            const VOICE_WORKER_URL = 'https://portfolio-voice-worker.michael-brancazio.workers.dev';
+            
+            let voiceChat = null;
+            let isInitialized = false;
+
+            // Initialize voice chat when button is first clicked
+            async function initializeVoiceChat() {
+                if (isInitialized) return true;
+
+                try {
+                    voiceStatus.textContent = 'Initializing...';
+                    voiceStatus.classList.add('active');
+
+                    voiceChat = new GeminiVoiceChat(VOICE_WORKER_URL);
+                    
+                    // Set up callbacks
+                    voiceChat.onConnected = () => {
+                        console.log('Voice chat connected');
+                        voiceStatus.textContent = 'Ready';
+                        setTimeout(() => {
+                            voiceStatus.textContent = '';
+                            voiceStatus.classList.remove('active');
+                        }, 2000);
+                    };
+
+                    voiceChat.onDisconnected = () => {
+                        console.log('Voice chat disconnected');
+                        voiceStatus.textContent = 'Disconnected';
+                        voiceButton.classList.remove('recording');
+                        setTimeout(() => {
+                            voiceStatus.textContent = '';
+                        }, 2000);
+                    };
+
+                    voiceChat.onError = (error) => {
+                        console.error('Voice chat error:', error);
+                        voiceStatus.textContent = 'Error: ' + error.message;
+                        voiceButton.classList.remove('recording');
+                        setTimeout(() => {
+                            voiceStatus.textContent = '';
+                        }, 3000);
+                    };
+
+                    voiceChat.onAudioResponse = (audioData) => {
+                        console.log('Received audio response');
+                        voiceStatus.textContent = 'Speaking...';
+                        voiceStatus.classList.add('active');
+                    };
+
+                    voiceChat.onTurnComplete = () => {
+                        console.log('Turn complete');
+                        voiceStatus.textContent = '';
+                        voiceStatus.classList.remove('active');
+                    };
+
+                    // Initialize
+                    const success = await voiceChat.initialize();
+                    if (!success) {
+                        throw new Error('Failed to initialize voice chat');
+                    }
+
+                    // Connect to server
+                    await voiceChat.connect();
+                    
+                    isInitialized = true;
+                    return true;
+
+                } catch (error) {
+                    console.error('Failed to initialize voice chat:', error);
+                    voiceStatus.textContent = 'Voice unavailable';
+                    setTimeout(() => {
+                        voiceStatus.textContent = '';
+                        voiceStatus.classList.remove('active');
+                    }, 3000);
+                    return false;
+                }
+            }
+
+            // Handle voice button click
+            voiceButton.addEventListener('click', async () => {
+                // Initialize on first use
+                if (!isInitialized) {
+                    const success = await initializeVoiceChat();
+                    if (!success) return;
+                }
+
+                // Toggle recording
+                if (voiceChat.isRecording) {
+                    // Stop recording
+                    voiceChat.stopRecording();
+                    voiceButton.classList.remove('recording');
+                    voiceStatus.textContent = 'Processing...';
+                    voiceStatus.classList.add('active');
+                } else {
+                    // Start recording
+                    try {
+                        await voiceChat.startRecording();
+                        voiceButton.classList.add('recording');
+                        voiceStatus.textContent = 'Listening...';
+                        voiceStatus.classList.add('active');
+
+                        // Track in analytics
+                        if (typeof gtag === 'function') {
+                            gtag('event', 'voice_chat_started', {
+                                'event_category': 'voice',
+                                'event_label': 'desktop'
+                            });
+                        }
+                    } catch (error) {
+                        console.error('Failed to start recording:', error);
+                        if (error.name === 'NotAllowedError') {
+                            voiceStatus.textContent = 'Microphone access denied';
+                        } else {
+                            voiceStatus.textContent = 'Failed to start recording';
+                        }
+                        setTimeout(() => {
+                            voiceStatus.textContent = '';
+                            voiceStatus.classList.remove('active');
+                        }, 3000);
+                    }
+                }
+            });
+
+            // Cleanup on page unload
+            window.addEventListener('beforeunload', () => {
+                if (voiceChat) {
+                    voiceChat.cleanup();
+                }
+            });
+        });
     </script>
 
 </body>
