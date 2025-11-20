@@ -857,10 +857,8 @@
             font-size: 14px;
             color: var(--text-secondary);
             width: 100%;
-            position: fixed;
-            bottom: 0;
+            position: relative;
             background-color: var(--bg-color);
-            z-index: 99999;
         }
 
         /* Role Progression Styles */
@@ -1036,9 +1034,6 @@
                 /* Ensure full width on mobile */
             }
 
-            .footer {
-                position: relative;
-            }
 
             #filter-box,
             .timeline-container {
@@ -1855,7 +1850,7 @@
             pointer-events: none;
             /* Disable interactions while hidden */
             /* Default positioning for desktop */
-            left: 50px;
+            left: 23px;
             bottom: 10vh;
         }
 
@@ -1863,7 +1858,7 @@
         @media (min-width: 769px) {
             .integrated-chatbot {
                 /* Position relative to timeline - use dynamic positioning */
-                left: 50px;
+                left: 23px;
                 top: auto;
                 bottom: 78px;
                 /* Optimized for 100% zoom in Chrome */
@@ -1874,7 +1869,7 @@
             /* When zoomed out, ensure chatbot scales appropriately */
             @media (max-width: 1200px) {
                 .integrated-chatbot {
-                    left: 30px;
+                    left: 3px;
                     bottom: 78px;
                     /* Keep consistent positioning */
                 }
@@ -1883,7 +1878,7 @@
             /* For very wide screens */
             @media (min-width: 1400px) {
                 .integrated-chatbot {
-                    left: 80px;
+                    left: 53px;
                     bottom: 78px;
                     /* Keep consistent positioning */
                 }
@@ -1917,8 +1912,10 @@
             .chat-input-container {
                 /* Auto-size to content with reasonable bounds */
                 width: fit-content;
-                min-width: 327px;
+                min-width: 380px;
                 max-width: 500px;
+                padding-right: 16px;
+                /* Add some padding for the extra button */
             }
         }
 
@@ -2028,6 +2025,50 @@
             cursor: not-allowed;
             transform: none;
             opacity: 0.6;
+        }
+
+        .voice-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 16px;
+            background-color: rgba(55, 113, 200, 0.1);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--accent-blue);
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+            margin-right: 4px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            outline: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .voice-btn:hover {
+            background-color: rgba(55, 113, 200, 0.2);
+            transform: scale(1.05);
+        }
+
+        .voice-btn.active {
+            background-color: rgba(255, 59, 48, 0.1);
+            color: #ff3b30;
+            animation: pulse-red 1.5s infinite;
+        }
+
+        @keyframes pulse-red {
+            0% {
+                box-shadow: 0 0 0 0 rgba(255, 59, 48, 0.4);
+            }
+
+            70% {
+                box-shadow: 0 0 0 6px rgba(255, 59, 48, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(255, 59, 48, 0);
+            }
         }
 
         .chat-response-popup {
@@ -2386,35 +2427,88 @@
             text-align: center;
         }
 
-        .mobile-chat-input-area {
-            padding: 16px 20px;
+        .chatbot-input-area {
+            padding: 16px;
             border-top: 1px solid var(--border-color);
+            display: flex;
+            gap: 8px;
+            align-items: flex-end;
+            background-color: var(--card-bg);
+        }
+
+        .chatbot-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        #chatbot-input {
+            flex: 1;
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 10px 16px;
+            font-family: var(--font-primary);
+            font-size: 14px;
+            resize: none;
+            background-color: transparent;
+            color: var(--text-color);
+            outline: none;
+            transition: border-color 0.2s ease;
+            max-height: 100px;
+            min-height: 42px;
+        }
+
+        #chatbot-input:focus {
+            border-color: var(--accent-blue);
+        }
+
+        #chatbot-send,
+        #mobile-voice-toggle {
+            background-color: var(--accent-blue);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.2s ease, background-color 0.2s ease;
             flex-shrink: 0;
         }
 
-        .mobile-chat-input-container {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            background-color: var(--card-bg);
-            border-radius: 24px;
-            padding: 8px 16px;
-            border: 1px solid var(--border-color);
+        #chatbot-send:hover,
+        #mobile-voice-toggle:hover {
+            transform: scale(1.05);
+            background-color: #2c5aa0;
         }
 
-        .mobile-chat-input {
-            flex: 1;
-            padding: 12px 0;
-            border: none;
-            outline: none;
-            background: transparent;
-            font-size: 16px;
-            font-family: var(--font-primary);
-            color: var(--text-color);
+        #chatbot-send:disabled,
+        #mobile-voice-toggle:disabled {
+            background-color: var(--text-secondary);
+            cursor: not-allowed;
+            opacity: 0.5;
         }
 
-        .mobile-chat-input::placeholder {
-            color: var(--text-secondary);
+        #mobile-voice-toggle.active {
+            background-color: #ef4444;
+            /* Red for active recording */
+            animation: pulse-red 1.5s infinite;
+        }
+
+        @keyframes pulse-red {
+            0% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+            }
+
+            70% {
+                box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+            }
         }
 
         .mobile-chat-send {
@@ -2689,7 +2783,6 @@
                 text-align: center;
                 /* Ensure it's positioned correctly relative to the filter box */
                 transform: translateX(calc(-1 * (100% - (80% - 24px)) / 2));
-                /* Center relative to filter box width */
                 /* This centering might need adjustment depending on exact layout */
             }
 
@@ -2975,13 +3068,23 @@
                 </div>
             </div>
 
-            <div class="mobile-chat-input-area">
-                <div class="mobile-chat-input-container">
-                    <input type="text" class="mobile-chat-input" id="mobile-chat-input"
-                        placeholder="Ask about Michael's experience...">
-                    <button class="mobile-chat-send" id="mobile-chat-send">
-                        <svg viewBox="0 0 24 24" width="20" height="20">
-                            <path d="M2 21l21-9L2 3v7l15 2-15 2v7z" fill="currentColor" />
+            <div class="chatbot-input-area">
+                <textarea id="chatbot-input" placeholder="Ask me anything..." rows="1"></textarea>
+                <div class="chatbot-controls">
+                    <button id="mobile-voice-toggle" class="voice-btn" aria-label="Start Voice Chat">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                            <line x1="12" y1="19" x2="12" y2="23"></line>
+                            <line x1="8" y1="23" x2="16" y2="23"></line>
+                        </svg>
+                    </button>
+                    <button id="chatbot-send" aria-label="Send Message">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
                         </svg>
                     </button>
                 </div>
@@ -3004,6 +3107,15 @@
                 Looking to hire Michael? Paste your job description and ask if he'd be good for the role!
             </span>
             <input type="text" class="chat-input" id="chat-input" placeholder="Ask about Michael's experience...">
+            <button id="desktop-voice-toggle" class="voice-btn" aria-label="Start Voice Chat">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                    <line x1="12" y1="19" x2="12" y2="23"></line>
+                    <line x1="8" y1="23" x2="16" y2="23"></line>
+                </svg>
+            </button>
             <button class="chat-send" id="chat-send">
                 <svg viewBox="0 0 24 24" width="16" height="16">
                     <path d="M2 21l21-9L2 3v7l15 2-15 2v7z" fill="currentColor" />
@@ -3426,11 +3538,8 @@
                             <img class="logo-badge" src="images/Beezwax.jpeg" alt="Beezwax Logo">
                             <div class="card-scrollable-content">
                                 <div class="experience-card">
-                                    <div class="experience-header">
-                                        <div class="experience-title">Analytics Consultant</div>
-                                        <div class="experience-date">Nov 2022 -<br>Jun 2023</div>
-                                    </div>
-                                    <div class="experience-company">Beezwax Datatools Inc.</div>
+                                    <div class="experience-title">Analytics Consultant</div>
+                                    <div class="experience-date">Nov 2022 -<br>Jun 2023</div>
                                     <div class="experience-description">
                                         <ul>
                                             <li>Work closely with clients to create tailored analytic solutions to
@@ -3449,11 +3558,8 @@
                             <img class="logo-badge" src="images/Temple.jpeg" alt="Temple University Logo">
                             <div class="card-scrollable-content">
                                 <div class="experience-card">
-                                    <div class="experience-header">
-                                        <div class="experience-title">Tableau Developer</div>
-                                        <div class="experience-date">Jun 2022 -<br>Dec 2022</div>
-                                    </div>
-                                    <div class="experience-company">Temple University (Contract)</div>
+                                    <div class="experience-title">Tableau Developer</div>
+                                    <div class="experience-date">Jun 2022 -<br>Dec 2022</div>
                                     <div class="experience-description">
                                         <ul>
                                             <li>Construct university dashboards for university president and provosts
@@ -3473,10 +3579,8 @@
                             <img class="logo-badge" src="images/maginative.jpeg" alt="Maginative Logo">
                             <div class="card-scrollable-content">
                                 <div class="experience-card">
-                                    <div class="experience-header">
-                                        <div class="experience-title">Consultant</div>
-                                        <div class="experience-date">Mar 2021 -<br>Present</div>
-                                    </div>
+                                    <div class="experience-title">Consultant</div>
+                                    <div class="experience-date">Mar 2021 -<br>Present</div>
                                     <div class="experience-company">maginative, Boston MA</div>
                                     <div class="experience-description">
                                         <ul>
@@ -5531,6 +5635,41 @@ When appropriate, use rich formatting:
         // Gemini API calls are now handled securely through Cloudflare Worker
         const CHATBOT_WORKER_URL = 'https://portfolio-chatbot-worker.michael-brancazio.workers.dev';
 
+        // Audio Context and WebSocket for Gemini Live
+        let ws = null;
+        let audioQueue = [];
+        let isPlaying = false;
+        let nextPlayTime = 0;
+
+        // Audio Worklet Processor Code (inlined)
+        const audioWorkletCode = `
+        class AudioRecorderProcessor extends AudioWorkletProcessor {
+            constructor() {
+                super();
+                this.bufferSize = 2048; // Send chunks of ~128ms at 16kHz
+                this.buffer = new Float32Array(this.bufferSize);
+                this.bufferIndex = 0;
+            }
+
+            process(inputs, outputs, parameters) {
+                const input = inputs[0];
+                if (input && input.length > 0) {
+                    const inputChannel = input[0];
+                    for (let i = 0; i < inputChannel.length; i++) {
+                        this.buffer[this.bufferIndex++] = inputChannel[i];
+                        if (this.bufferIndex >= this.bufferSize) {
+                            this.port.postMessage(this.buffer);
+                            this.buffer = new Float32Array(this.bufferSize);
+                            this.bufferIndex = 0;
+                        }
+                    }
+                }
+                return true;
+            }
+        }
+        registerProcessor('audio-recorder-processor', AudioRecorderProcessor);
+        `;
+
         // Integrated Chatbot functionality
         class MichaelsChatbot {
             constructor() {
@@ -5538,6 +5677,10 @@ When appropriate, use rich formatting:
                 this.conversationHistory = [];
                 this.hideTimeout = null;
                 this.isMobile = window.innerWidth <= 768;
+                this.isVoiceActive = false; // Initialize as class property
+                this.audioContext = null;
+                this.audioWorkletNode = null;
+                this.mediaStream = null;
                 this.initializeElements();
                 // Show immediately without testing connection
                 this.showChatbotImmediately();
@@ -5558,8 +5701,8 @@ When appropriate, use rich formatting:
                 // Mobile elements
                 this.mobileModal = document.getElementById('mobile-chatbot-modal');
                 this.mobileFab = document.getElementById('chatbot-fab');
-                this.mobileInput = document.getElementById('mobile-chat-input');
-                this.mobileSendButton = document.getElementById('mobile-chat-send');
+                this.mobileInput = document.getElementById('chatbot-input'); // Corrected ID for mobile input
+                this.mobileSendButton = document.getElementById('chatbot-send'); // Corrected ID for mobile send button
                 this.mobileResponseContent = document.getElementById('mobile-response-content');
                 this.mobileTypingIndicator = document.getElementById('mobile-typing-indicator');
                 this.mobileCloseButton = document.querySelector('.mobile-chat-close');
@@ -5571,6 +5714,238 @@ When appropriate, use rich formatting:
 
                 if (this.container) {
                     this.setupEventListeners();
+                    this.setupVoiceInteraction();
+                }
+            }
+
+            setupVoiceInteraction() {
+                this.voiceBtn = document.getElementById('desktop-voice-toggle');
+                this.mobileVoiceBtn = document.getElementById('mobile-voice-toggle');
+
+                if (this.voiceBtn) {
+                    this.voiceBtn.addEventListener('click', (e) => {
+                        e.stopPropagation(); // Prevent closing
+                        this.toggleVoice();
+                    });
+                }
+
+                if (this.mobileVoiceBtn) {
+                    this.mobileVoiceBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.toggleVoice();
+                    });
+                }
+            }
+
+            async toggleVoice() {
+                if (this.isVoiceActive) {
+                    this.stopVoice();
+                } else {
+                    await this.startVoice();
+                }
+            }
+
+            async startVoice() {
+                try {
+                    if (this.voiceBtn) this.voiceBtn.classList.add('active');
+                    if (this.mobileVoiceBtn) this.mobileVoiceBtn.classList.add('active');
+                    this.isVoiceActive = true;
+
+                    // Show a system message
+                    this.displayResponse("🎤 Connecting to Gemini Live...");
+                    this.showPopup();
+
+                    // 1. Initialize Audio Context
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+
+                    // 2. Setup Audio Worklet
+                    const blob = new Blob([audioWorkletCode], { type: 'application/javascript' });
+                    const workletUrl = URL.createObjectURL(blob);
+                    await this.audioContext.audioWorklet.addModule(workletUrl);
+
+                    // 3. Get Microphone Stream
+                    this.mediaStream = await navigator.mediaDevices.getUserMedia({
+                        audio: {
+                            sampleRate: 16000,
+                            channelCount: 1,
+                            echoCancellation: true,
+                            noiseSuppression: true
+                        }
+                    });
+
+                    // 4. Connect WebSocket
+                    const wsUrl = CHATBOT_WORKER_URL.replace('https://', 'wss://');
+                    ws = new WebSocket(wsUrl);
+
+                    ws.onopen = () => {
+                        console.log('WebSocket connected');
+                        this.displayResponse("🎤 Voice connected! Speak now.");
+
+                        // Send setup message
+                        const context = extractPageContext();
+                        const setupMessage = {
+                            setup: {
+                                model: "models/gemini-2.5-flash-native-audio-preview-09-2025",
+                                systemInstruction: {
+                                    parts: [{ text: context + "\n\nIMPORTANT: Please speak at a faster pace, approximately 1.5x speed." }]
+                                },
+                                generationConfig: {
+                                    responseModalities: ["AUDIO"],
+                                    speechConfig: {
+                                        voiceConfig: {
+                                            prebuiltVoiceConfig: {
+                                                voiceName: "Enceladus"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        };
+                        ws.send(JSON.stringify(setupMessage));
+
+                        // Start recording
+                        this.startRecording();
+                    };
+
+                    ws.onmessage = async (event) => {
+                        let msg = event.data;
+                        if (msg instanceof Blob) {
+                            msg = await msg.text();
+                        }
+
+                        try {
+                            const data = JSON.parse(msg);
+                            if (data.serverContent && data.serverContent.modelTurn && data.serverContent.modelTurn.parts) {
+                                for (const part of data.serverContent.modelTurn.parts) {
+                                    if (part.inlineData && part.inlineData.mimeType.startsWith('audio/')) {
+                                        // Decode and play audio
+                                        const audioData = atob(part.inlineData.data);
+                                        const arrayBuffer = new ArrayBuffer(audioData.length);
+                                        const view = new Uint8Array(arrayBuffer);
+                                        for (let i = 0; i < audioData.length; i++) {
+                                            view[i] = audioData.charCodeAt(i);
+                                        }
+                                        this.queueAudio(view.buffer);
+                                    }
+                                }
+                            }
+                        } catch (e) {
+                            console.error("Error parsing WebSocket message:", e);
+                        }
+                    };
+
+                    ws.onclose = (event) => {
+                        console.log(`WebSocket closed: ${event.code} ${event.reason}`);
+                        if (this.isVoiceActive) this.stopVoice();
+                    };
+
+                    ws.onerror = (error) => {
+                        console.error('WebSocket error:', error);
+                        this.displayResponse("❌ Voice connection error.");
+                        this.stopVoice();
+                    };
+
+                } catch (error) {
+                    console.error('Error starting voice:', error);
+                    this.displayResponse("❌ Could not start voice: " + error.message);
+                    this.stopVoice();
+                }
+            }
+
+            startRecording() {
+                const source = this.audioContext.createMediaStreamSource(this.mediaStream);
+                this.audioWorkletNode = new AudioWorkletNode(this.audioContext, 'audio-recorder-processor');
+
+                this.audioWorkletNode.port.onmessage = (event) => {
+                    if (ws && ws.readyState === WebSocket.OPEN) {
+                        const float32Array = event.data;
+                        const int16Array = new Int16Array(float32Array.length);
+                        for (let i = 0; i < float32Array.length; i++) {
+                            let s = Math.max(-1, Math.min(1, float32Array[i]));
+                            int16Array[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+                        }
+
+                        const base64Audio = btoa(String.fromCharCode(...new Uint8Array(int16Array.buffer)));
+
+                        ws.send(JSON.stringify({
+                            realtimeInput: {
+                                mediaChunks: [{
+                                    mimeType: "audio/pcm;rate=16000",
+                                    data: base64Audio
+                                }]
+                            }
+                        }));
+                    }
+                };
+
+                source.connect(this.audioWorkletNode);
+                // Do not connect to destination to avoid feedback
+            }
+
+            stopVoice() {
+                this.isVoiceActive = false;
+                if (this.voiceBtn) this.voiceBtn.classList.remove('active');
+                if (this.mobileVoiceBtn) this.mobileVoiceBtn.classList.remove('active');
+
+                if (ws) {
+                    ws.close();
+                    ws = null;
+                }
+
+                if (this.mediaStream) {
+                    this.mediaStream.getTracks().forEach(track => track.stop());
+                    this.mediaStream = null;
+                }
+
+                if (this.audioWorkletNode) {
+                    this.audioWorkletNode.disconnect();
+                    this.audioWorkletNode = null;
+                }
+
+                if (this.audioContext) {
+                    this.audioContext.close();
+                    this.audioContext = null;
+                }
+
+                this.displayResponse("Voice chat ended.");
+            }
+
+            async queueAudio(arrayBuffer) {
+                // Convert raw PCM to AudioBuffer (24kHz 16-bit PCM)
+                const int16Array = new Int16Array(arrayBuffer);
+                const float32Array = new Float32Array(int16Array.length);
+                for (let i = 0; i < int16Array.length; i++) {
+                    float32Array[i] = int16Array[i] / 32768.0;
+                }
+
+                if (this.audioContext) {
+                    const audioBuffer = this.audioContext.createBuffer(1, float32Array.length, 24000);
+                    audioBuffer.getChannelData(0).set(float32Array);
+
+                    audioQueue.push(audioBuffer);
+                    this.playQueue();
+                }
+            }
+
+            playQueue() {
+                if (isPlaying || audioQueue.length === 0) return;
+
+                isPlaying = true;
+                const buffer = audioQueue.shift();
+
+                if (this.audioContext) {
+                    const source = this.audioContext.createBufferSource();
+                    source.buffer = buffer;
+                    source.connect(this.audioContext.destination);
+
+                    source.onended = () => {
+                        isPlaying = false;
+                        this.playQueue();
+                    };
+
+                    source.start(0);
+                } else {
+                    isPlaying = false;
                 }
             }
 
