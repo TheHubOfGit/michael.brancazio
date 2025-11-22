@@ -7127,11 +7127,19 @@ When appropriate, use rich formatting:
         document.addEventListener('DOMContentLoaded', () => {
             const toggle = document.getElementById('iqvia-toggle');
             const body = document.body;
-            let showIqvia = true;
+
+            // Load state from localStorage, default to true if not set
+            const savedState = localStorage.getItem('showIqvia');
+            let showIqvia = savedState === null ? true : savedState === 'true';
+
+            // Set initial toggle state
+            toggle.checked = showIqvia;
 
             // Function to update state
             function updateIqviaState() {
                 showIqvia = toggle.checked;
+                localStorage.setItem('showIqvia', showIqvia); // Save to localStorage
+
                 if (showIqvia) {
                     body.classList.remove('iqvia-hidden');
                 } else {
