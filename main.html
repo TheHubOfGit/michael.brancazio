@@ -4903,7 +4903,7 @@
                 velocityIterations: 12   // More velocity iterations for smoother movement
             });
             const world = engine.world;
-            engine.gravity.y = 15.0; // Very heavy gravity to limit movement
+            engine.gravity.y = 12.0; // Reduced gravity for more natural swing
 
             // Get container dimensions
             let containerWidth = chainContainer.offsetWidth;
@@ -4934,8 +4934,8 @@
             const segmentRadius = isDesktop ? 7 : 7;  // 9 * 0.8 = 7.2 → 7px
             const numSegments = isDesktop ? 5 : 5;    // 6 * 0.8 = 4.8 → 5 segments  
             const segmentSpacing = isDesktop ? 5 : 5; // 6 * 0.8 = 4.8 → 5px
-            const stiffness = 0.7;
-            const damping = 0.2; // Increased damping
+            const stiffness = 0.9;
+            const damping = 0.1; // Reduced damping for less energy loss
             let chainStartX = containerWidth / 2;
             const chainStartY = -10; // Start slightly above the container
 
@@ -5001,7 +5001,7 @@
                 chain = Composites.stack(chainStartX, chainStartY, currentNumSegments, 1, segmentSpacing, segmentSpacing, function (x, y) {
                     return Bodies.circle(x, y, currentSegmentRadius, {
                         collisionFilter: { group: group },
-                        frictionAir: 0.22, // Higher air friction for smoother, more controlled movement
+                        frictionAir: 0.05, // Reduced air friction for more momentum
                         slop: 0.05, // Reduced slop for more precise physics
                         render: {
                             fillStyle: segmentFill,
@@ -5474,18 +5474,19 @@
                 const smoothedGamma = weightedSum / totalWeight;
 
                 // Additional exponential smoothing on top
-                lastGamma = lastGamma * 0.85 + smoothedGamma * 0.15;
+                lastGamma = lastGamma * 0.6 + smoothedGamma * 0.4;
 
                 // Convert gamma to a force (-90 to 90 degrees -> -1 to 1 force)
                 const normalizedForce = Math.max(-1, Math.min(1, lastGamma / 120)); // Use final smoothed value
-                const forceStrength = normalizedForce * 0.004; // Even weaker force for very subtle movement
+                const forceStrength = normalizedForce * 0.02; // Stronger force for visible tilt effect
 
                 // Apply horizontal force to all chain segments
                 chain.bodies.forEach((body, index) => {
                     // Apply much less force to segments closer to the anchor (exponential distribution)
-                    // First segment gets almost no force, last segment gets full force
-                    const segmentRatio = (index + 1) / chain.bodies.length; // 0.2, 0.4, 0.6, 0.8, 1.0 for 5 segments
-                    const segmentMultiplier = Math.pow(segmentRatio, 2.5); // Square the ratio for exponential effect: 0.01, 0.06, 0.22, 0.51, 1.0
+                    // Apply force to middle and end segments for "wind-blown" look
+                    // Parabolic distribution peaking at the end
+                    const segmentRatio = (index + 1) / chain.bodies.length;
+                    const segmentMultiplier = Math.pow(segmentRatio, 1.5); // Less aggressive curve so middle segments move too
                     const segmentForce = forceStrength * segmentMultiplier;
 
                     Matter.Body.applyForce(body, body.position, {
