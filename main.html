@@ -5912,6 +5912,9 @@ When appropriate, use rich formatting:
                 this.audioContext = null;
                 this.audioWorkletNode = null;
                 this.mediaStream = null;
+                this.currentSource = null; // Track currently playing audio source
+                this.audioQueue = []; // Instance variable for audio queue
+                this.isPlaying = false; // Instance variable for playing state
                 this.initializeElements();
                 // Show immediately without testing connection
                 this.showChatbotImmediately();
@@ -6090,6 +6093,25 @@ When appropriate, use rich formatting:
                 this.audioWorkletNode.port.onmessage = (event) => {
                     if (ws && ws.readyState === WebSocket.OPEN) {
                         const float32Array = event.data;
+
+                        // Calculate volume (RMS) for interruption
+                        let sumSquares = 0;
+                        for (let i = 0; i < float32Array.length; i++) {
+                            sumSquares += float32Array[i] * float32Array[i];
+                        }
+                        const rms = Math.sqrt(sumSquares / float32Array.length);
+
+                        // Threshold for interruption (adjust as needed)
+                        const VOICE_THRESHOLD = 0.02;
+
+                        if (rms > VOICE_THRESHOLD && this.isPlaying) {
+                            console.log("Interruption detected! Stopping audio.");
+                            this.stopAudioPlayback();
+
+                            // Optional: Send a signal to model to stop generating (if supported/needed)
+                            // For now, just stopping playback and sending new audio is enough
+                        }
+
                         const int16Array = new Int16Array(float32Array.length);
                         for (let i = 0; i < float32Array.length; i++) {
                             let s = Math.max(-1, Math.min(1, float32Array[i]));
@@ -6141,6 +6163,19 @@ When appropriate, use rich formatting:
                 this.displayResponse("Voice chat ended.");
             }
 
+            stopAudioPlayback() {
+                if (this.currentSource) {
+                    try {
+                        this.currentSource.stop();
+                    } catch (e) {
+                        // Ignore errors if already stopped
+                    }
+                    this.currentSource = null;
+                }
+                this.audioQueue = []; // Clear the queue
+                this.isPlaying = false;
+            }
+
             async queueAudio(arrayBuffer) {
                 // Convert raw PCM to AudioBuffer (24kHz 16-bit PCM)
                 const int16Array = new Int16Array(arrayBuffer);
@@ -6153,30 +6188,32 @@ When appropriate, use rich formatting:
                     const audioBuffer = this.audioContext.createBuffer(1, float32Array.length, 24000);
                     audioBuffer.getChannelData(0).set(float32Array);
 
-                    audioQueue.push(audioBuffer);
+                    this.audioQueue.push(audioBuffer);
                     this.playQueue();
                 }
             }
 
             playQueue() {
-                if (isPlaying || audioQueue.length === 0) return;
+                if (this.isPlaying || this.audioQueue.length === 0) return;
 
-                isPlaying = true;
-                const buffer = audioQueue.shift();
+                this.isPlaying = true;
+                const buffer = this.audioQueue.shift();
 
                 if (this.audioContext) {
                     const source = this.audioContext.createBufferSource();
                     source.buffer = buffer;
                     source.connect(this.audioContext.destination);
+                    this.currentSource = source; // Track the source
 
                     source.onended = () => {
-                        isPlaying = false;
+                        this.currentSource = null;
+                        this.isPlaying = false;
                         this.playQueue();
                     };
 
                     source.start(0);
                 } else {
-                    isPlaying = false;
+                    this.isPlaying = false;
                 }
             }
 

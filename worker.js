@@ -9,14 +9,16 @@ export default {
     const allowedOrigins = [
       'https://thehubofgit.github.io',
       'https://michael.brancazio',
-      'https://michaelbrancazio.pages.dev'
+      'https://michaelbrancazio.pages.dev',
+      'http://localhost:8080', // For local testing
+      'http://127.0.0.1:8080'
     ];
-    
+
     const origin = request.headers.get('Origin');
     const corsHeaders = {
       'Access-Control-Allow-Origin': allowedOrigins.includes(origin) ? origin : allowedOrigins[0],
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS, GET',
+      'Access-Control-Allow-Headers': 'Content-Type, Upgrade, Connection',
     };
 
     // Handle preflight requests
@@ -24,7 +26,13 @@ export default {
       return new Response(null, { headers: corsHeaders });
     }
 
-    // Only allow POST requests
+    // Handle WebSocket Upgrade
+    const upgradeHeader = request.headers.get('Upgrade');
+    if (upgradeHeader === 'websocket') {
+      return await handleWebSocket(request, env);
+    }
+
+    // Only allow POST requests for the rest
     if (request.method !== 'POST') {
       return new Response('Method not allowed', { status: 405 });
     }
@@ -78,7 +86,7 @@ export default {
         console.error('Primary model (gemini-2.5-flash) failed, trying fallback (gemini-2.5-flash-lite)...');
         const errorData = await geminiResponse.text();
         console.error('Primary model error:', errorData);
-        
+
         // Try fallback model
         geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${GEMINI_API_KEY}`;
         geminiResponse = await fetch(geminiUrl, {
@@ -123,3 +131,85 @@ export default {
     }
   }
 };
+
+async function handleWebSocket(request, env) {
+  const webSocketPair = new WebSocketPair();
+  const [client, server] = Object.values(webSocketPair);
+
+  server.accept();
+
+  const GEMINI_API_KEY = env.GEMINI_API_KEY;
+  if (!GEMINI_API_KEY) {
+    server.close(1011, "API Key missing");
+    return new Response(null, { status: 101, webSocket: client });
+  }
+
+  // Connect to Gemini Live API
+  // Using the specific model requested: gemini-2.5-flash-native-audio-preview-09-2025
+  const geminiUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key=${GEMINI_API_KEY}`;
+
+  try {
+    // Establish connection to Gemini
+    // Note: We use the WebSocket constructor which is available in Cloudflare Workers
+    const geminiWs = new WebSocket(geminiUrl);
+    let messageBuffer = [];
+    let isGeminiOpen = false;
+
+    geminiWs.addEventListener('open', () => {
+      console.log('Connected to Gemini Live API');
+      isGeminiOpen = true;
+      // Flush buffer
+      while (messageBuffer.length > 0) {
+        const msg = messageBuffer.shift();
+        geminiWs.send(msg);
+      }
+    });
+
+    geminiWs.addEventListener('message', (event) => {
+      if (server.readyState === WebSocket.OPEN) {
+        server.send(event.data);
+      }
+    });
+
+    geminiWs.addEventListener('close', (event) => {
+      console.log(`Gemini closed connection: ${event.code} ${event.reason}`);
+      if (server.readyState === WebSocket.OPEN) {
+        server.close(event.code, event.reason);
+      }
+    });
+
+    geminiWs.addEventListener('error', (error) => {
+      console.error('Gemini WebSocket error:', error);
+      if (server.readyState === WebSocket.OPEN) {
+        server.close(1011, 'Gemini connection error');
+      }
+    });
+
+    // Forward messages from Client to Gemini
+    server.addEventListener('message', (event) => {
+      if (isGeminiOpen && geminiWs.readyState === WebSocket.OPEN) {
+        geminiWs.send(event.data);
+      } else {
+        // Buffer message if Gemini is not ready yet
+        console.log('Buffering message for Gemini...');
+        messageBuffer.push(event.data);
+      }
+    });
+
+    server.addEventListener('close', (event) => {
+      console.log(`Client closed connection: ${event.code} ${event.reason}`);
+      if (geminiWs.readyState === WebSocket.OPEN) {
+        geminiWs.close(event.code, event.reason);
+      }
+    });
+
+    return new Response(null, {
+      status: 101,
+      webSocket: client,
+    });
+
+  } catch (err) {
+    console.error('Failed to establish WebSocket to Gemini:', err);
+    return new Response('WebSocket Proxy Error', { status: 502 });
+  }
+}
