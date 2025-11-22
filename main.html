@@ -7128,20 +7128,22 @@ When appropriate, use rich formatting:
             const toggle = document.getElementById('iqvia-toggle');
             const body = document.body;
 
+            // Load state from localStorage, default to true if not set
+            const savedState = localStorage.getItem('showIqvia');
+            let showIqvia = savedState === null ? true : savedState === 'true';
+
             // Check for URL parameter override
             const urlParams = new URLSearchParams(window.location.search);
-            const urlState = urlParams.get('iqvia');
+            const showParam = urlParams.get('show');
 
-            let showIqvia;
-
-            if (urlState !== null) {
-                // URL parameter present, use it and save to localStorage
-                showIqvia = urlState === 'true';
+            if (showParam === 'true') {
+                // "show=true" -> HIDE IQVIA (Obfuscated)
+                showIqvia = false;
                 localStorage.setItem('showIqvia', showIqvia);
-            } else {
-                // Load state from localStorage, default to true if not set
-                const savedState = localStorage.getItem('showIqvia');
-                showIqvia = savedState === null ? true : savedState === 'true';
+            } else if (showParam === 'lol') {
+                // "show=lol" -> SHOW IQVIA
+                showIqvia = true;
+                localStorage.setItem('showIqvia', showIqvia);
             }
 
             // Set initial toggle state
