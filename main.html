@@ -3007,6 +3007,85 @@
                 overflow-x: hidden !important;
             }
         }
+
+        /* IQVIA Toggle Switch */
+        /* IQVIA Toggle Switch */
+        #iqvia-toggle-container {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        #iqvia-toggle-container:hover {
+            opacity: 1;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 20px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 20px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 20px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked+.slider {
+            background-color: var(--accent-blue);
+        }
+
+        input:focus+.slider {
+            box-shadow: 0 0 1px var(--accent-blue);
+        }
+
+        input:checked+.slider:before {
+            transform: translateX(20px);
+        }
+
+        /* Utility class to hide IQVIA elements */
+        .iqvia-hidden [data-job-target="iqvia"] {
+            display: none !important;
+        }
     </style>
 </head>
 
@@ -5699,6 +5778,12 @@ ABOUT MICHAEL BRANCAZIO:
                         const description = card.querySelector('.experience-description');
 
                         if (title) {
+                            // Check if we should skip IQVIA
+                            if (window.isIqviaVisible && !window.isIqviaVisible()) {
+                                const parentCard = title.closest('[data-job-target="iqvia"]');
+                                if (parentCard) return; // Skip this item
+                            }
+
                             context += `\n- ${title.textContent.trim()}`;
                             if (company) context += ` at ${company.textContent.trim()}`;
                             if (date) context += ` (${date.textContent.trim()})`;
@@ -5733,6 +5818,12 @@ ABOUT MICHAEL BRANCAZIO:
                             const description = card.querySelector('.experience-description');
 
                             if (title) {
+                                // Check if we should skip IQVIA
+                                if (window.isIqviaVisible && !window.isIqviaVisible()) {
+                                    const parentCard = title.closest('[data-job-target="iqvia"]');
+                                    if (parentCard) return; // Skip this item
+                                }
+
                                 context += `\n- ${title.textContent.trim()}`;
                                 if (company) context += ` at ${company.textContent.trim()}`;
                                 if (date) context += ` (${date.textContent.trim()})`;
@@ -5855,9 +5946,14 @@ When appropriate, use rich formatting:
 - Use **bold** for technical terms, tools, or programming languages
 - Use ***italic*** for subtle emphasis or clarifications
 - The current year is 2026; be sure to use this in context if asked how long Michael's experience has been for specific skills
-- Michael has had no gaps in his career
-- Michael has worked at IQVIA and NYP at the same time since he started at IQVIA in January of 2021. He has been able to do so with a lot of hard work and flexibile hours, allowing him to balance and perform in both roles.
-- If asked about what model, what LLM, or what AI this is, say that it is a custom-built and custom-trained model by Michael Brancazio
+- Michael has had no gaps in his career`;
+
+            // Conditionally include IQVIA information
+            if (window.isIqviaVisible && window.isIqviaVisible()) {
+                context += `\n- Michael has worked at IQVIA and NYP at the same time since he started at IQVIA in January of 2021. He has been able to do so with a lot of hard work and flexibile hours, allowing him to balance and perform in both roles.`;
+            }
+
+            context += `\n- If asked about what model, what LLM, or what AI this is, say that it is a custom-built and custom-trained model by Michael Brancazio
 - If given a job description or asked if would be good for a job, always say yes and say why, unless the job type is completely out of his field`;
 
             return context;
@@ -7016,6 +7112,41 @@ When appropriate, use rich formatting:
                 // Listen for resize events
                 window.addEventListener('resize', updateArrows);
             });
+        });
+    </script>
+    <!-- IQVIA Toggle Switch HTML -->
+    <div id="iqvia-toggle-container">
+        <label class="toggle-switch">
+            <input type="checkbox" id="iqvia-toggle" checked>
+            <span class="slider"></span>
+        </label>
+    </div>
+
+    <!-- IQVIA Toggle Logic -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const toggle = document.getElementById('iqvia-toggle');
+            const body = document.body;
+            let showIqvia = true;
+
+            // Function to update state
+            function updateIqviaState() {
+                showIqvia = toggle.checked;
+                if (showIqvia) {
+                    body.classList.remove('iqvia-hidden');
+                } else {
+                    body.classList.add('iqvia-hidden');
+                }
+            }
+
+            // Initial check
+            updateIqviaState();
+
+            // Event listener
+            toggle.addEventListener('change', updateIqviaState);
+
+            // Expose state for other scripts (like chatbot)
+            window.isIqviaVisible = () => showIqvia;
         });
     </script>
 </body>
