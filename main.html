@@ -5459,7 +5459,7 @@
 
                 // Advanced smoothing using rolling average
                 smoothingBuffer.push(gamma);
-                if (smoothingBuffer.length > 8) { // Keep last 8 readings for very smooth movement
+                if (smoothingBuffer.length > 20) { // Increased buffer size for smoother average
                     smoothingBuffer.shift();
                 }
 
@@ -5473,8 +5473,13 @@
                 }
                 const smoothedGamma = weightedSum / totalWeight;
 
-                // Additional exponential smoothing on top
-                lastGamma = lastGamma * 0.6 + smoothedGamma * 0.4;
+                // Deadzone to prevent micro-jitter
+                if (Math.abs(smoothedGamma) < 3) {
+                    lastGamma = lastGamma * 0.95; // Decay to zero slowly
+                } else {
+                    // Strong exponential smoothing
+                    lastGamma = lastGamma * 0.95 + smoothedGamma * 0.05;
+                }
 
                 // Convert gamma to a force (-90 to 90 degrees -> -1 to 1 force)
                 const normalizedForce = Math.max(-1, Math.min(1, lastGamma / 120)); // Use final smoothed value
