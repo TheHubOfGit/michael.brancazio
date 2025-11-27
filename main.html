@@ -4465,6 +4465,10 @@
     <!-- Image Swap JavaScript -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // Preload the shocked image
+            const shockedImage = new Image();
+            shockedImage.src = 'images/shocked.png';
+
             const profilePic = document.getElementById('profile-picture');
 
             if (profilePic) {
