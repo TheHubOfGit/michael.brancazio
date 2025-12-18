@@ -71,8 +71,8 @@ export default {
         }
       };
 
-      // Try primary model first (gemini-2.5-flash)
-      let geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+      // Try primary model first (gemma-3-27b-it)
+      let geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemma-3-27b-it:generateContent?key=${GEMINI_API_KEY}`;
       let geminiResponse = await fetch(geminiUrl, {
         method: 'POST',
         headers: {
@@ -83,7 +83,7 @@ export default {
 
       // If primary model fails, fallback to lite model
       if (!geminiResponse.ok) {
-        console.error('Primary model (gemini-2.5-flash) failed, trying fallback (gemini-2.5-flash-lite)...');
+        console.error('Primary model (gemma-3-27b-it) failed, trying fallback (gemini-2.5-flash-lite)...');
         const errorData = await geminiResponse.text();
         console.error('Primary model error:', errorData);
 
