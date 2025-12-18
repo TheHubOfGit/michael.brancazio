@@ -6087,7 +6087,7 @@ When appropriate, use rich formatting:
                     this.isVoiceActive = true;
 
                     // Show a system message
-                    this.displayResponse("<i class='fa-solid fa-microphone'></i> Connecting to Gemini Live...");
+                    this.displayResponse("<i class='fa-solid fa-microphone'></i> Connecting to Gemini Live...", true);
                     this.showPopup();
 
                     // 1. Initialize Audio Context
@@ -6114,7 +6114,7 @@ When appropriate, use rich formatting:
 
                     ws.onopen = () => {
                         console.log('WebSocket connected');
-                        this.displayResponse("<i class='fa-solid fa-microphone'></i> Voice connected! Speak now.");
+                        this.displayResponse("<i class='fa-solid fa-microphone'></i> Voice connected! Speak now.", true);
 
                         // Send setup message
                         const context = extractPageContext();
@@ -6755,13 +6755,13 @@ When appropriate, use rich formatting:
                 this.mobileSendButton.disabled = false;
             }
 
-            displayResponse(text) {
+            displayResponse(text, isHtml = false) {
                 // Add animation class for replacement
                 this.responseContent.style.opacity = '0';
                 this.responseContent.style.transform = 'translateY(10px)';
 
                 setTimeout(() => {
-                    this.responseContent.innerHTML = this.parseMarkdown(text);
+                    this.responseContent.innerHTML = isHtml ? text : this.parseMarkdown(text);
                     this.responseContent.style.opacity = '1';
                     this.responseContent.style.transform = 'translateY(0)';
                     this.responseContent.scrollTop = 0; // Scroll to top of new content
