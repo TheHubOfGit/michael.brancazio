@@ -26,6 +26,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
         :root {
@@ -6086,7 +6087,7 @@ When appropriate, use rich formatting:
                     this.isVoiceActive = true;
 
                     // Show a system message
-                    this.displayResponse("🎤 Connecting to Gemini Live...");
+                    this.displayResponse("<i class='fa-solid fa-microphone'></i> Connecting to Gemini Live...");
                     this.showPopup();
 
                     // 1. Initialize Audio Context
@@ -6113,7 +6114,7 @@ When appropriate, use rich formatting:
 
                     ws.onopen = () => {
                         console.log('WebSocket connected');
-                        this.displayResponse("🎤 Voice connected! Speak now.");
+                        this.displayResponse("<i class='fa-solid fa-microphone'></i> Voice connected! Speak now.");
 
                         // Send setup message
                         const context = extractPageContext();
