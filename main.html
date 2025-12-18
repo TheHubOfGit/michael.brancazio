@@ -2146,8 +2146,8 @@
             bottom: 80px;
             left: 50%;
             transform: translateX(-50%) translateY(10px);
-            width: 400px;
-            max-height: 300px;
+            width: 300px;
+            max-height: 200px;
             background-color: var(--card-bg);
             backdrop-filter: blur(20px);
             border-radius: 16px;
@@ -2163,8 +2163,8 @@
         @media (min-width: 769px) {
             .chat-response-popup {
                 /* Scale with viewport but maintain reasonable bounds */
-                width: min(max(30vw, 350px), 500px);
-                max-height: min(40vh, 400px);
+                width: min(max(20vw, 250px), 350px);
+                max-height: min(30vh, 300px);
                 /* Keep centered above chatbox regardless of width */
                 left: 50%;
                 /* Enhanced transitions for responsive resizing */
@@ -2192,6 +2192,7 @@
             color: var(--text-color);
             transition: max-height 0.4s ease-out, opacity 0.3s ease;
             opacity: 1;
+            text-align: center;
         }
 
         .response-content::-webkit-scrollbar {
