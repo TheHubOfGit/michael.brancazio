@@ -2146,8 +2146,8 @@
             bottom: 80px;
             left: 50%;
             transform: translateX(-50%) translateY(10px);
-            width: 300px;
-            max-height: 200px;
+            width: 400px;
+            max-height: 300px;
             background-color: var(--card-bg);
             backdrop-filter: blur(20px);
             border-radius: 16px;
@@ -2163,8 +2163,8 @@
         @media (min-width: 769px) {
             .chat-response-popup {
                 /* Scale with viewport but maintain reasonable bounds */
-                width: min(max(20vw, 250px), 350px);
-                max-height: min(30vh, 300px);
+                width: min(max(30vw, 350px), 500px);
+                max-height: min(40vh, 400px);
                 /* Keep centered above chatbox regardless of width */
                 left: 50%;
                 /* Enhanced transitions for responsive resizing */
@@ -2192,7 +2192,24 @@
             color: var(--text-color);
             transition: max-height 0.4s ease-out, opacity 0.3s ease;
             opacity: 1;
+        }
+
+        /* Audio Popup Styles (Compact & Centered) */
+        .chat-response-popup.audio-popup {
+            width: 300px;
+            max-height: 200px;
+        }
+
+        .chat-response-popup.audio-popup .response-content {
             text-align: center;
+        }
+
+        @media (min-width: 769px) {
+            .chat-response-popup.audio-popup {
+                width: 300px !important;
+                /* Force compact width on desktop */
+                max-height: 200px !important;
+            }
         }
 
         .response-content::-webkit-scrollbar {
@@ -6091,7 +6108,7 @@ When appropriate, use rich formatting:
                     this.isVoiceActive = true;
 
                     // Show a system message
-                    this.displayResponse("<i class='fa-solid fa-microphone' style='margin-right: 10px;'></i> Connecting to Gemini Live...", true);
+                    this.displayResponse("<i class='fa-solid fa-microphone' style='margin-right: 10px;'></i> Connecting to Gemini Live...", true, true);
                     this.showPopup();
 
                     // 1. Initialize Audio Context
@@ -6118,7 +6135,7 @@ When appropriate, use rich formatting:
 
                     ws.onopen = () => {
                         console.log('WebSocket connected');
-                        this.displayResponse("<i class='fa-solid fa-microphone' style='margin-right: 10px;'></i> Voice connected! Speak now.", true);
+                        this.displayResponse("<i class='fa-solid fa-microphone' style='margin-right: 10px;'></i> Voice connected! Speak now.", true, true);
 
                         // Send setup message
                         const context = extractPageContext();
@@ -6759,7 +6776,14 @@ When appropriate, use rich formatting:
                 this.mobileSendButton.disabled = false;
             }
 
-            displayResponse(text, isHtml = false) {
+            displayResponse(text, isHtml = false, isAudio = false) {
+                // Toggle audio-popup class based on flag
+                if (isAudio) {
+                    this.popup.classList.add('audio-popup');
+                } else {
+                    this.popup.classList.remove('audio-popup');
+                }
+
                 // Add animation class for replacement
                 this.responseContent.style.opacity = '0';
                 this.responseContent.style.transform = 'translateY(10px)';
