@@ -1,27 +1,32 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0X2CVQQE5"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
+    function gtag() { dataLayer.push(arguments); }
     gtag('js', new Date());
 
     gtag('config', 'G-H0X2CVQQE5');
   </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Terminal-Style Typing Animation</title>
+  <title>Michael Brancazio | Full-Stack Data Professional</title>
+  <link rel="icon" href="images/favicon.png">
   <style>
-    body, html {
+    body,
+    html {
       margin: 0;
       padding: 0;
       height: 100%;
       width: 100%;
       overflow: hidden;
-      background-color: black; /* Changed from transparent */
+      background-color: black;
+      /* Changed from transparent */
     }
+
     .terminal {
       position: absolute;
       top: 0;
@@ -34,9 +39,11 @@
       justify-content: center;
       overflow: hidden;
     }
+
     .terminal-content {
       position: relative;
-      width: 90%; /* Increased from 80% for better mobile margins */
+      width: 90%;
+      /* Increased from 80% for better mobile margins */
       max-width: 600px;
       height: 300px;
       display: flex;
@@ -44,26 +51,33 @@
       align-items: center;
       justify-content: flex-end;
       overflow: hidden;
-      padding: 0 20px; /* Added horizontal padding for extra safety margin */
+      padding: 0 20px;
+      /* Added horizontal padding for extra safety margin */
       box-sizing: border-box;
     }
+
     .line {
       font-family: monospace;
-      color: #4ade80; /* green-400 */
+      color: #4ade80;
+      /* green-400 */
       width: 100%;
       text-align: center;
       margin: 5px 0;
       line-height: 1.5;
       transform: translateY(0);
       transition: transform 0.5s ease-out;
-      word-break: break-word; /* Prevent overflow on very small screens */
+      word-break: break-word;
+      /* Prevent overflow on very small screens */
     }
+
     .command {
       font-size: 28px;
     }
+
     .output {
       font-size: 22px;
     }
+
     .cursor {
       display: inline-block;
       width: 0.6em;
@@ -73,6 +87,7 @@
       vertical-align: middle;
       margin-left: 2px;
     }
+
     .floating-bubble {
       position: absolute;
       top: -40px;
@@ -87,6 +102,7 @@
       opacity: 0;
       transition: opacity 0.5s ease, top 0.5s ease;
     }
+
     .floating-bubble:after {
       content: '';
       position: absolute;
@@ -99,24 +115,37 @@
       border-right: 10px solid transparent;
       border-top: 10px solid #111;
     }
+
     .floating-bubble.show {
       opacity: 1;
       top: -60px;
     }
+
     @keyframes blink {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0; }
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0;
+      }
     }
 
     /* Mobile responsive styles */
     @media (max-width: 768px) {
       .terminal-content {
-        width: 95%; /* Even more margin on mobile */
+        width: 95%;
+        /* Even more margin on mobile */
         padding: 0 15px;
       }
+
       .command {
-        font-size: 20px; /* Smaller font size for mobile */
+        font-size: 20px;
+        /* Smaller font size for mobile */
       }
+
       .output {
         font-size: 16px;
       }
@@ -124,19 +153,23 @@
 
     @media (max-width: 480px) {
       .terminal-content {
-        width: 98%; /* Maximum width utilization on very small screens */
+        width: 98%;
+        /* Maximum width utilization on very small screens */
         padding: 0 10px;
       }
+
       .command {
-        font-size: 16px; /* Even smaller for very small screens */
+        font-size: 16px;
+        /* Even smaller for very small screens */
       }
+
       .output {
         font-size: 14px;
       }
     }
-
   </style>
 </head>
+
 <body>
   <div class="terminal">
     <div class="terminal-content" id="terminal-content">
@@ -148,23 +181,23 @@
 
   <script>
     // Original terminal animation code
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
       const terminalContent = document.getElementById('terminal-content');
       const fullText = "print(Michael Brancazio)";
-      
+
       // Create the command line
       const commandLine = document.createElement('div');
       commandLine.className = 'line command';
       terminalContent.appendChild(commandLine);
-      
+
       // Add cursor to command line
       const cursor = document.createElement('span');
       cursor.className = 'cursor';
       commandLine.appendChild(cursor);
-      
+
       let charIndex = 0;
       let currentText = '';
-      
+
       // Type out "print(portfolio)"
       function typeCommand() {
         if (charIndex < fullText.length) {
@@ -178,27 +211,27 @@
           cursor.remove();
           commandLine.textContent = currentText;
           commandLine.appendChild(cursor);
-          
+
           // Wait 1 second then show the floating bubble
           setTimeout(showFloatingBubble, 1000);
         }
       }
-      
+
       // Show the floating bubble
       function showFloatingBubble() {
         // Detect if user is on mobile device
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
-                        (navigator.maxTouchPoints && navigator.maxTouchPoints > 2);
-        
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+          (navigator.maxTouchPoints && navigator.maxTouchPoints > 2);
+
         // Create floating bubble
         const bubble = document.createElement('div');
         bubble.className = 'floating-bubble';
         bubble.textContent = isMobile ? '(Tap anywhere)' : '(Press enter)';
-        
+
         // Add the bubble to the terminal content
         commandLine.style.position = 'relative';
         commandLine.appendChild(bubble);
-        
+
         // Trigger animation after a small delay to ensure DOM is updated
         setTimeout(() => {
           bubble.classList.add('show');
@@ -218,16 +251,17 @@
         document.body.addEventListener('click', redirectToMain, { once: true });
 
         // Listen for Enter key press
-        document.addEventListener('keydown', function(event) {
+        document.addEventListener('keydown', function (event) {
           if (event.key === 'Enter') {
             redirectToMain();
           }
         }, { once: true });
       }
-      
+
       // Start typing the command after 3 seconds
       setTimeout(typeCommand, 3000);
     });
   </script>
 </body>
+
 </html>
