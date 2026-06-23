@@ -3521,6 +3521,11 @@
                                                             data
                                                             workflows, providing leadership insights for scalable AI
                                                             solutions</li>
+                                                        <li>Stewarded Snowflake migration and adaptation, creating
+                                                            Snowflake
+                                                            AI Skills, MCPs, and internal trainings around Snowflake
+                                                            Cortex,
+                                                            CoCo, and Cowork.</li>
                                                     </ul>
                                                 </div>
                                             </div>
@@ -3912,8 +3917,12 @@
                                         </span>
                                         <div class="skill-tag">Tableau</div>
                                         <div class="skill-tag">Power BI</div>
+                                        <div class="skill-tag">Snowflake</div>
                                         <div class="skill-tag">Data Science</div>
                                         <div class="skill-tag">Business Intelligence</div>
+                                        <div class="skill-tag">AI</div>
+                                        <div class="skill-tag">LLMs</div>
+                                        <div class="skill-tag">Agentic Development</div>
                                         <div class="skill-tag">Machine Learning</div>
                                         <div class="skill-tag">Data Governance</div>
                                         <div class="skill-tag">Epic EHR</div>
@@ -3929,6 +3938,14 @@
                                 <div class="card-scrollable-content">
 
                                     <div class="certifications-list">
+                                        <div class="cert-item">
+                                            <img class="cert-icon" src="images/snowflake.png" alt="Snowflake Logo">
+                                            <div>
+                                                <div class="cert-title">Snowflake (Multiple Badges)</div>
+                                                <div class="cert-issuer">Snowflake</div>
+                                            </div>
+                                        </div>
+
                                         <div class="cert-item">
                                             <img class="cert-icon" src="images/tableau.png" alt="Tableau Logo">
                                             <div>
@@ -4643,16 +4660,16 @@
                     // Match "AI" (with word boundaries) or "artificial intelligence", outside tags
                     // (?<!<[^>]*) negative lookbehind to ensure not inside a tag opening
                     // (?![^<]*>) negative lookahead to ensure not inside a tag closing
-                    regex = new RegExp(`(?<!<[^>]*)(?:\\b${keyword}\\b|artificial intelligence)(?![^<]*>)`, 'gi');
+                    regex = new RegExp(`(?<!<[^>]*)(?:\\b${keyword}\\b|artificial intelligence)(?![^<]*>)`, 'i');
                 } else if (keyword === 'Python') {
                     // Match "Python", "Plotly", "Prophet", or "Pandas", outside tags
-                    regex = new RegExp(`(?<!<[^>]*)(?:\\bPython\\b|\\bPlotly\\b|\\bProphet\\b|\\bPandas\\b)(?![^<]*>)`, 'gi');
+                    regex = new RegExp(`(?<!<[^>]*)(?:\\bPython\\b|\\bPlotly\\b|\\bProphet\\b|\\bPandas\\b)(?![^<]*>)`, 'i');
                 } else if (keyword === 'Power BI') {
                     // Specific regex for "Power BI" to match with or without space, outside tags
-                    regex = new RegExp(`(?<!<[^>]*)(Power ?BI)(?![^<]*>)`, 'gi');
+                    regex = new RegExp(`(?<!<[^>]*)(Power ?BI)(?![^<]*>)`, 'i');
                 } else {
                     // Original regex for other keywords (ensuring not inside tags)
-                    regex = new RegExp(`(?<!<[^>]*)${keyword}(?![^<]*>)`, 'gi');
+                    regex = new RegExp(`(?<!<[^>]*)${keyword}(?![^<]*>)`, 'i');
                 }
 
                 contentAreas.forEach(area => {
