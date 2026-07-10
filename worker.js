@@ -146,7 +146,7 @@ async function handleWebSocket(request, env) {
 
   // Connect to Gemini Live API
   // The client configures Gemini 3.1 Flash Live Preview in its setup message.
-  const geminiUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key=${GEMINI_API_KEY}`;
+  const geminiUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=${GEMINI_API_KEY}`;
 
   try {
     // Establish connection to Gemini
