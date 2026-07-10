@@ -72,7 +72,7 @@ export default {
       };
 
       // Use a stable, low-latency model first.
-      let geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${GEMINI_API_KEY}`;
+      let geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${GEMINI_API_KEY}`;
       let geminiResponse = await fetch(geminiUrl, {
         method: 'POST',
         headers: {
@@ -81,14 +81,14 @@ export default {
         body: JSON.stringify(geminiPayload)
       });
 
-      // If the primary model is unavailable, fall back to the full Flash model.
+      // If the primary model is unavailable, fall back to Gemini 2.5 Flash-Lite.
       if (!geminiResponse.ok) {
-        console.error('Primary model (gemini-2.5-flash-lite) failed, trying fallback (gemini-2.5-flash)...');
+        console.error('Primary model (gemini-3.1-flash-lite) failed, trying fallback (gemini-2.5-flash-lite)...');
         const errorData = await geminiResponse.text();
         console.error('Primary model error:', errorData);
 
         // Try fallback model
-        geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+        geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${GEMINI_API_KEY}`;
         geminiResponse = await fetch(geminiUrl, {
           method: 'POST',
           headers: {
@@ -100,7 +100,7 @@ export default {
         // If fallback also fails, return error
         if (!geminiResponse.ok) {
           const fallbackErrorData = await geminiResponse.text();
-          console.error('Fallback model (gemini-2.5-flash) also failed:', fallbackErrorData);
+          console.error('Fallback model (gemini-2.5-flash-lite) also failed:', fallbackErrorData);
           console.error('Gemini URL used:', geminiUrl.replace(/key=[^&]*/, 'key=***'));
           return new Response(JSON.stringify({
             error: 'Failed to get response from AI service',
