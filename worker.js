@@ -145,7 +145,7 @@ async function handleWebSocket(request, env) {
   }
 
   // Connect to Gemini Live API
-  // Using the specific model requested: gemini-2.5-flash-native-audio-preview-09-2025
+  // The client configures Gemini 3.1 Flash Live Preview in its setup message.
   const geminiUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key=${GEMINI_API_KEY}`;
 
   try {
