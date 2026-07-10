@@ -5787,7 +5787,9 @@
     <script>
         // Function to extract dynamic context from the page content
         function extractPageContext() {
-            const currentYear = new Date().getFullYear();
+            const currentDate = new Date();
+            const currentYear = currentDate.getFullYear();
+            const currentMonth = currentDate.toLocaleString('en-US', { month: 'long' });
             let context = `
 You are a professional assistant that helps users learn about Michael Brancazio's experience and qualifications. Provide accurate, concise information about his background and skills in a professional tone.
 
@@ -5992,7 +5994,7 @@ When appropriate, use rich formatting:
 - Use bullet points (- item) for lists
 - Use **bold** for technical terms, tools, or programming languages
 - Use ***italic*** for subtle emphasis or clarifications
-- The current year is ${currentYear}; be sure to use this in context if asked how long Michael's experience has been for specific skills
+- The current month is ${currentMonth} and the current year is ${currentYear}; use this context when calculating how long Michael has held roles or used specific skills
 - Michael has had no gaps in his career`;
 
             // Conditionally include IQVIA information
