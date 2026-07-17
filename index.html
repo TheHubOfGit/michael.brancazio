@@ -206,7 +206,8 @@
           commandLine.textContent = currentText;
           commandLine.appendChild(cursor);
           charIndex++;
-          setTimeout(typeCommand, 300);
+          const typingDelay = currentText === 'print' ? 500 : 100;
+          setTimeout(typeCommand, typingDelay);
         } else {
           cursor.remove();
           commandLine.textContent = currentText;
