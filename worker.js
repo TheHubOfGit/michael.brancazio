@@ -72,7 +72,7 @@ export default {
       };
 
       // Use a stable, low-latency model first.
-      let geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${GEMINI_API_KEY}`;
+      let geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${GEMINI_API_KEY}`;
       let geminiResponse = await fetch(geminiUrl, {
         method: 'POST',
         headers: {
@@ -83,7 +83,7 @@ export default {
 
       // If the primary model is unavailable, fall back to Gemini 2.5 Flash-Lite.
       if (!geminiResponse.ok) {
-        console.error('Primary model (gemini-3.1-flash-lite) failed, trying fallback (gemini-2.5-flash-lite)...');
+        console.error('Primary model (gemini-3.5-flash-lite) failed, trying fallback (gemini-2.5-flash-lite)...');
         const errorData = await geminiResponse.text();
         console.error('Primary model error:', errorData);
 
