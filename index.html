@@ -14,7 +14,20 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Michael Brancazio | Full-Stack Data Professional</title>
+  <meta name="description"
+    content="Michael Brancazio is a full-stack data professional specializing in business intelligence, healthcare analytics, automation, and AI-enabled data workflows.">
+  <link rel="canonical" href="https://thehubofgit.github.io/michael.brancazio/main.html">
   <link rel="icon" href="images/favicon.png">
+  <script>
+    (function () {
+      const referrer = document.referrer;
+      const isGoogleSearchVisit = /^https?:\/\/([^/]+\.)?google\.[^/]+/i.test(referrer);
+
+      if (isGoogleSearchVisit) {
+        window.location.replace(new URL('main.html', window.location.href));
+      }
+    })();
+  </script>
   <style>
     body,
     html {
@@ -245,7 +258,7 @@
       // Function to add event listeners for redirection
       function addRedirectListeners() {
         function redirectToMain() {
-          window.location.href = 'main.html';
+          window.location.href = '/main';
         }
 
         // Listen for click anywhere

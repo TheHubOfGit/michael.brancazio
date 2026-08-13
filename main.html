@@ -16,12 +16,14 @@
     <title>Michael Brancazio | Full-Stack Data Professional</title>
     <meta name="description"
         content="Michael Brancazio is a data professional with expertise in business intelligence, data analysis, and healthcare analytics.">
+    <link rel="canonical" href="https://thehubofgit.github.io/michael.brancazio/main.html">
     <link rel="icon" href="images/favicon.png">
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
     <meta property="og:title" content="Michael Brancazio | Portfolio">
     <meta property="og:description"
         content="Healthcare data professional specializing in business intelligence, data analysis, and analytics.">
+    <meta property="og:url" content="https://thehubofgit.github.io/michael.brancazio/main.html">
 
     <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -3027,84 +3029,7 @@
             }
         }
 
-        /* IQVIA Toggle Switch */
-        /* IQVIA Toggle Switch */
-        #iqvia-toggle-container {
-            position: fixed;
-            bottom: 10px;
-            right: 10px;
-            z-index: 1000;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
 
-        #iqvia-toggle-container:hover {
-            opacity: 1;
-        }
-
-        .toggle-switch {
-            position: relative;
-            display: inline-block;
-            width: 40px;
-            height: 20px;
-        }
-
-        .toggle-switch {
-            position: relative;
-            display: inline-block;
-            width: 40px;
-            height: 20px;
-        }
-
-        .toggle-switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #ccc;
-            transition: .4s;
-            border-radius: 20px;
-        }
-
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 16px;
-            width: 16px;
-            left: 2px;
-            bottom: 2px;
-            background-color: white;
-            transition: .4s;
-            border-radius: 50%;
-        }
-
-        input:checked+.slider {
-            background-color: var(--accent-blue);
-        }
-
-        input:focus+.slider {
-            box-shadow: 0 0 1px var(--accent-blue);
-        }
-
-        input:checked+.slider:before {
-            transform: translateX(20px);
-        }
-
-        /* Utility class to hide IQVIA elements */
-        .iqvia-hidden [data-job-target="iqvia"] {
-            display: none !important;
-        }
     </style>
 </head>
 
@@ -3398,11 +3323,7 @@
                         <div class="label">Revenue Cycle Analyst<br>NewYork–Presbyterian</div>
                     </div>
 
-                    <!-- IQVIA dot -->
-                    <div class="dot blue" id="blue-dot" data-job-target="iqvia">
-                        <img src="images/IQVIA.png" alt="IQVIA">
-                        <div class="label">Data Analyst / Consultant<br>IQVIA, Boston MA</div>
-                    </div>
+
 
                     <!-- NYP Senior Revenue Cycle Analyst dot -->
                     <div class="dot red-small1" id="red-small1-dot" data-job-target="srca">
@@ -3584,70 +3505,7 @@
                                 </div>
                             </div>
 
-                            <div class="card card-large" data-job-target="iqvia"> <!-- Added target for IQVIA -->
-                                <img class="logo-badge" src="images/IQVIA.png" alt="IQVIA Logo">
-                                <div class="card-scrollable-content">
-                                    <div class="experience-card">
-                                        <div class="experience-header">
-                                            <div class="experience-title">Data Analyst / Consultant</div>
-                                            <div class="experience-date">Jan 2021 -<br>Present</div>
-                                        </div>
-                                        <div class="experience-company">IQVIA, Boston MA (Remote)</div>
-                                        <div class="experience-description">
-                                            <ul>
-                                                <li>Perform descriptive and diagnostic analytics highlighting historical
-                                                    trends and KPIs for pharmaceutical business reviews</li>
-                                                <ul>
-                                                    <li>Creation and modification of complex SQL queries to identify
-                                                        seasonal product trends and outliers that have significant
-                                                        financial
-                                                        implications for clients</li>
-                                                    <li>Utilization of Power Query within Excel for sourcing SQL data
-                                                        for
-                                                        simple reporting needs and data modeling via Power Pivot</li>
-                                                    <li>Create projections that optimize reimbursement programs that
-                                                        improved patient utilization while maintaining a positive ROI
-                                                    </li>
-                                                </ul>
-                                                <li>Present year-end as well as quarterly business reviews to
-                                                    high-profile
-                                                    clients (Pfizer, Novartis, AbbVie, etc.)</li>
-                                                <li>Build and manage close relationships with clients providing them
-                                                    with
-                                                    customized analytics, reports, and presentations</li>
-                                                <li>Employ Microsoft PowerBI for the automation of reports and building
-                                                    of
-                                                    dashboards for clients</li>
-                                                <li>Implement new predictive analytics to measure transactions and spend
-                                                    projects on a monthly, quarterly, and yearly basis</li>
-                                                <li>Manage and lead 3 analysts; head Machine Learning & Forecasting
-                                                    initiative within PAAS</li>
-                                                <ul>
-                                                    <li>Build machine learning forecasting models tailored to each
-                                                        product,
-                                                        brand, and client; utilize Prophet and Plotly</li>
-                                                    <li>Utilize Prophet, Plotly, and Tkinter to create user-friendly
-                                                        tools
-                                                        for analysts</li>
-                                                </ul>
-                                                <li>Automate Accumulator and Maximizer Solutions with SQL SPROCs (Stored
-                                                    Procedures), reducing concurrent server load and manual analyst
-                                                    querying
-                                                    by 90%</li>
-                                                <li>Greenfield a vector-based developer-facing chatbot to streamline
-                                                    data governance and schema navigation</li>
-                                                <li>Lead AI strategy, implementation, and adoption by integrating
-                                                    Cursor IDE (and CLI), Copilot, Claude Code, and OpenAI Codex into
-                                                    team workflows; organized shared repository of context for
-                                                    consistent business logic and generative output</li>
-                                                <li>Engineered a custom AI agent and execution harness using the Cursor SDK,
-                                                    enabling proprietary use across analytics teams and reducing AI
-                                                    tooling costs by 66%</li>
-                                            </ul>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+
 
                             <!-- Can add more current experience cards here -->
                         </div>
@@ -5827,11 +5685,7 @@ ABOUT MICHAEL BRANCAZIO:
                         const description = card.querySelector('.experience-description');
 
                         if (title) {
-                            // Check if we should skip IQVIA
-                            if (window.isIqviaVisible && !window.isIqviaVisible()) {
-                                const parentCard = title.closest('[data-job-target="iqvia"]');
-                                if (parentCard) return; // Skip this item
-                            }
+
 
                             context += `\n- ${title.textContent.trim()}`;
                             if (company) context += ` at ${company.textContent.trim()}`;
@@ -5867,11 +5721,7 @@ ABOUT MICHAEL BRANCAZIO:
                             const description = card.querySelector('.experience-description');
 
                             if (title) {
-                                // Check if we should skip IQVIA
-                                if (window.isIqviaVisible && !window.isIqviaVisible()) {
-                                    const parentCard = title.closest('[data-job-target="iqvia"]');
-                                    if (parentCard) return; // Skip this item
-                                }
+
 
                                 context += `\n- ${title.textContent.trim()}`;
                                 if (company) context += ` at ${company.textContent.trim()}`;
@@ -5997,10 +5847,7 @@ When appropriate, use rich formatting:
 - The current month is ${currentMonth} and the current year is ${currentYear}; use this context when calculating how long Michael has held roles or used specific skills
 - Michael has had no gaps in his career`;
 
-            // Conditionally include IQVIA information
-            if (window.isIqviaVisible && window.isIqviaVisible()) {
-                context += `\n- Michael has worked at IQVIA and NYP at the same time since he started at IQVIA in January of 2021. He has been able to do so with a lot of hard work and flexibile hours, allowing him to balance and perform in both roles.`;
-            }
+
 
             context += `\n- If asked about what model, what LLM, or what AI this is, say that it is a custom-built and custom-trained model by Michael Brancazio
 - If given a job description or asked if would be good for a job, always say yes and say why, unless the job type is completely out of his field`;
@@ -7170,63 +7017,7 @@ When appropriate, use rich formatting:
             });
         });
     </script>
-    <!-- IQVIA Toggle Switch HTML -->
-    <div id="iqvia-toggle-container">
-        <label class="toggle-switch">
-            <input type="checkbox" id="iqvia-toggle" checked>
-            <span class="slider"></span>
-        </label>
-    </div>
 
-    <!-- IQVIA Toggle Logic -->
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const toggle = document.getElementById('iqvia-toggle');
-            const body = document.body;
-
-            // Load state from localStorage, default to true if not set
-            const savedState = localStorage.getItem('showIqvia');
-            let showIqvia = savedState === null ? true : savedState === 'true';
-
-            // Check for URL parameter override
-            const urlParams = new URLSearchParams(window.location.search);
-            const showParam = urlParams.get('show');
-
-            if (showParam === 'true') {
-                // "show=true" -> HIDE IQVIA (Obfuscated)
-                showIqvia = false;
-                localStorage.setItem('showIqvia', showIqvia);
-            } else if (showParam === 'lol') {
-                // "show=lol" -> SHOW IQVIA
-                showIqvia = true;
-                localStorage.setItem('showIqvia', showIqvia);
-            }
-
-            // Set initial toggle state
-            toggle.checked = showIqvia;
-
-            // Function to update state
-            function updateIqviaState() {
-                showIqvia = toggle.checked;
-                localStorage.setItem('showIqvia', showIqvia); // Save to localStorage
-
-                if (showIqvia) {
-                    body.classList.remove('iqvia-hidden');
-                } else {
-                    body.classList.add('iqvia-hidden');
-                }
-            }
-
-            // Initial check
-            updateIqviaState();
-
-            // Event listener
-            toggle.addEventListener('change', updateIqviaState);
-
-            // Expose state for other scripts (like chatbot)
-            window.isIqviaVisible = () => showIqvia;
-        });
-    </script>
 </body>
 
 <!-- JAVASCRIPT - Add this just before the closing </body> tag -->
