@@ -10,13 +10,21 @@ export default {
       'https://thehubofgit.github.io',
       'https://michael.brancazio',
       'https://michaelbrancazio.pages.dev',
+      'https://michaelbrancazio-resume.pages.dev',
       'http://localhost:8080', // For local testing
       'http://127.0.0.1:8080'
     ];
 
+    const isAllowedOrigin = (orig) => {
+      if (!orig) return false;
+      if (allowedOrigins.includes(orig)) return true;
+      if (/^https:\/\/[a-z0-9-]+\.pages\.dev$/i.test(orig)) return true;
+      return false;
+    };
+
     const origin = request.headers.get('Origin');
     const corsHeaders = {
-      'Access-Control-Allow-Origin': allowedOrigins.includes(origin) ? origin : allowedOrigins[0],
+      'Access-Control-Allow-Origin': isAllowedOrigin(origin) ? origin : allowedOrigins[0],
       'Access-Control-Allow-Methods': 'POST, OPTIONS, GET',
       'Access-Control-Allow-Headers': 'Content-Type, Upgrade, Connection',
     };
