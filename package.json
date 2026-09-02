@@ -1,0 +1,19 @@
+{
+  "name": "michael.brancazio",
+  "version": "1.0.0",
+  "description": "Michael Brancazio Portfolio & AI Chatbot Worker",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "types": "wrangler types",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx tests/server.test.ts"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250224.0",
+    "tsx": "^4.23.13",
+    "typescript": "^5.7.3",
+    "wrangler": "^3.111.0"
+  }
+}

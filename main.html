@@ -6060,6 +6060,9 @@ When appropriate, use rich formatting:
                 this.currentSource = null; // Track currently playing audio source
                 this.audioQueue = []; // Instance variable for audio queue
                 this.isPlaying = false; // Instance variable for playing state
+                this.promptCount = 0;
+                this.voiceStartTime = null;
+                this.sessionId = 'sess_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now();
                 this.initializeElements();
                 // Show immediately without testing connection
                 this.showChatbotImmediately();
@@ -6129,6 +6132,17 @@ When appropriate, use rich formatting:
                     if (this.voiceBtn) this.voiceBtn.classList.add('active');
                     if (this.mobileVoiceBtn) this.mobileVoiceBtn.classList.add('active');
                     this.isVoiceActive = true;
+                    this.voiceStartTime = Date.now();
+
+                    // --- Google Analytics Event: Voice Chat Started ---
+                    if (typeof gtag === 'function') {
+                        gtag('event', 'chatbot_voice_start', {
+                            'event_category': 'chatbot',
+                            'device_type': this.isMobile ? 'mobile' : 'desktop',
+                            'session_id': this.sessionId
+                        });
+                    }
+                    // --- End Google Analytics Event ---
 
                     // Show a system message
                     this.displayResponse("<i class='fa-solid fa-microphone' style='margin-right: 10px;'></i> Connecting to Gemini Live...", true, true);
@@ -6281,6 +6295,20 @@ When appropriate, use rich formatting:
             }
 
             stopVoice() {
+                const durationSeconds = this.voiceStartTime ? Math.round((Date.now() - this.voiceStartTime) / 1000) : 0;
+                this.voiceStartTime = null;
+
+                // --- Google Analytics Event: Voice Chat Ended ---
+                if (typeof gtag === 'function') {
+                    gtag('event', 'chatbot_voice_end', {
+                        'event_category': 'chatbot',
+                        'duration_seconds': durationSeconds,
+                        'device_type': this.isMobile ? 'mobile' : 'desktop',
+                        'session_id': this.sessionId
+                    });
+                }
+                // --- End Google Analytics Event ---
+
                 this.isVoiceActive = false;
                 if (this.voiceBtn) this.voiceBtn.classList.remove('active');
                 if (this.mobileVoiceBtn) this.mobileVoiceBtn.classList.remove('active');
@@ -6508,6 +6536,17 @@ When appropriate, use rich formatting:
                     item.addEventListener('click', () => {
                         const question = item.getAttribute('data-question');
                         if (this.mobileInput && question) {
+                            // --- Google Analytics Event: Suggestion Clicked ---
+                            if (typeof gtag === 'function') {
+                                gtag('event', 'chatbot_suggestion_clicked', {
+                                    'event_category': 'chatbot',
+                                    'suggestion_text': question,
+                                    'device_type': this.isMobile ? 'mobile' : 'desktop',
+                                    'session_id': this.sessionId
+                                });
+                            }
+                            // --- End Google Analytics Event ---
+
                             this.mobileInput.value = question;
                             this.mobileInput.focus();
                             // Optionally auto-send the message
@@ -6733,6 +6772,7 @@ When appropriate, use rich formatting:
                 const message = this.input.value.trim();
                 if (!message) return;
 
+                this.promptCount += 1;
                 this.conversationHistory.push({ role: 'user', content: message });
                 this.input.value = '';
                 this.sendButton.disabled = true;
@@ -6741,7 +6781,13 @@ When appropriate, use rich formatting:
                 if (typeof gtag === 'function') {
                     gtag('event', 'chatbot_message_sent', {
                         'event_category': 'chatbot',
-                        'event_label': 'desktop: ' + message // Prefix with desktop:
+                        'event_label': 'desktop: ' + message,
+                        'input_mode': 'text',
+                        'prompt_index': this.promptCount,
+                        'prompt_text': message.slice(0, 500),
+                        'prompt_length': message.length,
+                        'device_type': 'desktop',
+                        'session_id': this.sessionId
                     });
                 }
                 // --- End Google Analytics Event ---
@@ -6767,6 +6813,7 @@ When appropriate, use rich formatting:
                 const message = this.mobileInput.value.trim();
                 if (!message) return;
 
+                this.promptCount += 1;
                 this.conversationHistory.push({ role: 'user', content: message });
                 this.mobileInput.value = '';
                 this.mobileSendButton.disabled = true;
@@ -6775,7 +6822,13 @@ When appropriate, use rich formatting:
                 if (typeof gtag === 'function') {
                     gtag('event', 'chatbot_message_sent', {
                         'event_category': 'chatbot',
-                        'event_label': 'mobile: ' + message // Prefix with mobile:
+                        'event_label': 'mobile: ' + message,
+                        'input_mode': 'text',
+                        'prompt_index': this.promptCount,
+                        'prompt_text': message.slice(0, 500),
+                        'prompt_length': message.length,
+                        'device_type': 'mobile',
+                        'session_id': this.sessionId
                     });
                 }
                 // --- End Google Analytics Event ---
@@ -6840,7 +6893,10 @@ When appropriate, use rich formatting:
                     },
                     body: JSON.stringify({
                         message: userMessage,
-                        context: context
+                        context: context,
+                        sessionId: this.sessionId,
+                        inputMode: 'text',
+                        promptIndex: this.promptCount
                     })
                 });
 

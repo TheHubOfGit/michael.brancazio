@@ -1,1 +1,9 @@
 .DS_Store
+node_modules/
+.wrangler/
+.agent/
+.cursor/
+dist/
+.dev.vars
+.env
+*.log
