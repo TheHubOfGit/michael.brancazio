@@ -28,7 +28,7 @@ export default {
 
     // 4. Chat Endpoint (New /api/chat or legacy root /)
     if ((pathname === '/api/chat' || pathname === '/') && request.method === 'POST') {
-      return handleChat(request, env);
+      return handleChat(request, env, ctx);
     }
 
     // 5. Method / Path Not Found

@@ -5,7 +5,7 @@ import { checkRateLimit } from '../middleware/rateLimit';
 import { logAuditEntry } from '../middleware/logger';
 import { jsonResponse, errorResponse } from '../middleware/errorHandler';
 
-export async function handleChat(request: Request, env: Env): Promise<Response> {
+export async function handleChat(request: Request, env: Env, ctx?: ExecutionContext): Promise<Response> {
   const startTime = Date.now();
   const clientIp = request.headers.get('CF-Connecting-IP') || 'unknown';
   const origin = request.headers.get('Origin') || 'unknown';
@@ -134,6 +134,30 @@ export async function handleChat(request: Request, env: Env): Promise<Response> 
       status: 200,
       latencyMs: result.latencyMs,
     });
+
+    // Asynchronously log to Cloudflare D1 database if configured
+    if (env.DB && ctx) {
+      ctx.waitUntil(
+        env.DB.prepare(
+          `INSERT INTO chat_logs (timestamp, session_id, client_ip, input_mode, prompt_index, prompt_text, response_text, model_used, latency_ms, status)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        )
+        .bind(
+          new Date().toISOString(),
+          sessionId || null,
+          clientIp,
+          inputMode,
+          promptIndex || null,
+          message,
+          result.text,
+          result.modelUsed,
+          result.latencyMs,
+          200
+        )
+        .run()
+        .catch((err) => console.error('Failed to log to D1:', err))
+      );
+    }
 
     return jsonResponse(
       {

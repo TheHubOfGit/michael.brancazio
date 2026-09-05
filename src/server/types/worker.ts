@@ -2,6 +2,7 @@ export interface Env {
   GEMINI_API_KEY?: string;
   ENVIRONMENT?: string;
   ALLOWED_ORIGINS?: string;
+  DB?: D1Database;
 }
 
 export interface ChatRequestPayload {

@@ -9,5 +9,12 @@
   "observability": {
     "enabled": true,
     "head_sampling_rate": 1
-  }
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "portfolio-chat-db",
+      "database_id": "f303aedb-36e5-4e99-a8f3-4084729f3ae2"
+    }
+  ]
 }
