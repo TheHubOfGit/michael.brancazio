@@ -1,8 +1,8 @@
 export const CONFIG = {
   // Preserved models as required
   MODELS: {
-    PRIMARY: 'gemini-3.5-flash-lite',
-    FALLBACK: 'gemini-2.5-flash-lite',
+    PRIMARY: 'gemini-2.5-flash-lite',
+    FALLBACK: 'gemini-3.5-flash-lite',
   },
   GEMINI_API_BASE: 'https://generativelanguage.googleapis.com/v1beta/models',
   GEMINI_LIVE_WS_BASE: 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent',
