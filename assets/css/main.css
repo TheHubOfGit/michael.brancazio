@@ -184,23 +184,29 @@ body.dark-mode .card-scrollable-content {
 /* The SVG catches input only on the chain, leaving the page beneath usable. */
 #chain-container {
     position: fixed;
-    top: 0;
-    right: 0;
-    width: 112px;
-    height: 166px;
+    top: -10px;
+    right: -15px;
+    width: 80px;
+    height: 100vh;
     z-index: 1000;
-    pointer-events: none;
+    display: block;
 }
-#chain-container svg { display: block; width: 100%; height: 100%; overflow: hidden; touch-action: none; }
-#chain-container .chain-hit {
-    pointer-events: stroke;
-    cursor: grab;
-    touch-action: none;
-}
-#chain-container[data-dragging] .chain-hit { cursor: grabbing; }
-#chain-container svg:focus-visible { outline: 2px solid var(--accent-color, #888); outline-offset: -3px; }
+
 @media (max-width: 768px) {
-    #chain-container { width: 96px; }
+    #chain-container { height: 20vh; }
+}
+
+@media (min-width: 769px) {
+    #chain-container {
+        width: 60px;
+        right: -10px;
+    }
+}
+
+#chain-container canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
 }
 
 
