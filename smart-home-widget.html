@@ -1,0 +1,1466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Custom 3D Smart Home Widget</title>
+<script>
+// ?embed=1: shown inside the wall dashboard, which supplies the toolbar and the light/dark choice
+if (new URLSearchParams(location.search).has("embed")){ document.documentElement.classList.add("embed"); document.documentElement.dataset.theme = "light"; }
+// inside the Apartment Lights Android app (ApartmentLights project), which adds window.AndroidLamps: the phone
+// switches the bulbs itself; the page floats over the home screen with no background or controls
+if (window.AndroidLamps) document.documentElement.classList.add("app");
+// ?widget=1: the pop-out on the portfolio page. It borrows the Android widget's look — the apartment
+// alone on a transparent background, no toolbar — but the bulbs are still the on-screen demo ones.
+if (new URLSearchParams(location.search).has("widget")) document.documentElement.classList.add("app", "widget");
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#e9ecef; --panel:rgba(255,255,255,.9); --text:#1b2a3d; --muted:#5a6878;
+  --line:rgba(27,42,61,.14); --navy:#1b2a3d; --btn:#fff; --btn-on:#1b2a3d; --btn-on-text:#fff;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#151a21; --panel:rgba(30,37,47,.9); --text:#e6ebf1; --muted:#9aa6b5;
+    --line:rgba(255,255,255,.12); --navy:#a9c3e6; --btn:#232b36; --btn-on:#a9c3e6; --btn-on-text:#121821;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#151a21; --panel:rgba(30,37,47,.9); --text:#e6ebf1; --muted:#9aa6b5;
+  --line:rgba(255,255,255,.12); --navy:#a9c3e6; --btn:#232b36; --btn-on:#a9c3e6; --btn-on-text:#121821;
+  color-scheme:dark;
+}
+/* embedded in the e-ink dashboard: plain black on white (or white on black), no toolbar of its own */
+html.embed{ --bg:#ffffff; --panel:#ffffff; --text:#000000; --muted:#555555; --line:#000000; --navy:#000000; }
+html.embed[data-theme="dark"]{ --bg:#000000; --panel:#000000; --text:#ffffff; --muted:#bbbbbb; --line:#ffffff; --navy:#ffffff; }
+html.embed .bar{ display:none; }
+html.app .bar, html.app .tip, html.app #demo{ display:none; }
+html.widget .tip{ display:block; }
+html.app body{ background:transparent; }
+html.widget, html.widget body{ background:transparent !important; color-scheme:normal !important; }
+html.embed .tip, html.embed .dimmer, html.embed .demo{ backdrop-filter:none; -webkit-backdrop-filter:none; border-width:2px; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; font-weight:600; }
+[hidden]{display:none!important}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--text);font-family:"Archivo",system-ui,-apple-system,"Segoe UI",sans-serif;overflow:hidden}
+#app{position:relative;height:100%}
+#app canvas{display:block;touch-action:none}
+.bar{
+  position:absolute;left:50%;bottom:16px;transform:translateX(-50%);
+  display:flex;gap:6px;flex-wrap:wrap;justify-content:center;width:max-content;max-width:calc(100% - 24px);
+  background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:6px;
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+}
+.bar .sep{width:1px;align-self:stretch;margin:4px 3px;background:var(--line)}   /* divides the button groups */
+.bar button{
+  font:inherit;font-size:.85rem;font-weight:500;color:var(--text);background:var(--btn);
+  border:1px solid var(--line);border-radius:8px;padding:8px 12px;cursor:pointer;
+}
+.bar button[aria-pressed="true"]{background:var(--btn-on);color:var(--btn-on-text);border-color:transparent}
+.bar button:focus-visible{outline:2px solid var(--navy);outline-offset:2px}
+.tip{position:fixed;pointer-events:none;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:5px 8px;font-size:.78rem;white-space:nowrap;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.tip b{display:block;font-weight:600}
+.tip span{display:block;color:var(--muted);font-size:.72rem;margin-top:1px}
+.dimmer{position:fixed;pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:5px;padding:6px 5px;background:var(--panel);border:1px solid var(--line);border-radius:10px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.dimmer span{position:relative;width:6px;height:72px;border-radius:3px;background:var(--line);overflow:hidden}
+.dimmer i{position:absolute;left:0;right:0;bottom:0;border-radius:3px;background:linear-gradient(#ffd58a,#f2a640)}
+.dimmer b{font-size:.7rem;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums}
+.note{position:absolute;top:14px;left:50%;transform:translateX(-50%);width:max-content;max-width:calc(100% - 24px);
+  background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:7px 12px;
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);text-align:center;line-height:1.35}
+.note b{display:block;font-size:.8rem;font-weight:600;color:var(--navy)}
+.note span{display:block;font-size:.72rem;color:var(--muted)}
+html.app .note, html.embed .note{ display:none }
+.demo{position:absolute;top:16px;left:50%;transform:translateX(-50%);width:min(340px,calc(100% - 32px));box-sizing:border-box;
+  background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px 12px;
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:grid;gap:8px}
+.demo-head{display:flex;align-items:center;gap:8px;font-size:.85rem}
+.demo-head b{color:var(--navy)}
+.demo-head span{flex:1;color:var(--muted);font-size:.75rem;font-variant-numeric:tabular-nums}
+.demo-head button{font:inherit;font-size:.78rem;color:var(--text);background:var(--btn);border:1px solid var(--line);border-radius:7px;padding:4px 10px;cursor:pointer}
+.demo label{display:grid;grid-template-columns:auto 1fr;gap:2px 8px;font-size:.75rem;color:var(--muted)}
+.demo output{justify-self:end;color:var(--text);font-variant-numeric:tabular-nums}
+.demo input{grid-column:1 / -1;width:100%;accent-color:#f2a640;margin:0}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="tip" id="lampTip" hidden></div>
+  <div class="dimmer" id="dimmer" hidden aria-hidden="true"><span><i></i></span><b></b></div>
+  <div class="demo" id="demo" hidden role="region" aria-label="Demo mode">
+    <div class="demo-head"><b>Demo mode</b><span id="demoSun"></span><button id="demoExit" type="button">Exit</button></div>
+    <label>Time <output id="demoTimeOut"></output><input id="demoTime" type="range" min="0" max="1439" step="5"></label>
+    <label>Date <output id="demoDateOut"></output><input id="demoDate" type="range" min="1" max="365" step="1"></label>
+  </div>
+  <p class="note">
+    <b>Demo &middot; not connected to real bulbs</b>
+    <span>Tap a lamp to switch it &middot; drag &#x2195; on it to dim &middot; drag the room to orbit, scroll to zoom</span>
+  </p>
+  <div class="bar" role="toolbar" aria-label="View controls">
+    <button id="b3d" aria-pressed="false">3D view</button>
+    <button id="btop" aria-pressed="false">Top view</button>
+    <button id="bcwy" aria-pressed="true">Cutaway view</button>
+    <span class="sep" aria-hidden="true"></span>
+    <button id="bliv" aria-pressed="false">Living room view</button>
+    <button id="bbed" aria-pressed="false">Bedroom view</button>
+    <button id="boff" aria-pressed="false">Office view</button>
+    <span class="sep" aria-hidden="true"></span>
+    <button id="bcut" aria-pressed="false">Cut walls</button>
+    <span class="sep" aria-hidden="true"></span>
+    <button id="blab" aria-pressed="false">Room labels</button>
+  </div>
+</div>
+
+<!-- three.js r128 kept next to the page (vendor/), so it loads from the bridge with no internet round trip -->
+<script src="assets/vendor/three.min.js"></script>
+<script src="assets/vendor/OrbitControls.js"></script>
+<script>
+(function(){
+// ---------- Plan data (feet; x = right, z = down the page) ----------
+const WALL_H = 8, CUT_H = 3, T = 0.35, DOOR_H = 6.67;      // 6'8" doors
+const CENTER = { x: 25.75, z: 9.65 };
+const NOOK_W = 40.1;                    // west wall of the kitchen nook (widened to fit the photographed kitchen)
+const EAST = 51.5;                      // exterior east wall
+const KW = NOOK_W + T/2;                // interior face of the nook's west wall
+const KN = T/2;                         // interior face of the north wall
+const EI = EAST - T/2;                  // interior face of the east wall
+
+const walls = [
+  // office
+  [0,0, 12.2,0], [12.2,0, 12.2,3.6], [12.2,3.6, 14.7,3.6], [14.7,3.6, 14.7,7.3],
+  [0,0, 0,19.3], [0,7.3, 11.275,7.3],
+  // hallway top (wall ends stop T/2 short of each opening so doors keep full width)
+  [14.295,7.3, 23.725,7.3], [26.405,7.3, 34.925,7.3], [37.605,7.3, NOOK_W,7.3],
+  // bedroom
+  [11.2,10.295, 11.2,19.3], [0,19.3, 11.2,19.3],
+  // hallway bottom + living room
+  [11.2,12.5, 11.275,12.5], [14.295,12.5, 34,12.5], [34,12.5, 34,19.3], [34,19.3, 51.5,19.3],
+  // east wall, split around the two windows
+  [51.5,0, 51.5,2.975], [51.5,5.325, 51.5,10.775], [51.5,15.625, 51.5,19.3],
+  // kitchen nook
+  [NOOK_W,0, 51.5,0], [NOOK_W,0, NOOK_W,7.3],
+  // bath 1
+  [20.5,0, 29,0], [20.5,0, 20.5,3.4], [20.5,3.4, 23.7,3.4], [23.7,3.4, 23.7,7.3], [29,0, 29,7.3],
+  // bath 2
+  [32,0, 38.5,0], [32,0, 32,7.3], [38.5,0, 38.5,7.3]
+];
+
+// office + bedroom: 2'8" doors; baths: 2'4" doors
+const openings = [ [11.45,7.3, 14.12,7.3], [11.2,7.45, 11.2,10.12], [23.9,7.3, 26.23,7.3], [35.1,7.3, 37.43,7.3], [11.45,12.5, 14.12,12.5] ];   // last: entry door, across the hall from the office door
+const leaves = [ [13.85,7.12, 13.85,4.45], [11.03,7.72, 8.36,7.72], [24.17,7.12, 24.17,4.79], [37.16,7.12, 37.16,4.79], [11.45,12.5, 14.12,12.5] ];   // last: entry door, shown closed
+
+const rooms = [
+  { name:"Office",   wood:true, color:0xe6eaf1, pts:[[0,0],[12.2,0],[12.2,3.6],[14.7,3.6],[14.7,7.3],[0,7.3]], label:[6.2,2.2] },
+  { name:"Bedroom",  wood:true, color:0xe6eaf1, pts:[[0,7.3],[11.2,7.3],[11.2,19.3],[0,19.3]], label:[5.6,10.2] },
+  { name:"Bath",     color:0xf5e4ac, pts:[[20.5,0],[29,0],[29,7.3],[23.7,7.3],[23.7,3.4],[20.5,3.4]], label:[26.6,6.4] },
+  { name:"Bath",     color:0xd8f1e5, pts:[[32,0],[38.5,0],[38.5,7.3],[32,7.3]], label:[35.4,5.7] },
+  { name:"Living",   wood:true, color:0xdfe6fa, pts:[[11.2,7.3],[NOOK_W,7.3],[NOOK_W,0],[51.5,0],[51.5,19.3],[34,19.3],[34,12.5],[11.2,12.5]], label:null }
+];
+const extraLabels = [ ["Hall",22.5,9.9], ["Living",47.6,10.2], ["Kitchen",47.2,5.0] ];
+
+// ---------- Procedural textures ----------
+function rng(seed){
+  let s = seed >>> 0;
+  return () => {
+    s = (s + 0x6D2B79F5) >>> 0;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function finishTex(c, anis){
+  const t = new THREE.CanvasTexture(c);
+  t.encoding = THREE.sRGBEncoding; t.anisotropy = anis || 4;
+  return t;
+}
+// honey-oak planks, 5" wide, running along z; one tile = 8 ft
+function woodTex(){
+  const S = 1024, c = document.createElement("canvas"); c.width = c.height = S;
+  const x = c.getContext("2d"), r = rng(11), cols = 20, pw = S / cols;
+  for (let i = 0; i < cols; i++){
+    let y = -r() * S * 0.5;
+    while (y < S){
+      const len = S * (0.3 + r() * 0.4);
+      x.fillStyle = `hsl(${31 + r()*7},${54 + r()*10}%,${54 + r()*9}%)`;
+      x.fillRect(i * pw, y, pw, len);
+      for (let k = 0; k < 12; k++){
+        x.strokeStyle = `rgba(110,68,28,${0.04 + r()*0.07})`;
+        x.lineWidth = 1 + r() * 1.5;
+        const gx = i * pw + r() * pw;
+        x.beginPath(); x.moveTo(gx, y); x.lineTo(gx + (r() - 0.5) * 4, y + len); x.stroke();
+      }
+      x.fillStyle = "rgba(62,36,14,0.55)"; x.fillRect(i * pw, y, pw, 1.5);
+      y += len;
+    }
+    x.fillStyle = "rgba(62,36,14,0.5)"; x.fillRect(i * pw, 0, 1.6, S);
+  }
+  const t = finishTex(c, 8);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(1/8, 1/8);
+  return t;
+}
+// white quartz with gray veining
+function marbleTex(){
+  const c = document.createElement("canvas"); c.width = c.height = 512;
+  const x = c.getContext("2d"), r = rng(5);
+  x.fillStyle = "#f3f3f1"; x.fillRect(0, 0, 512, 512);
+  x.lineCap = "round"; x.lineJoin = "round";
+  for (let i = 0; i < 7; i++){
+    const pts = []; let px = r() * 512, py = 0;
+    const dx = (r() - 0.5) * 240;
+    for (let k = 0; k <= 5; k++){ pts.push([px + (r() - 0.5) * 70, py]); py += 512 / 5; px += dx / 5; }
+    x.strokeStyle = `rgba(104,111,120,${0.18 + r() * 0.3})`;
+    x.lineWidth = 0.8 + r() * 2.6;
+    x.beginPath(); x.moveTo(pts[0][0], pts[0][1]);
+    for (let k = 1; k < pts.length; k++){
+      x.quadraticCurveTo(pts[k-1][0] + (r() - 0.5) * 60, (pts[k-1][1] + pts[k][1]) / 2, pts[k][0], pts[k][1]);
+    }
+    x.stroke();
+  }
+  return finishTex(c);
+}
+// gray linear mosaic backsplash: 12 rows per foot
+function tileTex(rx, ry){
+  const c = document.createElement("canvas"); c.width = c.height = 256;
+  const x = c.getContext("2d"), r = rng(7), rows = 12, rh = 256 / rows;
+  x.fillStyle = "#7b8187"; x.fillRect(0, 0, 256, 256);
+  for (let i = 0; i < rows; i++){
+    let px = -r() * 60;
+    while (px < 256){
+      const len = 50 + r() * 70, g = 150 + Math.floor(r() * 60);
+      x.fillStyle = `rgb(${g - 6},${g},${g + 5})`;
+      x.fillRect(px + 1, i * rh + 1, len - 2, rh - 2);
+      px += len;
+    }
+  }
+  const t = finishTex(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx, ry);
+  return t;
+}
+// shaker cabinet door, drawn at 96 px per foot so rails keep a constant 3" width
+const doorCache = {};
+function doorMat(w, h){
+  const key = w.toFixed(2) + "x" + h.toFixed(2);
+  if (doorCache[key]) return doorCache[key];
+  const s = 96, c = document.createElement("canvas");
+  c.width = Math.max(8, Math.round(w * s)); c.height = Math.max(8, Math.round(h * s));
+  const x = c.getContext("2d"), m = Math.round(0.24 * s);
+  x.fillStyle = "#f8f8f6"; x.fillRect(0, 0, c.width, c.height);
+  x.strokeStyle = "#d3d7dc"; x.lineWidth = 3; x.strokeRect(1.5, 1.5, c.width - 3, c.height - 3);
+  x.fillStyle = "#f0f1f1"; x.fillRect(m, m, c.width - 2*m, c.height - 2*m);
+  x.strokeStyle = "#cdd1d6"; x.lineWidth = 3; x.strokeRect(m, m, c.width - 2*m, c.height - 2*m);
+  x.strokeStyle = "#ffffff"; x.lineWidth = 2; x.strokeRect(m + 3, m + 3, c.width - 2*m - 6, c.height - 2*m - 6);
+  return (doorCache[key] = new THREE.MeshStandardMaterial({ map: finishTex(c), roughness: 0.5 }));
+}
+
+// ---------- Renderer / scene ----------
+const app = document.getElementById("app");
+// ?snapshot: a still, transparent top-down picture for the Android widget (see window.snapshot below)
+const SNAPSHOT = new URLSearchParams(location.search).has("snapshot");
+const APP = !!window.AndroidLamps;   // inside the Android app (see the top of the page)
+const WIDGET = document.documentElement.classList.contains("widget");   // the portfolio pop-out (see the top of the page)
+const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:SNAPSHOT || APP || WIDGET, preserveDrawingBuffer:SNAPSHOT });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.autoUpdate = false;   // the scene is static, so shadows re-render only when walls move
+renderer.shadowMap.needsUpdate = true;
+// Draw only when something changed (camera, lamps, walls, sun, theme, size): an always-on wall
+// display (e-ink tablet) then idles instead of re-rendering an identical frame 60 times a second.
+let dirty = true;
+const invalidate = () => { dirty = true; };
+renderer.outputEncoding = THREE.sRGBEncoding;
+app.prepend(renderer.domElement);
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(42, 1, 0.5, 600);
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.maxPolarAngle = Math.PI * 0.49;
+controls.minDistance = 8;
+controls.maxDistance = 160;
+
+// ambient + sun kept low so the lamps carry much of the light; inside the e-ink dashboard (?embed) the base
+// light is raised, since an e-ink screen shows the darker look as murky grey
+const EMBEDDED = document.documentElement.classList.contains("embed");
+const hemi = new THREE.HemisphereLight(0xffffff, 0x8a94a3, EMBEDDED ? 0.5 : 0.27);
+scene.add(hemi);
+// faint shadowless fill from one fixed side, so walls facing different ways get slightly different
+// tones indoors (hemisphere light alone shades every vertical wall the same flat grey)
+const fill = new THREE.DirectionalLight(0xffffff, EMBEDDED ? 0.22 : 0.12);
+fill.position.set(-0.45, 1, 0.75); scene.add(fill);
+// Sun: real position for the apartment (33-17 36th Ave, Astoria) at the viewer's current time.
+// The model's +x wall (the windows) faces the street, which from the north side of 36th Ave is SSW.
+const SITE = { lat:40.7557, lon:-73.9274, windowsFace:209.5 };   // windowsFace: compass bearing of model +x
+const sun = new THREE.DirectionalLight(0xfff2dc, 0);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+Object.assign(sun.shadow.camera, { left:-34, right:34, top:34, bottom:-34, near:1, far:220 });
+sun.shadow.bias = -0.0008; sun.shadow.normalBias = 0.02;
+scene.add(sun);
+function sunAngles(date){   // solar azimuth (degrees clockwise from north) and elevation, NOAA-style approximation
+  const rad = Math.PI/180, d = date / 86400000 - 10957.5;   // days since J2000
+  const g = (357.529 + 0.98560028 * d) * rad, q = 280.459 + 0.98564736 * d;
+  const L = (q + 1.915 * Math.sin(g) + 0.020 * Math.sin(2*g)) * rad, e = (23.439 - 0.00000036 * d) * rad;
+  const ra = Math.atan2(Math.cos(e) * Math.sin(L), Math.cos(L)), dec = Math.asin(Math.sin(e) * Math.sin(L));
+  const H = ((18.697374558 + 24.06570982441908 * d) * 15 + SITE.lon) * rad - ra, lat = SITE.lat * rad;
+  const el = Math.asin(Math.sin(lat) * Math.sin(dec) + Math.cos(lat) * Math.cos(dec) * Math.cos(H));
+  const az = Math.atan2(-Math.cos(dec) * Math.sin(H), Math.sin(dec) * Math.cos(lat) - Math.cos(dec) * Math.cos(H) * Math.sin(lat));
+  return { az: (az / rad + 360) % 360, el: el / rad };
+}
+const sunLow = new THREE.Color(0xffa860), sunHigh = new THREE.Color(0xfff2dc);
+let demoTime = null;   // a Date while demo mode overrides the clock, else null (live sun)
+if (SNAPSHOT){ demoTime = new Date(); demoTime.setHours(13, 0, 0, 0); }   // same midday light in every snapshot
+else { demoTime = new Date(); demoTime.setHours(20, 15, 0, 0); }          // the demo opens in the evening, where the lamps do the work
+function updateSun(){
+  const { az, el } = sunAngles(demoTime || new Date()), rad = Math.PI/180;
+  const b = (az - SITE.windowsFace) * rad, flat = Math.cos(el * rad);   // bearing relative to the model's +x
+  sun.position.set(Math.cos(b) * flat * 100, Math.sin(el * rad) * 100, Math.sin(b) * flat * 100);
+  sun.intensity = 1.6 * THREE.MathUtils.smoothstep(el, -1, 8);          // fades out through sunset
+  sun.color.copy(sunLow).lerp(sunHigh, THREE.MathUtils.smoothstep(el, 2, 30));   // warmer near the horizon
+  renderer.shadowMap.needsUpdate = true;
+}
+updateSun(); setInterval(updateSun, 60000);
+
+const world = new THREE.Group();
+world.position.set(-CENTER.x, 0, -CENTER.z);
+scene.add(world);
+
+// ground
+// unlit, so outdoors shows neither sunlight nor the building's shadow: the sun is only seen through the windows
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(400, 400), new THREE.MeshBasicMaterial({ color:0xffffff }));
+ground.rotation.x = -Math.PI/2; ground.position.y = -0.02;
+scene.add(ground);
+
+// ---------- Materials ----------
+const M = (color, o={}) => new THREE.MeshStandardMaterial(Object.assign({ color, roughness:0.8 }, o));
+const mat = {
+  wall: M(0xeee6d2, { roughness:0.95 }),               // cream paint, as in the photos
+  cap: M(0x1b2a3d, { roughness:0.6 }),
+  door: M(0xc9a77c, { roughness:0.6 }),
+  fabric: M(0xbfc4cb), fabricDark: M(0x8e959f), cushion: M(0xd5d9de),
+  wood: M(0xa47a52, { roughness:0.6 }), woodDark: M(0x5b4636, { roughness:0.6 }),
+  white: M(0xfbfbfb, { roughness:0.35 }),
+  steel: M(0xbcc2c9, { metalness:0.35, roughness:0.45 }),
+  chrome: M(0xe9edf1, { metalness:0.4, roughness:0.25 }),
+  sinkDark: M(0x8f969d, { metalness:0.3, roughness:0.5 }),
+  black: M(0x22262c, { roughness:0.4 }), linen: M(0xf2f0eb), duvet: M(0xdfe5ee),
+  glass: new THREE.MeshStandardMaterial({ color:0xbfe0f0, transparent:true, opacity:0.28, roughness:0.05 }),
+  tile: M(0xeef1f3, { roughness:0.5 }),
+  // kitchen + living finishes
+  cab: M(0xf6f6f3, { roughness:0.5 }),
+  trim: M(0xfbfaf6, { roughness:0.5 }),
+  frame: M(0x14171b, { roughness:0.45 }),
+  sky: new THREE.MeshStandardMaterial({ color:0x7fa6d6, transparent:true, opacity:0.4, roughness:0.05, depthWrite:false }),
+  quartz: new THREE.MeshStandardMaterial({ map: marbleTex(), roughness:0.25 }),
+  splash: new THREE.MeshStandardMaterial({ map: tileTex(8, 1.5), roughness:0.3 }),
+  splashSide: new THREE.MeshStandardMaterial({ map: tileTex(6.95, 1.5), roughness:0.3 }),
+  oak: new THREE.MeshStandardMaterial({ map: woodTex(), roughness:0.62 })   // matte enough that lamp light spreads instead of mirroring
+};
+mat.oak.map.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+const qTri = marbleTex(); qTri.wrapS = qTri.wrapT = THREE.RepeatWrapping; qTri.repeat.set(1/3, 1/3);
+mat.quartzTri = new THREE.MeshStandardMaterial({ map: qTri, roughness:0.25 });
+
+function box(parent, w, h, d, m, x, y, z, shadow=true){
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m);
+  mesh.position.set(x, y, z);
+  mesh.castShadow = shadow; mesh.receiveShadow = true;
+  parent.add(mesh); return mesh;
+}
+function cyl(parent, r, h, m, x, y, z, seg=24){
+  const mesh = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, seg), m);
+  mesh.position.set(x, y, z); mesh.castShadow = true; mesh.receiveShadow = true;
+  parent.add(mesh); return mesh;
+}
+
+// ---------- Floors ----------
+rooms.forEach(r => {
+  const s = new THREE.Shape();
+  r.pts.forEach(([x,z], i) => i ? s.lineTo(x, -z) : s.moveTo(x, -z));
+  const mesh = new THREE.Mesh(new THREE.ShapeGeometry(s), r.wood ? mat.oak : M(r.color, { roughness:0.9 }));
+  mesh.rotation.x = -Math.PI/2; mesh.receiveShadow = true;
+  world.add(mesh);
+});
+
+// ---------- Walls ----------
+const wallMeshes = [];
+// Walls ignore the sun: the lamps, sky and soft fill light them, but not direct sunlight, so the outside
+// walls never show bright sunlit faces. Sun through the windows still falls on the floor and furniture.
+// (Done in the shader by patchLighting, further down.)
+mat.wall.userData.ignoreSun = true; mat.cap.userData.ignoreSun = true;
+const wallMats = [mat.wall, mat.wall, mat.cap, mat.wall, mat.wall, mat.wall];
+walls.forEach(([x1,z1,x2,z2]) => {
+  const horiz = z1 === z2;
+  const len = (horiz ? Math.abs(x2-x1) : Math.abs(z2-z1)) + T;
+  const g = new THREE.BoxGeometry(horiz ? len : T, 1, horiz ? T : len);
+  g.translate(0, 0.5, 0);
+  const m = new THREE.Mesh(g, wallMats);
+  m.position.set((x1+x2)/2, 0, (z1+z2)/2);
+  m.castShadow = true; m.receiveShadow = true;
+  m.userData.seg = [x1, z1, x2, z2].join(",");   // plan segment, used to pick walls that stay up in the cutaway view
+  world.add(m); wallMeshes.push(m);
+});
+const lintels = openings.map(([x1,z1,x2,z2]) => {
+  const horiz = z1 === z2;
+  const len = horiz ? Math.abs(x2-x1) : Math.abs(z2-z1);
+  const h = WALL_H - DOOR_H - 0.1;
+  const m = new THREE.Mesh(new THREE.BoxGeometry(horiz ? len : T, h, horiz ? T : len), wallMats);
+  m.position.set((x1+x2)/2, DOOR_H + 0.1 + h/2, (z1+z2)/2);
+  m.castShadow = true; world.add(m); return m;
+});
+const doorMeshes = leaves.map(([x1,z1,x2,z2]) => {
+  const horiz = z1 === z2;
+  const len = horiz ? Math.abs(x2-x1) : Math.abs(z2-z1);
+  const g = new THREE.BoxGeometry(horiz ? len : 0.13, 1, horiz ? 0.13 : len);
+  g.translate(0, 0.5, 0);
+  const m = new THREE.Mesh(g, mat.door);
+  m.position.set((x1+x2)/2, 0, (z1+z2)/2);
+  m.castShadow = true; world.add(m); return m;
+});
+
+// ---------- Windows (east wall): black frames, white casing, deep sill ----------
+const wallParts = [];
+function windowE(zc, w, sill, h, cols, rows){
+  const head = sill + h;
+  const mk = () => new THREE.Mesh(new THREE.BoxGeometry(T, 1, w).translate(0, 0.5, 0), wallMats);
+  const below = mk(); below.position.set(EAST, 0, zc);
+  const above = mk(); above.position.set(EAST, head, zc);
+  [below, above].forEach(m => { m.castShadow = true; m.receiveShadow = true; world.add(m); });
+  const trim = new THREE.Group(); world.add(trim);
+  const fb = 0.12, c = 0.22, p = 0.08, yc = sill + h/2;
+  box(trim, 0.04, h, w, mat.sky, EAST, yc, zc, false);
+  box(trim, 0.2, fb, w, mat.frame, EAST, sill + fb/2, zc);
+  box(trim, 0.2, fb, w, mat.frame, EAST, head - fb/2, zc);
+  box(trim, 0.2, h, fb, mat.frame, EAST, yc, zc - w/2 + fb/2, false);
+  box(trim, 0.2, h, fb, mat.frame, EAST, yc, zc + w/2 - fb/2, false);
+  for (let i = 1; i < cols; i++) box(trim, 0.16, h, 0.07, mat.frame, EAST, yc, zc - w/2 + w*i/cols);
+  for (let j = 1; j < rows; j++) box(trim, 0.16, 0.07, w, mat.frame, EAST, sill + h*j/rows, zc);
+  box(trim, p, c, w + 2*c, mat.trim, EI - p/2, head + c/2, zc, false);
+  box(trim, p, h, c, mat.trim, EI - p/2, yc, zc - w/2 - c/2, false);
+  box(trim, p, h, c, mat.trim, EI - p/2, yc, zc + w/2 + c/2, false);
+  box(trim, 0.85, 0.09, w + 2*c, mat.trim, EI - 0.5 + 0.425, sill + 0.045, zc, false);   // deep sill
+  wallParts.push({ below, above, trim, sill, head });
+}
+windowE(4.15, 2.0, 2.3, 4.6, 1, 3);    // tall narrow window beside the fridge
+windowE(13.2, 4.5, 2.5, 4.7, 2, 3);    // big window, centred on the living room's east wall
+
+// ---------- Light blockers ----------
+// Invisible full-height copies of the walls, window walls, doors and lintels, plus a roof over every
+// room. They draw nothing on screen but cast shadows, so sunlight only gets in through the windows and
+// each lamp's light stays in its room, even with the walls cut down for viewing.
+const blockerMat = new THREE.MeshBasicMaterial({ colorWrite:false, depthWrite:false, side:THREE.DoubleSide });
+const noShadow = new THREE.ShaderMaterial({   // used as a shadow material to opt out of one light type
+  vertexShader:"void main(){ gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
+  fragmentShader:"void main(){ discard; }"
+});
+function blocker(geometry, src, scaleY){
+  const m = new THREE.Mesh(geometry, blockerMat);
+  if (src){ m.position.copy(src.position); m.rotation.copy(src.rotation); }
+  m.scale.y = scaleY; m.castShadow = true;
+  m.raycast = () => {};   // never intercept lamp clicks
+  world.add(m); return m;
+}
+const OVER = 0.5;   // blockers rise above the walls so the roof sits clear of the wall tops (no shadow flicker on their caps)
+wallMeshes.forEach(w => blocker(w.geometry, w, WALL_H + OVER));
+doorMeshes.forEach(d => blocker(d.geometry, d, DOOR_H));
+lintels.forEach(l => blocker(l.geometry, l, 1));
+wallParts.forEach(p => { blocker(p.below.geometry, p.below, p.sill); blocker(p.above.geometry, p.above, WALL_H + OVER - p.head); });
+[...wallMeshes, ...lintels, ...wallParts.flatMap(p => [p.below, p.above])].forEach(m => m.userData.wall = true);   // triple-tap target for demo mode
+{   // roof over the whole footprint (closets and gaps between rooms too); blocks the sun only
+  const W = EAST + T, D = 19.3 + T;
+  const roof = blocker(new THREE.PlaneGeometry(W, D), null, 1);
+  roof.rotation.x = -Math.PI/2; roof.position.set(EAST/2, WALL_H + OVER, 19.3/2);
+  roof.customDistanceMaterial = noShadow;
+}
+
+// ---------- Furniture (each built facing +z, back at -z) ----------
+function place(group, x, z, rotY=0){ group.position.set(x, 0, z); group.rotation.y = rotY; world.add(group); return group; }
+
+function bed(){ // Queen 5'7" x 7'2", headboard at +z
+  const g = new THREE.Group(), W = 5.58, L = 7.17;
+  box(g, W, 1.0, L, mat.wood, 0, 0.5, 0);
+  box(g, W-0.2, 0.75, L-0.3, mat.linen, 0, 1.38, -0.05);
+  box(g, W-0.1, 0.12, L*0.62, mat.duvet, 0, 1.8, -L*0.17);
+  box(g, W, 3.3, 0.3, mat.woodDark, 0, 1.65, L/2-0.15);
+  [-1.25, 1.25].forEach(x => box(g, 2.1, 0.42, 1.2, mat.white, x, 1.95, L/2-1.1));
+  return g;
+}
+function endTable(){ // small black nightstand with a drawer and a glowing globe lamp, faces -z (toward the room)
+  const g = new THREE.Group(), W = 1.5, D = 1.5, H = 2.0;
+  box(g, W, 0.08, D, mat.black, 0, H - 0.04, 0);
+  box(g, W - 0.12, 0.3, D - 0.12, mat.black, 0, H - 0.23, 0);
+  [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([sx, sz]) => box(g, 0.1, H - 0.4, 0.1, mat.black, sx*(W/2 - 0.1), (H - 0.4)/2, sz*(D/2 - 0.1)));
+  box(g, W - 0.5, 0.2, 0.03, mat.steel, 0, H - 0.25, -D/2 - 0.01, false);   // drawer face with a pull
+  box(g, 0.4, 0.04, 0.04, mat.chrome, 0, H - 0.25, -D/2 - 0.04, false);
+  // sphere lamp
+  cyl(g, 0.28, 0.06, mat.black, 0, H + 0.03, 0.05, 20);
+  cyl(g, 0.04, 0.45, mat.black, 0, H + 0.28, 0.05, 10);
+  const lamp = lampBulb(g, 0, H + 0.8, 11, 1.8, 0.65);
+  const globe = new THREE.Mesh(new THREE.SphereGeometry(0.42, 28, 20), lamp.glow);
+  globe.position.set(0, H + 0.8, 0); g.add(globe);   // no shadow: its own bulb sits inside it
+  lamp.meshes.push(globe);
+  g.userData.bulbs = { globe:lamp };
+  return g;
+}
+function sofa(W, D, m=mat.fabric, cm=mat.cushion){
+  const g = new THREE.Group(), arm = 0.55, seatH = 1.45;
+  box(g, W, 1.1, D, m, 0, 0.55, 0);
+  box(g, W, 1.75, 0.65, m, 0, 1.1 + 0.85, -D/2 + 0.33);
+  [-1,1].forEach(s => box(g, arm, 2.1, D, m, s*(W/2 - arm/2), 1.05, 0));
+  const n = W > 6 ? 3 : 2, cw = (W - 2*arm - 0.1) / n;
+  for (let i=0;i<n;i++) box(g, cw-0.06, 0.4, D-0.85, cm, -W/2 + arm + 0.05 + cw*(i+0.5), seatH - 0.15, 0.25);
+  return g;
+}
+function desk(){ // 4'4" x 2'7"
+  const g = new THREE.Group(), W = 4.33, D = 2.58;
+  box(g, W, 0.12, D, mat.wood, 0, 2.45, 0);
+  [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([sx,sz]) => box(g, 0.12, 2.4, 0.12, mat.black, sx*(W/2-0.12), 1.2, sz*(D/2-0.12)));
+  box(g, 1.9, 1.15, 0.08, mat.black, 0, 3.25, D/2-0.45);
+  box(g, 0.1, 0.5, 0.1, mat.black, 0, 2.75, D/2-0.5);
+  box(g, 1.3, 0.04, 0.45, mat.black, 0, 2.53, -0.15);
+  return g;
+}
+// a padded slab with rounded corners and softly beveled edges, centred on the origin, thickness along z
+function cushion(w, h, d, r=0.12, m=mat.black){
+  const sh = new THREE.Shape(), x = w/2 - r, y = h/2 - r;
+  sh.moveTo(-x, -h/2); sh.lineTo(x, -h/2); sh.quadraticCurveTo(w/2, -h/2, w/2, -y);
+  sh.lineTo(w/2, y); sh.quadraticCurveTo(w/2, h/2, x, h/2); sh.lineTo(-x, h/2);
+  sh.quadraticCurveTo(-w/2, h/2, -w/2, y); sh.lineTo(-w/2, -y); sh.quadraticCurveTo(-w/2, -h/2, -x, -h/2);
+  const bev = Math.min(0.06, d/3);
+  const geo = new THREE.ExtrudeGeometry(sh, { depth: d - 2*bev, bevelEnabled:true, bevelSize:bev, bevelThickness:bev, bevelSegments:3, curveSegments:6 });
+  geo.center();
+  const mesh = new THREE.Mesh(geo, m); mesh.castShadow = true;
+  return mesh;
+}
+function deskChair(){ // high-back executive chair in black leather with mesh side panels; faces +z, back at -z
+  const g = new THREE.Group();
+  const leather = new THREE.MeshStandardMaterial({ color:0x1b1c1f, roughness:0.42, metalness:0.05 });
+  const meshPanel = new THREE.MeshStandardMaterial({ color:0x34373c, roughness:0.95 });
+  const plastic = new THREE.MeshStandardMaterial({ color:0x111214, roughness:0.55 });
+  // five-star base on casters
+  cyl(g, 0.16, 0.18, plastic, 0, 0.32, 0, 16);
+  for (let i = 0; i < 5; i++){
+    const a = i / 5 * Math.PI * 2 + Math.PI/2, arm = new THREE.Group();
+    arm.rotation.y = a; g.add(arm);
+    const leg = box(arm, 0.14, 0.1, 1.0, plastic, 0, 0.27, 0.55); leg.rotation.x = 0.08;
+    const wheel = cyl(arm, 0.09, 0.08, plastic, 0, 0.09, 1.02, 14); wheel.rotation.z = Math.PI/2;
+    cyl(arm, 0.035, 0.12, plastic, 0, 0.2, 1.02, 8);   // caster stem
+  }
+  cyl(g, 0.065, 0.95, mat.chrome, 0, 0.82, 0, 12);    // gas lift
+  cyl(g, 0.09, 0.35, plastic, 0, 1.15, 0, 12);         // lift shroud
+  box(g, 0.75, 0.14, 0.8, plastic, 0, 1.36, -0.05);    // tilt mechanism
+  const lever = cyl(g, 0.025, 0.45, plastic, 0.45, 1.33, 0.12, 8); lever.rotation.z = Math.PI/2;
+  // seat: thick padded cushion with a rolled front edge
+  const seat = cushion(1.75, 1.65, 0.36, 0.28, leather);
+  seat.rotation.x = -Math.PI/2; seat.position.set(0, 1.6, 0.02); g.add(seat);
+  const roll = cyl(g, 0.17, 1.55, leather, 0, 1.6, 0.78, 16); roll.rotation.z = Math.PI/2;
+  // tall back, leaning back a little: main pad, separate headrest, lumbar bulge, mesh side panels
+  const back = new THREE.Group(); back.position.set(0, 1.62, -0.78); back.rotation.x = -0.16; g.add(back);
+  const shell = cushion(1.7, 2.35, 0.3, 0.3, leather); shell.position.set(0, 1.2, 0); back.add(shell);
+  const head = cushion(1.35, 0.62, 0.26, 0.22, leather); head.position.set(0, 2.68, 0.03); back.add(head);
+  box(back, 1.2, 0.05, 0.05, plastic, 0, 2.33, 0.16, false);   // seam between back and headrest
+  const lumbar = cushion(1.2, 0.55, 0.14, 0.2, leather); lumbar.position.set(0, 0.5, 0.17); back.add(lumbar);
+  [-1, 1].forEach(sx => {
+    const panel = cushion(0.34, 1.3, 0.06, 0.12, meshPanel); panel.position.set(sx * 0.55, 1.45, 0.15); back.add(panel);
+  });
+  // padded loop armrests, fixed to the seat at the back and the front
+  [-1, 1].forEach(sx => {
+    const x = sx * 0.98;
+    const curve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(x, 1.5, -0.55), new THREE.Vector3(x, 2.1, -0.5), new THREE.Vector3(x, 2.32, -0.15),
+      new THREE.Vector3(x, 2.3, 0.35), new THREE.Vector3(x, 2.05, 0.55), new THREE.Vector3(x, 1.62, 0.45)
+    ]);
+    const loop = new THREE.Mesh(new THREE.TubeGeometry(curve, 32, 0.065, 10), plastic);
+    loop.castShadow = true; g.add(loop);
+    const pad = cushion(0.26, 0.85, 0.12, 0.1, leather);
+    pad.rotation.x = -Math.PI/2; pad.position.set(x, 2.38, 0.05); g.add(pad);
+  });
+  return g;
+}
+function slipperChair(){ // 2'4" x 2'10"
+  const g = new THREE.Group(), W = 2.33, D = 2.83;
+  box(g, W, 1.2, D, mat.fabricDark, 0, 0.75, 0.05);
+  box(g, W, 1.9, 0.4, mat.fabricDark, 0, 2.0, -D/2 + 0.25).rotation.x = -0.12;
+  [-1,1].forEach(sx => [-1,1].forEach(sz => box(g, 0.1, 0.3, 0.1, mat.woodDark, sx*(W/2-0.2), 0.15, sz*(D/2-0.2))));
+  return g;
+}
+function rockingChair(){ // birch bentwood cantilever rocker with a black cushion, faces +z; about 2' wide
+  const g = new THREE.Group();
+  const birch = M(0xe6cfa0, { roughness:0.55 }), cush = M(0x1f2227, { roughness:0.85 });
+  const band = (pts, x) => {
+    const m = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts.map(([z, y]) => new THREE.Vector3(0, y, z))), 32, 0.07, 8), birch);
+    m.scale.x = 0.55; m.position.x = x; m.castShadow = true; m.receiveShadow = true; g.add(m);
+  };
+  [-0.95, 0.95].forEach(x => {
+    band([[-1.45, 0.55], [-1.0, 0.14], [0, 0.08], [1.0, 0.14], [1.45, 0.55]], x);          // rocker runner
+    band([[-1.2, 0.25], [-0.5, 1.05], [0.4, 1.5], [0.95, 1.62], [0.35, 1.72], [-0.7, 1.75]], x);   // arm loop
+    band([[0.95, 1.62], [1.0, 1.0], [0.9, 0.3]], x);                                        // front post to the runner
+    band([[-0.7, 1.75], [-1.05, 2.5], [-1.15, 3.2]], x);                                    // frame rising behind the back cushion
+  });
+  box(g, 1.9, 0.08, 0.2, birch, 0, 1.1, 0.4);
+  box(g, 1.9, 0.08, 0.2, birch, 0, 1.0, -0.65);
+  box(g, 1.55, 0.22, 1.55, cush, 0, 1.28, 0.05);
+  const back = box(g, 1.5, 2.5, 0.22, cush, 0, 2.55, -0.95); back.rotation.x = -0.3;
+  return g;
+}
+function wallTV(){ // flat panel on a wall mount, screen faces +z, back against the wall at local z = -0.05
+  const g = new THREE.Group();
+  box(g, 5.4, 3.1, 0.1, mat.black, 0, 0, 0);
+  g.userData.screen = box(g, 5.2, 2.9, 0.012, M(0x0d0f12, { roughness:0.15, metalness:0.2 }), 0, 0, 0.056, false);
+  box(g, 1.2, 1.0, 0.08, mat.steel, 0, 0, -0.09, false);
+  return g;
+}
+function coffeeTable(R){ // round wood top on a black pedestal
+  const g = new THREE.Group();
+  cyl(g, R, 0.12, mat.wood, 0, 1.44, 0, 48);
+  cyl(g, 0.12, 1.4, mat.black, 0, 0.7, 0, 12);
+  cyl(g, R*0.5, 0.06, mat.black, 0, 0.03, 0, 32);
+  return g;
+}
+function tvStand(){ // 7'5" x 1'7"
+  const g = new THREE.Group(), W = 7.42, D = 1.58;
+  box(g, W, 1.7, D, mat.woodDark, 0, 0.85, 0);
+  box(g, 0.6, 0.06, 0.6, mat.black, 0, 1.73, 0);
+  box(g, 0.12, 0.4, 0.12, mat.black, 0, 1.95, 0);
+  box(g, 5.4, 3.1, 0.12, mat.black, 0, 3.7, 0);
+  return g;
+}
+const haloTex = (() => {   // soft radial glow drawn around a lamp that's on
+  const c = document.createElement("canvas"); c.width = c.height = 128;
+  const ctx = c.getContext("2d"), gr = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+  gr.addColorStop(0, "rgba(255,255,255,1)"); gr.addColorStop(0.25, "rgba(255,255,255,.55)"); gr.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = gr; ctx.fillRect(0, 0, 128, 128);
+  return new THREE.CanvasTexture(c);
+})();
+const ringTex = (() => {   // selection ring shown around a smart bulb on hover / while dimming
+  const c = document.createElement("canvas"); c.width = c.height = 128;
+  const ctx = c.getContext("2d");
+  ctx.beginPath(); ctx.arc(64, 64, 54, 0, Math.PI*2);
+  ctx.lineWidth = 11; ctx.strokeStyle = "rgba(15,25,40,.35)"; ctx.stroke();
+  ctx.lineWidth = 5; ctx.strokeStyle = "#fff"; ctx.stroke();
+  return new THREE.CanvasTexture(c);
+})();
+const hitMat = new THREE.MeshBasicMaterial({ visible:false });   // invisible, but still raycastable
+// one bulb of a lamp: its glowing shade material, a point light, a halo, a hover ring and a generous
+// invisible hit sphere, all driven by the smart-lamp code
+function lampBulb(g, x, y, range, haloSize, hitR, lightLift=0){
+  const glow = new THREE.MeshStandardMaterial({ color:0xfaf6ec, emissive:0xffe9b8, emissiveIntensity:0.45, roughness:0.6, side:THREE.DoubleSide });
+  const bulb = new THREE.PointLight(0xffc98a, 0, range, 2);   // decay 2 gives a soft, gradual falloff on the floor
+  bulb.position.set(x, y - 0.3 + lightLift, 0); g.add(bulb);
+  bulb.castShadow = true;   // so walls keep each lamp's light in its own room
+  bulb.shadow.mapSize.set(512, 512); bulb.shadow.bias = -0.004; bulb.shadow.radius = 3;
+  Object.assign(bulb.shadow.camera, { near:0.2, far:range });
+  const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map:haloTex, color:0xffc070, transparent:true, opacity:0, blending:THREE.AdditiveBlending, depthWrite:false }));
+  halo.position.set(x, y, 0); halo.scale.set(haloSize, haloSize, 1); halo.raycast = () => {}; g.add(halo);
+  const ring = new THREE.Sprite(new THREE.SpriteMaterial({ map:ringTex, transparent:true, opacity:0, depthTest:false, depthWrite:false }));
+  ring.position.set(x, y, 0); ring.scale.set(hitR * 2.3, hitR * 2.3, 1); ring.renderOrder = 10; ring.raycast = () => {}; g.add(ring);
+  const hit = new THREE.Mesh(new THREE.SphereGeometry(hitR, 12, 8), hitMat);
+  hit.position.set(x, y, 0); g.add(hit);
+  return { glow, bulb, halo, ring, meshes:[hit], level:0, target:0, bright:1, hover:0 };
+}
+function floorLamp(withArm=true){ // black torchiere with a gooseneck reading arm; the arm points along local +x
+  const g = new THREE.Group();
+  const top = lampBulb(g, 0, 6.45, 28, 3.6, 1.0, 0.9);   // light sits up near the ceiling, like a torchiere's bounce
+  top.meshes.push(cyl(g, 0.5, 0.08, mat.black, 0, 0.04, 0, 24), cyl(g, 0.045, 5.5, mat.black, 0, 2.8, 0, 10));
+  const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.07, 0.5, 20, 1, true), mat.black);
+  cup.position.y = 5.7; cup.material = new THREE.MeshStandardMaterial({ color:0x22262c, roughness:0.4, side:THREE.DoubleSide }); g.add(cup);
+  const bowl = new THREE.Mesh(new THREE.SphereGeometry(0.62, 28, 14, 0, Math.PI*2, Math.PI/2, Math.PI/2), top.glow);
+  bowl.scale.y = 0.75; bowl.position.y = 6.5; g.add(bowl);
+  top.meshes.push(cup, bowl);
+  g.userData.bulbs = { top };
+  if (!withArm) return g;   // single torchiere
+  const arm = lampBulb(g, 1.62, 4.3, 13, 2.0, 0.8);
+  const curve = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(0, 3.5, 0), new THREE.Vector3(0.25, 4.3, 0), new THREE.Vector3(0.85, 4.75, 0), new THREE.Vector3(1.5, 4.55, 0)
+  ]);
+  const tube = new THREE.Mesh(new THREE.TubeGeometry(curve, 24, 0.03, 8), mat.black);
+  g.add(tube);
+  const sh = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.3, 0.55, 18, 1, true), arm.glow);
+  sh.position.set(1.62, 4.3, 0); sh.rotation.z = Math.PI/4; g.add(sh);
+  arm.meshes.push(tube, sh);
+  g.userData.bulbs.arm = arm;
+  return g;
+}
+function vanity(W, D){ // bathroom sink cabinet
+  const g = new THREE.Group();
+  box(g, W, 2.7, D, mat.wood, 0, 1.35, 0);
+  box(g, W + 0.05, 0.1, D + 0.05, mat.white, 0, 2.75, 0);
+  const sink = cyl(g, Math.min(W, D) * 0.3, 0.06, mat.tile, 0, 2.81, 0.05); sink.scale.x = 1.3;
+  box(g, 0.08, 0.4, 0.08, mat.steel, 0, 3.0, -D/2 + 0.2);
+  return g;
+}
+function toilet(){ // standard 1'8" x 2'5", tank at -z
+  const g = new THREE.Group(), D = 2.42;
+  box(g, 1.6, 1.25, 0.62, mat.white, 0, 2.2, -D/2 + 0.31);
+  const base = cyl(g, 0.42, 1.2, mat.white, 0, 0.6, 0.3); base.scale.z = 1.4;
+  const bowl = cyl(g, 0.62, 0.22, mat.white, 0, 1.3, 0.38); bowl.scale.z = 1.35;
+  box(g, 1.0, 1.25, 0.5, mat.white, 0, 0.62, -D/2 + 0.75);
+  return g;
+}
+function shower(W, D){ // tiled pan with curb and drain, glass on +z
+  const g = new THREE.Group();
+  box(g, W, 0.12, D, mat.tile, 0, 0.06, 0, false);
+  box(g, W, 0.35, 0.3, mat.tile, 0, 0.175, D/2 - 0.15, false);
+  box(g, W*0.55, 6.2, 0.05, mat.glass, -W*0.2, 3.45, D/2 - 0.15, false);
+  cyl(g, 0.1, 0.04, mat.steel, 0, 0.14, 0, 12);
+  return g;
+}
+
+// Kitchen appliances (each faces +z)
+function range(){ // 30" stainless gas range
+  const g = new THREE.Group(), W = 2.5, D = 2.17;
+  box(g, W, 2.94, D, mat.steel, 0, 1.47, 0);
+  box(g, W, 0.06, D, mat.black, 0, 2.97, 0);
+  box(g, W, 0.32, 0.14, mat.steel, 0, 3.16, -D/2 + 0.07);
+  box(g, W - 0.45, 1.2, 0.03, mat.black, 0, 1.55, D/2 + 0.01);
+  box(g, W - 0.7, 0.07, 0.1, mat.chrome, 0, 2.45, D/2 + 0.1);
+  [-1.0, -0.5, 0, 0.5, 1.0].forEach(x => {
+    const k = cyl(g, 0.06, 0.07, mat.black, x, 2.75, D/2 + 0.04, 12); k.rotation.x = Math.PI/2;
+  });
+  [[-0.6,-0.45],[0.6,-0.45],[-0.6,0.5],[0.6,0.5]].forEach(([x,z]) => {
+    cyl(g, 0.3, 0.04, mat.black, x, 3.02, z);
+    cyl(g, 0.12, 0.05, mat.steel, x, 3.04, z);
+  });
+  return g;
+}
+function dishwasher(){ // 24"
+  const g = new THREE.Group(), W = 1.96, D = 1.95;
+  box(g, W, 2.84, D, mat.steel, 0, 1.42, 0);
+  box(g, W - 0.1, 0.22, 0.02, mat.black, 0, 2.62, D/2 + 0.006);
+  box(g, 1.5, 0.06, 0.09, mat.chrome, 0, 2.3, D/2 + 0.07);
+  return g;
+}
+function fridge(){ // side-by-side stainless, 3' x 2'9"; freezer + dispenser on the left
+  const g = new THREE.Group(), W = 3.0, D = 2.75, s = -0.3;
+  box(g, W, 5.95, D, mat.steel, 0, 2.975, 0);
+  box(g, 0.025, 5.8, 0.02, mat.black, s, 2.9, D/2 + 0.005);
+  box(g, 0.5, 0.95, 0.02, mat.black, s - 0.6, 3.9, D/2 + 0.006);
+  [s - 0.14, s + 0.14].forEach(x => box(g, 0.06, 2.1, 0.1, mat.chrome, x, 3.8, D/2 + 0.06));
+  return g;
+}
+
+// ---------- Kitchen: diagonal corner sink (NW), range on the west wall ----------
+const uppers = new THREE.Group(); world.add(uppers);   // hidden when walls are cut low
+
+function cabDoor(parent, w, h, x, yc, z, pullY, side){
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), doorMat(w, h));
+  m.position.set(x, yc, z); m.receiveShadow = true; parent.add(m);
+  box(parent, 0.035, 0.5, 0.05, mat.chrome, x + side*(w/2 - 0.14), pullY, z + 0.03, false);
+}
+// vertical prism from a plan-view polygon [[x, z], ...]
+function prism(pts, h, m, y0, parent){
+  const s = new THREE.Shape();
+  pts.forEach(([x, z], i) => i ? s.lineTo(x, -z) : s.moveTo(x, -z));
+  const mesh = new THREE.Mesh(new THREE.ExtrudeGeometry(s, { depth:h, bevelEnabled:false }), m);
+  mesh.rotation.x = -Math.PI/2; mesh.position.y = y0;
+  mesh.castShadow = true; mesh.receiveShadow = true;
+  parent.add(mesh); return mesh;
+}
+// a run of upper cabinets on a wall; (x, z) = centre of the run on the wall face, rotY turns it to face the room
+const UB = 4.5, UT = 7.88;
+function wallUpper(x, z, rotY, len, yb, yt, n, depth=1.0){
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = rotY; uppers.add(g);
+  box(g, len, yt - yb, depth, mat.cab, 0, (yb + yt)/2, depth/2);
+  if (yt >= UT) box(g, len, 0.12, depth + 0.1, mat.cab, 0, 7.94, (depth + 0.1)/2);
+  const w = len / n;
+  for (let i = 0; i < n; i++){
+    cabDoor(g, w - 0.02, yt - yb - 0.08, -len/2 + w*(i + 0.5), (yb + yt)/2, depth + 0.004, yb + (yb > 5 ? 0.25 : 0.55), i % 2 === 0 ? 1 : -1);
+  }
+  return g;
+}
+function microwaveAt(x, z, rotY){   // over-the-range microwave on a wall
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = rotY; uppers.add(g);
+  box(g, 2.46, 1.33, 1.2, mat.steel, 0, 4.5 + 0.665, 0.6);
+  box(g, 1.6, 0.9, 0.02, mat.black, -0.35, 5.1, 1.21, false);
+  box(g, 0.05, 0.9, 0.08, mat.chrome, 0.62, 5.1, 1.24, false);
+}
+
+function buildKitchen(){
+  const BASE_H = 2.88, DEPTH = 2.0, L = 3.0;           // L = leg length of the diagonal corner sink unit
+  const ZS = KN + L;                                   // west-wall run starts south of the corner unit
+  const ZE = 7.3 - T/2;                                // south end of the nook's west wall
+  // chamfered corner: the diagonal front runs from the dishwasher's front corner to the range's front corner,
+  // so it lines up with the fronts of the north-wall and west-wall runs (2 ft deep)
+  const corner = [[KW, KN], [KW + L, KN], [KW + L, KN + DEPTH], [KW + DEPTH, KN + L], [KW, KN + L]];
+
+  // --- corner sink unit: the diagonal front faces the middle of the room ---
+  prism(corner, BASE_H, mat.cab, 0, world);
+  prism(corner, 0.12, mat.quartzTri, BASE_H, world);
+  const dg = new THREE.Group(); dg.position.set(KW + (L + DEPTH)/2, 0, KN + (L + DEPTH)/2); dg.rotation.y = Math.PI/4; world.add(dg);
+  cabDoor(dg, 1.3, 2.7, -0.33, 1.46, 0.004, 2.45, 1);
+  cabDoor(dg, 1.3, 2.7,  1.0, 1.46, 0.004, 2.45, -1);
+  const sk = new THREE.Group(); sk.position.set(KW + 1.7, 0, KN + 1.7); sk.rotation.y = Math.PI/4; world.add(sk);
+  box(sk, 1.2, 0.02, 1.1, mat.steel, 0, 3.01, 0, false);
+  box(sk, 1.06, 0.025, 0.9, mat.sinkDark, 0, 3.017, 0, false);
+  cyl(sk, 0.035, 0.9, mat.chrome, 0, 3.45, -0.62, 12);
+  box(sk, 0.06, 0.06, 0.45, mat.chrome, 0, 3.9, -0.62 + 0.2, false);
+
+  // --- west wall: range, then a base cabinet ---
+  place(range(), KW + 1.085, ZS + 1.25, Math.PI/2);
+  const wl = ZE - (ZS + 2.5);                          // length left after the range
+  box(world, 2.0, BASE_H, wl, mat.cab, KW + 1.0, BASE_H/2, ZS + 2.5 + wl/2);
+  box(world, 2.1, 0.12, wl, mat.quartz, KW + 1.05, 2.94, ZS + 2.5 + wl/2);
+  const wg = new THREE.Group(); wg.position.set(KW + 2.0, 0, ZS + 2.5 + wl/2); wg.rotation.y = Math.PI/2; world.add(wg);
+  cabDoor(wg, wl - 0.1, 2.7, 0, 1.46, 0.004, 2.45, 1);
+
+  // --- north wall: dishwasher, storage cabinet, fridge in the NE corner ---
+  place(dishwasher(), KW + 4.0, KN + 0.975);
+  box(world, 3.0, BASE_H, DEPTH, mat.cab, KW + 6.5, BASE_H/2, KN + DEPTH/2);
+  cabDoor(world, 1.46, 2.7, KW + 5.75, 1.46, KN + DEPTH + 0.004, 2.45, 1);
+  cabDoor(world, 1.46, 2.7, KW + 7.25, 1.46, KN + DEPTH + 0.004, 2.45, -1);
+  box(world, 5.0, 0.12, 2.1, mat.quartz, KW + 5.5, 2.94, KN + 1.05);
+  place(fridge(), KW + 9.5, KN + 1.375);
+
+  // --- mosaic backsplash on both walls ---
+  box(world, 8.0, 1.5, 0.03, mat.splash, KW + 4.0, 3.75, KN + 0.015, false);
+  box(world, 0.03, 1.5, ZE - KN, mat.splashSide, KW + 0.015, 3.75, (KN + ZE)/2, false);
+
+  // --- upper cabinets ---
+  const UH = UT - UB, LU = 2.2;
+  const cu = [[KW, KN], [KW + LU, KN], [KW, KN + LU]];
+  prism(cu, UH, mat.cab, UB, uppers);
+  prism(cu, 0.12, mat.cab, UT, uppers);
+  const ug = new THREE.Group(); ug.position.set(KW + LU/2, 0, KN + LU/2); ug.rotation.y = Math.PI/4; uppers.add(ug);
+  cabDoor(ug, 1.4, 3.3, -0.72, UB + UH/2, 0.004, UB + 0.55, 1);
+  cabDoor(ug, 1.4, 3.3,  0.72, UB + UH/2, 0.004, UB + 0.55, -1);
+  wallUpper(KW + LU + 2.9, KN, 0, 5.8, UB, UT, 4);                  // north wall, corner to fridge cabinet
+  wallUpper(KW + 9.5, KN, 0, 3.0, 6.1, UT, 2, 2.0);                 // above the fridge
+  wallUpper(KW, KN + LU + (ZS - KN - LU)/2, Math.PI/2, ZS - KN - LU, UB, UT, 1);   // filler north of the range
+  wallUpper(KW, ZS + 1.25, Math.PI/2, 2.5, 5.85, UT, 2);            // above the microwave
+  microwaveAt(KW, ZS + 1.25, Math.PI/2);
+  wallUpper(KW, ZS + 2.5 + wl/2, Math.PI/2, wl, UB, UT, 1);         // south of the range
+}
+buildKitchen();
+
+// ---------- Baseboards + baseboard heater ----------
+const BB = 0.05, BH = 0.42;
+function bbX(x1, x2, z){ box(world, x2 - x1, BH, BB, mat.trim, (x1 + x2)/2, BH/2, z, false); }
+function bbZ(z1, z2, x){ box(world, BB, BH, z2 - z1, mat.trim, x, BH/2, (z1 + z2)/2, false); }
+const hallN = 7.3 + T/2 + BB/2 + 0.002, hallS = 12.5 - T/2 - BB/2 - 0.002;
+bbX(14.12, 23.9, hallN); bbX(26.23, 35.1, hallN); bbX(37.43, KW, hallN);
+bbX(14.12, 34.0, hallS);
+bbZ(12.5 + T/2, 19.3 - T/2, 34 + T/2 + BB/2 + 0.002);
+bbX(34 + T/2, EI, 19.3 - T/2 - BB/2 - 0.002);
+bbZ(5.45, 10.7, EI - BB/2 - 0.002);
+bbZ(15.7, 19.3 - T/2, EI - BB/2 - 0.002);
+// white hot-water baseboard heaters under each window
+box(world, 0.28, 0.72, 2.4, mat.trim, EI - 0.14 - 0.002, 0.12 + 0.36, 4.15, false);
+box(world, 0.28, 0.72, 5.0, mat.trim, EI - 0.14 - 0.002, 0.12 + 0.36, 13.2, false);
+
+// ---------- Live-in furniture ----------
+place(bed(), 5.6, 15.5);
+const bedWest = place(endTable(), 1.75, 18.3);            // bedside tables, one each side of the headboard
+const bedEast = place(endTable(), 9.45, 18.3);
+place(desk(), 2.7, 5.85);
+place(deskChair(), 2.7, 3.75);                              // faces the desk (+z), backrest toward the room
+place(sofa(5.25, 2.42, M(0x23272d, { roughness:0.9 }), M(0x333840, { roughness:0.9 })), 8.35, 5.9, Math.PI);           // office sofa, back to wall
+place(sofa(7.83, 3.75, M(0x8a9098, { roughness:0.92 }), M(0x9ea4ac, { roughness:0.92 })), 41.5, 12.6);                    // living sofa, facing TV
+const tvG = place(wallTV(), 41.0, 19.1 - 0.05, Math.PI); tvG.position.y = 4.9;   // wall-mounted, centre ~4'11" up
+place(coffeeTable(1.4), 41.25, 16.8);
+place(rockingChair(), 46.0, 16.2, -3*Math.PI/4);       // rocker, turned diagonally toward the sofa
+const tvLamp = place(floorLamp(), 35.0, 18.3, Math.PI/4);               // corner lamps flanking the TV, reading arms angled into the room
+const windowLamp = place(floorLamp(), 50.5, 18.3, 3*Math.PI/4);          // (facing the TV, this one is on the left)
+const officeLamp = place(floorLamp(false), 1.0, 1.0);                    // single torchiere in the office's NW corner, opposite the sofa (bowl clears both walls)
+// smart bulbs, keyed by their device name (Kasa alias); each TV lamp has a high bulb (top) and a low one (reading arm)
+const smartLamps = {
+  "Living Room Lamp - Light 1": windowLamp.userData.bulbs.top,   // left of the TV, high
+  "Living Room Lamp - Light 2": windowLamp.userData.bulbs.arm,   // left of the TV, low
+  "Living Room Lamp - Light 3": tvLamp.userData.bulbs.top,       // right of the TV, high
+  "Living Room Lamp - Light 4": tvLamp.userData.bulbs.arm,       // right of the TV, low
+  "Office Lamp":                officeLamp.userData.bulbs.top,
+  // the nightstand globes: Aya's on the west side of the bed, Mike's on the east
+  "Aya's Light":                bedWest.userData.bulbs.globe,
+  "Mike's Light":               bedEast.userData.bulbs.globe,
+  // the TV itself (on/off over the network): its screen lights up when it's on
+  "Living Room TV":             tvScreen()
+};
+if (APP) delete smartLamps["Living Room TV"];   // the phone app switches lights only
+// The TV as a switchable device: same parts as a lamp bulb (glow, light, ring, hit area), but the glow is the
+// screen itself, a soft light spills into the room from in front of it, and there's no halo.
+function tvScreen(){
+  const d = lampBulb(tvG, 0, 0, 9, 0.01, 2.4);
+  tvG.userData.screen.material = d.glow;
+  d.meshes.push(tvG.userData.screen);
+  d.bulb.position.set(0, 0, 1.2);   // in front of the screen, so the TV's own body doesn't block it
+  d.screen = true; d.switchOnly = true;
+  return d;
+}
+// extra bulbs that follow another lamp's device (same switch): [device name, bulb]
+const linkedBulbs = [];
+// friendlier names shown in the tooltip, where the device's own name isn't the one we use
+const lampNames = { "Living Room TV": "TV" };
+// bath 1: 5'x2'8" shower; toilet back against the east wall, compact vanity beside it on the same wall
+place(shower(5.0, 2.67), 26.33, 1.51);
+place(toilet(), 27.62, 4.6, -Math.PI/2);
+place(vanity(1.25, 1.4), 28.125, 6.475, -Math.PI/2);
+// bath 2: full-width shower, toilet + small vanity on the left, door hinged right
+place(shower(6.1, 2.67), 35.25, 1.51);
+place(toilet(), 33.39, 4.15, Math.PI/2);
+place(vanity(1.67, 1.5), 32.93, 6.28, Math.PI/2);
+
+// Everything lit must receive shadows: with the roof shading the interior, any surface that doesn't
+// (lintels, doors, panels built without the box() helper) would glow as if it were in full sun.
+world.traverse(o => { if (o.isMesh && o.material !== blockerMat) o.receiveShadow = true; });
+
+// ---------- E-ink style (inside the wall dashboard) ----------
+// Flat light greys and black outlines, no textures, sun or directional shading: the only light and shadow
+// on screen comes from the lamps, so lamps that are on stand out clearly on an e-ink panel.
+if (EMBEDDED){
+  sun.visible = false; fill.visible = false;
+  hemi.color.set(0xffffff); hemi.groundColor.set(0xffffff); hemi.intensity = 0.62;   // same light from every side: flat
+  const lampGlows = new Set();
+  Object.values(smartLamps).forEach(L => lampGlows.add(L.glow));
+  Object.values(tvLamp.userData.bulbs).forEach(b => lampGlows.add(b.glow));
+  const outline = new THREE.LineBasicMaterial({ color:0x000000 });
+  const meshes = [];
+  world.traverse(o => { if (o.isMesh && o.material !== blockerMat && o.material !== hitMat) meshes.push(o); });
+  meshes.forEach(o => {
+    [].concat(o.material).forEach(m => {
+      if (lampGlows.has(m) || m.isMeshBasicMaterial || m.userData.eink) return;   // lamps keep their glow; labels stay as they are
+      m.userData.eink = true;
+      const c = m.color, lum = 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
+      const g = m.map ? 0.86 : 0.5 + 0.5 * lum;   // textured surfaces (wood, stone, tile) become a light flat grey
+      m.map = null; m.color.setRGB(g, g, g);
+      if ("roughness" in m){ m.roughness = 1; m.metalness = 0; }   // no shiny highlights
+      if (m.emissive) m.emissive.setRGB(0, 0, 0);
+      m.needsUpdate = true;
+    });
+    const edges = new THREE.LineSegments(new THREE.EdgesGeometry(o.geometry, 30), outline);
+    edges.raycast = () => {};   // outlines never catch taps meant for lamps or walls
+    o.add(edges);
+  });
+}
+
+// ---------- Floor labels ----------
+const labelMeshes = [];
+function label(text, x, z){
+  const c = document.createElement("canvas"); c.width = 512; c.height = 128;
+  const ctx = c.getContext("2d");
+  ctx.font = '600 64px "Archivo", system-ui, sans-serif';
+  ctx.fillStyle = "rgba(27,42,61,0.75)"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.fillText(text, 256, 64);
+  const tex = new THREE.CanvasTexture(c); tex.anisotropy = 4;
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(4, 1), new THREE.MeshBasicMaterial({ map:tex, transparent:true, depthWrite:false }));
+  m.rotation.x = -Math.PI/2; m.position.set(x, 0.03, z);
+  m.visible = false;   // room labels start off; the toolbar button shows them
+  world.add(m); labelMeshes.push(m);
+}
+function buildLabels(){
+  rooms.forEach(r => r.label && label(r.name, r.label[0], r.label[1]));
+  extraLabels.forEach(([t,x,z]) => label(t, x, z));
+}
+(document.fonts && document.fonts.load) ? document.fonts.load('600 64px "Archivo"').then(buildLabels, buildLabels) : buildLabels();
+
+// ---------- Wall height ----------
+let wallH = WALL_H, wallTarget = WALL_H;
+let keepUp = new Set();   // walls that stay full height while the others are cut (cutaway view)
+let cutDown = new Set();  // walls kept cut while the others stand (top view)
+let cutDoors = new Set(); // doorways in those walls (index into openings/leaves): their door and lintel are cut too
+function applyWallHeight(h){
+  wallMeshes.forEach(m => m.scale.y = keepUp.has(m) ? WALL_H : cutDown.has(m) ? Math.min(h, CUT_H) : h);
+  doorMeshes.forEach((m, i) => m.scale.y = Math.min(DOOR_H, cutDoors.has(i) ? Math.min(h, CUT_H) : h));
+  lintels.forEach((m, i) => m.visible = h > DOOR_H + 0.2 && !cutDoors.has(i));
+  wallParts.forEach(p => {
+    p.below.scale.y = Math.min(p.sill, h);
+    p.above.visible = h > p.head + 0.01;
+    p.above.scale.y = Math.max(h - p.head, 0.001);
+    p.trim.visible = h >= p.head - 0.001;
+  });
+  uppers.visible = h > 4.6;
+  renderer.shadowMap.needsUpdate = true;
+}
+applyWallHeight(wallH);
+
+// ---------- Camera views ----------
+let camTween = null;
+const P = (x, y, z) => new THREE.Vector3(x - CENTER.x, y, z - CENTER.z);
+function viewFor(kind){
+  const aspect = camera.aspect, wide = aspect >= 1;
+  if (kind === "living") return wide   // looking south over the living room from above the kitchen side
+    ? { pos: P(33.35, 28.19, -10.31), target: P(41.94, 3.6, 14.56) }
+    : { pos: P(29.91, 38.03, -20.26), target: P(41.94, 3.6, 14.56) };
+  if (kind === "cutaway") return wide   // from beyond the kitchen corner, across the whole apartment toward the bedroom
+    ? { pos: P(57.35, 32.72, -28.28), target: P(27.75, 0, 9.65) }
+    : { pos: P(66.23, 42.54, -39.66), target: P(27.75, 0, 9.65) };
+  if (kind === "office") return wide   // close in from the hall side, looking down at the desk, sofa and torchiere
+    ? { pos: P(22.37, 18.97, 7.79), target: P(16.72, 13.56, 6.1) }
+    : { pos: P(24.63, 21.13, 8.47), target: P(16.72, 13.56, 6.1) };
+  if (kind === "bedroom") return wide   // from above the office, looking down at the bed and nightstands
+    ? { pos: P(8.91, 27.98, 0.82), target: P(5.36, 3.0, 15.28) }
+    : { pos: P(10.33, 37.97, -4.96), target: P(5.36, 3.0, 15.28) };
+  const fit = wide ? 1.15 : 1.9 / aspect;
+  return kind === "top"
+    ? { pos: new THREE.Vector3(0, 52 * fit, -0.01), target: new THREE.Vector3(0,0,0) }
+    : { pos: new THREE.Vector3(-14 * fit, 34 * fit, 34 * fit), target: new THREE.Vector3(2,0,0) };
+}
+function goTo(kind, instant){
+  const v = viewFor(kind);
+  if (instant){ camera.position.copy(v.pos); controls.target.copy(v.target); controls.update(); return; }
+  camTween = { t:0, p0:camera.position.clone(), t0:controls.target.clone(), p1:v.pos, t1:v.target };
+}
+
+// ---------- Theme ----------
+const mq = window.matchMedia("(prefers-color-scheme: dark)");
+function applyTheme(){
+  const bg = getComputedStyle(document.documentElement).getPropertyValue("--bg").trim() || "#e9ecef";
+  scene.background = new THREE.Color(bg);
+  ground.material.color.set(bg);   // blends into the page background
+  scene.fog = new THREE.Fog(bg, 90, 220);
+  if (SNAPSHOT || APP || WIDGET){ scene.background = null; scene.fog = null; ground.visible = false; }   // only the apartment, on transparent
+  invalidate();
+}
+mq.addEventListener ? mq.addEventListener("change", applyTheme) : mq.addListener(applyTheme);
+new MutationObserver(applyTheme).observe(document.documentElement, { attributes:true, attributeFilter:["data-theme"] });
+applyTheme();
+
+// ---------- UI ----------
+const viewBtns = { "3d": document.getElementById("b3d"), top: document.getElementById("btop"), living: document.getElementById("bliv"), bedroom: document.getElementById("bbed"), office: document.getElementById("boff"), cutaway: document.getElementById("bcwy") };
+const bcut = document.getElementById("bcut"), blab = document.getElementById("blab");
+// Cutaway view: every wall cut except the bedroom's headboard wall, the long west wall (bedroom side
+// wall + office far wall), the living room TV wall and the living wall beside the TV, away from the chair
+const CUTAWAY_KEEP = ["0,19.3,11.2,19.3", "0,0,0,19.3", "34,19.3,51.5,19.3", "34,12.5,34,19.3"];
+// Top view: the bedroom's hall-side wall (by Aya's Light), the living wall by the TV lamp and the hallway wall between them
+const TOP_CUT = ["11.2,10.295,11.2,19.3", "11.2,12.5,11.275,12.5", "14.295,12.5,34,12.5", "34,12.5,34,19.3"];
+let cutBeforeCutaway = null;
+function setCut(on){ bcut.setAttribute("aria-pressed", String(on)); wallTarget = on ? CUT_H : WALL_H; }
+function setView(k, instant){
+  Object.keys(viewBtns).forEach(key => viewBtns[key].setAttribute("aria-pressed", String(key === k)));
+  if (k === "cutaway"){
+    if (cutBeforeCutaway === null) cutBeforeCutaway = bcut.getAttribute("aria-pressed") === "true";
+    keepUp = new Set(wallMeshes.filter(m => CUTAWAY_KEEP.includes(m.userData.seg)));
+    setCut(true);
+  } else if (cutBeforeCutaway !== null){   // leaving the cutaway: all walls follow Cut walls again, as it was before
+    keepUp = new Set(); setCut(cutBeforeCutaway); cutBeforeCutaway = null;
+  }
+  cutDown = new Set(k === "top" ? wallMeshes.filter(m => TOP_CUT.includes(m.userData.seg)) : []);
+  // a doorway lying on the same line as a cut wall belongs to it (openings and leaves share their order)
+  const cutLines = [...cutDown].map(m => m.userData.seg.split(",").map(Number));
+  cutDoors = new Set(openings.map((o, i) => cutLines.some(([x1, z1, x2, z2]) =>
+    (x1 === x2 && o[0] === o[2] && o[0] === x1) || (z1 === z2 && o[1] === o[3] && o[1] === z1)) ? i : -1).filter(i => i >= 0));
+  if (instant) wallH = wallTarget;   // no wall animation when jumping straight there (page load)
+  applyWallHeight(wallH);
+  goTo(k, instant);
+}
+Object.keys(viewBtns).forEach(k => { viewBtns[k].onclick = () => setView(k); });
+bcut.onclick = () => setCut(bcut.getAttribute("aria-pressed") !== "true");
+blab.onclick = () => {
+  const on = blab.getAttribute("aria-pressed") !== "true";
+  blab.setAttribute("aria-pressed", String(on));
+  labelMeshes.forEach(m => m.visible = on); invalidate();
+};
+controls.addEventListener("start", () => { camTween = null; });
+
+// ---------- Smart lamps (served by lamp_bridge.py) ----------
+// click a bulb to toggle it; press and drag up/down on it to dim
+const lampTip = document.getElementById("lampTip");
+const dimmer = document.getElementById("dimmer"), dimFill = dimmer.querySelector("i"), dimLabel = dimmer.querySelector("b");
+[...Object.entries(smartLamps), ...linkedBulbs].forEach(([alias, L]) => L.meshes.forEach(m => m.userData.alias = alias));
+let bridge = false, hovered = null, drag = null;
+const busy = new Set();
+// In the Android app the phone switches the bulb (and stores what it asked for at once); the next poll picks
+// up the bulb's answer, so api() returns nothing there.
+const api = (alias, what, body) => APP
+  ? Promise.resolve(window.AndroidLamps.command(alias, what, body && body.brightness != null ? body.brightness : -1)).then(() => null)
+  : Promise.resolve(null);   // portfolio demo: nothing is sent, the bulbs live only on screen
+function setLamp(alias, on, brightness){
+  const L = smartLamps[alias]; if (!L) return;
+  L.target = on ? 1 : 0;   // a lamp the bridge can't read shows as off, never half-lit (that reads as on on e-ink)
+  if (brightness != null) L.bright = brightness / 100;
+}
+async function pollLamps(){
+  try {
+    let list;
+    if (APP) list = JSON.parse(window.AndroidLamps.states());
+    else throw 0;   // portfolio demo: no bridge to read, so every lamp stays on screen only
+    bridge = true;
+    list.forEach(l => { if (!busy.has(l.alias)) setLamp(l.alias, l.on, l.brightness); });
+  } catch {
+    bridge = false;   // not connected: lamps still toggle and dim on screen, as a preview
+    Object.values(smartLamps).forEach(L => { if (L.target === 0.5) L.target = 0; });   // never-known lamps show as off
+  }
+}
+// a very soft click on toggle, made on the fly (no sound file): a few ms of filtered noise, a little
+// brighter when switching on than off
+let clickCtx = null;
+function softClick(on){
+  try {
+    clickCtx = clickCtx || new (window.AudioContext || window.webkitAudioContext)();
+    if (clickCtx.state === "suspended") clickCtx.resume();
+    const len = Math.ceil(clickCtx.sampleRate * 0.025), buf = clickCtx.createBuffer(1, len, clickCtx.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 4);
+    const src = clickCtx.createBufferSource(), tone = clickCtx.createBiquadFilter(), vol = clickCtx.createGain();
+    src.buffer = buf; tone.type = "bandpass"; tone.frequency.value = on ? 2600 : 1800; tone.Q.value = 1.4; vol.gain.value = 0.12;
+    src.connect(tone); tone.connect(vol); vol.connect(clickCtx.destination); src.start();
+  } catch {}
+}
+async function toggleLamp(alias){
+  if (busy.has(alias)) return;
+  const L = smartLamps[alias];
+  softClick(L.target < 0.5);
+  if (!bridge){ setLamp(alias, L.target < 0.5); return; }   // not connected: on-screen only
+  busy.add(alias); setLamp(alias, L.target < 0.5);   // optimistic flip
+  const j = await api(alias, L.target ? "on" : "off");   // the state wanted, not "toggle": no read first, safe to retry
+  if (j) setLamp(alias, j.on, j.brightness);
+  busy.delete(alias); pollLamps();
+}
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+function hitAt(e){   // nearest visible object under the pointer
+  const r = renderer.domElement.getBoundingClientRect();
+  ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+  const shown = o => o.visible && (!o.parent || shown(o.parent));   // three.js raycasts hidden objects too
+  const hit = ray.intersectObjects(scene.children, true).find(h => shown(h.object));   // nearest, so walls in front block the click
+  return hit && hit.object;
+}
+// Lamps far from the camera shrink to a few pixels, so a tap that misses every lamp still picks the nearest
+// one within LAMP_TAP_PX on screen, as long as nothing (a wall) stands between it and the camera.
+const LAMP_TAP_PX = 34;
+const sightRay = new THREE.Raycaster(), lampPos = new THREE.Vector3(), lampScreen = new THREE.Vector3();
+function lampVisible(alias, L){
+  L.meshes[0].getWorldPosition(lampPos);
+  const dir = lampPos.clone().sub(camera.position), dist = dir.length();
+  sightRay.set(camera.position, dir.normalize()); sightRay.far = dist;
+  const shown = o => o.visible && (!o.parent || shown(o.parent));
+  const first = sightRay.intersectObjects(scene.children, true).find(h => shown(h.object));
+  return !first || first.object.userData.alias === alias;   // first thing along the line of sight is the lamp itself
+}
+function lampAt(e){
+  const o = hitAt(e);
+  if (o && o.userData.alias) return o.userData.alias;
+  const r = renderer.domElement.getBoundingClientRect();
+  camera.updateMatrixWorld();
+  let best = null, bestD = LAMP_TAP_PX;
+  for (const [alias, L] of Object.entries(smartLamps)){
+    L.meshes[0].getWorldPosition(lampScreen).project(camera);
+    if (lampScreen.z > 1) continue;   // behind the camera
+    const d = Math.hypot(r.left + (lampScreen.x + 1) / 2 * r.width - e.clientX, r.top + (1 - lampScreen.y) / 2 * r.height - e.clientY);
+    if (d < bestD && lampVisible(alias, L)){ best = alias; bestD = d; }
+  }
+  return best;
+}
+function showTip(alias, x, y){
+  lampTip.hidden = !alias;
+  if (!alias) return;
+  const L = smartLamps[alias];
+  const state = L.target === 1 ? (L.switchOnly ? "on" : `on · ${Math.round(L.bright * 100)}%`) : L.target === 0 ? "off" : "";
+  lampTip.innerHTML = `<b></b><span>${!bridge ? "Not connected · preview only" : L.switchOnly ? "Tap to toggle" : "Tap to toggle · drag ↕ to dim"}</span>`;
+  const name = lampNames[alias] || alias;
+  lampTip.firstChild.textContent = state ? `${name} · ${state}` : name;
+  lampTip.style.left = x + 16 + "px"; lampTip.style.top = y + 16 + "px";
+}
+function showDimmer(){
+  const pct = Math.round(smartLamps[drag.alias].bright * 100);
+  dimFill.style.height = pct + "%"; dimLabel.textContent = pct + "%";
+  dimmer.style.left = drag.x0 + 22 + "px"; dimmer.style.top = drag.y0 - 48 + "px";
+  dimmer.hidden = false;
+}
+function sendBrightness(final){
+  if (!drag) return;
+  const now = performance.now(), b = Math.round(smartLamps[drag.alias].bright * 100);
+  if (!final && (now - drag.sentAt < 220 || b === drag.sent)) return;   // throttle while dragging
+  drag.sentAt = now; drag.sent = b;
+  if (bridge) api(drag.alias, "brightness", { brightness:b });
+}
+// capture phase on the container, so a press on a lamp never reaches OrbitControls and doesn't orbit
+app.addEventListener("pointerdown", e => {
+  if (e.target !== renderer.domElement || e.button !== 0) return;
+  const alias = lampAt(e);
+  if (!alias) return;
+  e.stopPropagation(); e.preventDefault();
+  try { renderer.domElement.setPointerCapture(e.pointerId); } catch {}   // keeps the drag alive off the canvas
+  const L = smartLamps[alias];
+  drag = { alias, x0:e.clientX, y0:e.clientY, b0:L.bright, moved:false, sentAt:0, sent:null };
+  busy.add(alias); lampTip.hidden = true;
+}, true);
+renderer.domElement.addEventListener("pointermove", e => {
+  if (drag){
+    const dy = drag.y0 - e.clientY;
+    if (!drag.moved && Math.abs(dy) < 6) return;
+    drag.moved = true;
+    const L = smartLamps[drag.alias];
+    if (L.switchOnly){ drag.moved = false; return; }   // the TV can't dim: a press on it is only a tap
+    L.bright = Math.min(1, Math.max(0.01, drag.b0 + dy / 160));   // 160 px of travel = full range
+    L.target = 1;
+    showDimmer(); sendBrightness(false);
+    return;
+  }
+  if (e.buttons) return;
+  hovered = lampAt(e) || null;
+  renderer.domElement.style.cursor = hovered ? "ns-resize" : "";
+  showTip(hovered, e.clientX, e.clientY);
+});
+function endDrag(e, cancelled){
+  if (!drag) return;
+  const d = drag;
+  if (d.moved && !cancelled) sendBrightness(true);
+  drag = null; dimmer.hidden = true;
+  if (!d.moved && !cancelled){ busy.delete(d.alias); toggleLamp(d.alias); }
+  else setTimeout(() => { busy.delete(d.alias); pollLamps(); }, 600);   // let the bulb settle before trusting a poll
+}
+renderer.domElement.addEventListener("pointerup", e => endDrag(e, false));
+renderer.domElement.addEventListener("pointercancel", e => endDrag(e, true));
+renderer.domElement.addEventListener("pointerleave", () => { if (!drag){ hovered = null; lampTip.hidden = true; } });
+// OrbitControls also listens to raw touch events: while a finger is on a lamp, keep them from it
+["touchstart", "touchmove", "touchend"].forEach(type => app.addEventListener(type, e => {
+  if (drag && e.target === renderer.domElement){ e.stopPropagation(); if (e.cancelable) e.preventDefault(); }
+}, { capture:true, passive:false }));
+const lampOff = new THREE.Color(0x77736d), lampOn = new THREE.Color(0xfaf6ec);
+const screenOff = new THREE.Color(0x0d0f12), screenOn = new THREE.Color(0xe8edf2);
+function updateLamps(dt){   // returns true while anything about the lamps is still changing on screen
+  const k = reduce ? 1 : Math.min(1, dt * 8);
+  let changing = false;
+  linkedBulbs.forEach(([alias, L]) => { L.target = smartLamps[alias].target; L.bright = smartLamps[alias].bright; });
+  [...Object.entries(smartLamps), ...linkedBulbs].forEach(([alias, L]) => {
+    L.level += (L.target - L.level) * k;
+    const active = drag ? drag.alias === alias : hovered === alias;
+    if (Math.abs(L.target - L.level) > 0.002 || Math.abs((active ? 1 : 0) - L.hover) > 0.002 || L.hover > 0.01 || L.bright !== L.drawnBright) changing = true;
+    L.drawnBright = L.bright;
+    L.hover += ((active ? 1 : 0) - L.hover) * Math.min(1, k * 1.5);
+    const on = Math.max(0, L.level * 2 - 1);   // 0 at off/unknown, 1 when fully on
+    if (L.screen){   // the TV: black when off, a pale lit screen when on
+      L.glow.color.lerpColors(screenOff, screenOn, on);
+      L.glow.emissive.setHex(0xcfd8e3); L.glow.emissiveIntensity = on * 0.85;
+      L.bulb.intensity = on * 0.7;
+      L.halo.material.opacity = 0;
+      L.ring.material.opacity = L.hover * 0.9;
+      return;
+    }
+    const b = 0.25 + 0.75 * L.bright;          // dimmed bulbs still read as on
+    L.glow.emissiveIntensity = L.level < 0.5 ? L.level * 0.9 : 0.45 + on * 0.9 * b;
+    L.glow.emissive.setHex(on > 0 ? 0xffc070 : 0xffe9b8);
+    L.glow.color.lerpColors(lampOff, lampOn, Math.min(1, L.level * 2));
+    L.bulb.intensity = on * 1.5 * L.bright;
+    L.halo.material.opacity = on * 0.8 * b;
+    L.ring.material.opacity = L.hover * 0.9;
+    const pulse = 1 + L.hover * 0.06 * Math.sin(performance.now() / 260);
+    L.ring.scale.setScalar(L.ring.userData.size || (L.ring.userData.size = L.ring.scale.x)).multiplyScalar(pulse);
+  });
+  return changing;
+}
+// poll only while someone can see it: not in a background browser tab, nor while the dashboard shows another tab
+let shownInDash = true;
+// a snapshot shows every lamp off; in the app a poll only reads the phone's stored states, so it's frequent
+if (!SNAPSHOT) pollLamps();   // demo: one pass to settle into preview mode, then nothing to poll
+// With no bridge to read, the demo opens part-lit instead of dark: the lamps a room is usually left with
+// in the evening, so reflections and dimming are visible before anything is touched.
+setLamp("Living Room Lamp - Light 1", true, 100);
+setLamp("Living Room Lamp - Light 3", true, 55);
+setLamp("Mike's Light", true, 70);
+document.addEventListener("visibilitychange", () => { if (!document.hidden && shownInDash) pollLamps(); });
+
+// ---------- Embedded in the dashboard: take commands from it, report state back ----------
+if (document.documentElement.classList.contains("embed")){
+  const post = msg => parent.postMessage(Object.assign({ from:"apartment" }, msg), "*");
+  const pressed = b => b.getAttribute("aria-pressed") === "true";
+  const sendState = () => post({ type:"state", view: Object.keys(viewBtns).find(k => pressed(viewBtns[k])) || null, cut: pressed(bcut), labels: pressed(blab) });
+  window.addEventListener("message", e => {
+    const m = e.data || {};
+    if (m.to !== "apartment") return;
+    if (m.type === "shown"){ shownInDash = m.on; if (m.on){ pollLamps(); invalidate(); } return; }
+    if (m.type === "theme") document.documentElement.dataset.theme = m.dark ? "dark" : "light";
+    if (m.type === "view" && viewBtns[m.view]) setView(m.view);
+    if (m.type === "cut") bcut.click();
+    if (m.type === "labels") blab.click();
+    sendState();
+  });
+  app.addEventListener("pointerdown", () => post({ type:"activity" }), true);   // any touch, lamps included, keeps the dashboard from timing out
+  // dragging never moves the model here: lamps take their own drags (dimming), anything else is a swipe
+  // that the dashboard turns into "next / previous tab", like on its other tabs
+  controls.enabled = false;
+  let swipe = null;
+  renderer.domElement.addEventListener("pointerdown", e => { swipe = { x:e.clientX, y:e.clientY }; });
+  renderer.domElement.addEventListener("pointerup", e => {
+    if (!swipe) return;
+    post({ type:"swipe", dx: e.clientX - swipe.x, dy: e.clientY - swipe.y });
+    swipe = null;
+  });
+  renderer.domElement.addEventListener("pointercancel", () => { swipe = null; });
+  sendState();
+}
+
+// ---------- Demo mode: triple-tap any wall, then scrub the sun by time and date ----------
+const demo = document.getElementById("demo"), demoTimeIn = document.getElementById("demoTime"), demoDateIn = document.getElementById("demoDate");
+const demoTimeOut = document.getElementById("demoTimeOut"), demoDateOut = document.getElementById("demoDateOut"), demoSun = document.getElementById("demoSun");
+const TZ = "America/New_York";
+function tzOffsetMin(d){   // minutes the site's clock is ahead of UTC at instant d (handles daylight saving)
+  const p = Object.fromEntries(new Intl.DateTimeFormat("en-US", { timeZone:TZ, hourCycle:"h23", year:"numeric", month:"numeric", day:"numeric", hour:"numeric", minute:"numeric" })
+    .formatToParts(d).map(x => [x.type, x.value]));
+  return (Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute) - Math.floor(d / 60000) * 60000) / 60000;
+}
+function siteDate(dayOfYear, minutes){   // site-local day of year + minutes after midnight -> Date
+  const year = new Date().getFullYear(), guess = Date.UTC(year, 0, dayOfYear, 0, minutes);
+  return new Date(guess - tzOffsetMin(new Date(guess - tzOffsetMin(new Date(guess)) * 60000)) * 60000);
+}
+function siteParts(d){   // Date -> { dayOfYear, minutes } on the site's clock
+  const local = new Date(d.getTime() + tzOffsetMin(d) * 60000);
+  return { dayOfYear: Math.floor((local - Date.UTC(local.getUTCFullYear(), 0, 0)) / 86400000), minutes: local.getUTCHours() * 60 + local.getUTCMinutes() };
+}
+function applyDemo(){
+  demoTime = siteDate(+demoDateIn.value, +demoTimeIn.value);
+  const m = +demoTimeIn.value, h = Math.floor(m / 60) % 12 || 12;
+  demoTimeOut.textContent = `${h}:${String(m % 60).padStart(2, "0")} ${m < 720 ? "AM" : "PM"}`;
+  demoDateOut.textContent = new Date(Date.UTC(2001, 0, +demoDateIn.value)).toLocaleDateString("en-US", { month:"short", day:"numeric", timeZone:"UTC" });
+  const { az, el } = sunAngles(demoTime);
+  demoSun.textContent = el > 0 ? `Sun ${Math.round(az)}° · ${Math.round(el)}° up` : "Sun below horizon";
+  updateSun();
+}
+function setDemo(on){
+  demo.hidden = !on;
+  if (on){ const now = siteParts(new Date()); demoDateIn.value = now.dayOfYear; demoTimeIn.value = now.minutes - now.minutes % 5; applyDemo(); }
+  else { demoTime = null; updateSun(); }
+}
+demoTimeIn.addEventListener("input", applyDemo);
+demoDateIn.addEventListener("input", applyDemo);
+document.getElementById("demoExit").onclick = () => setDemo(false);
+// triple tap/click: three quick taps on walls, close together in time and place
+let taps = [], tapStart = null;
+renderer.domElement.addEventListener("pointerdown", e => { tapStart = { x:e.clientX, y:e.clientY, t:performance.now() }; });
+renderer.domElement.addEventListener("pointerup", e => {
+  if (!tapStart || performance.now() - tapStart.t > 350 || Math.hypot(e.clientX - tapStart.x, e.clientY - tapStart.y) > 8) return;   // drags and long presses don't count
+  const o = hitAt(e);
+  if (!o || !o.userData.wall){ taps = []; return; }
+  const now = performance.now();
+  taps = taps.filter(t => now - t.t < 900 && Math.hypot(e.clientX - t.x, e.clientY - t.y) < 40);
+  taps.push({ x:e.clientX, y:e.clientY, t:now });
+  if (taps.length >= 3){ taps = []; setDemo(demo.hidden); }
+});
+
+// ---------- Lighting rules, applied in every lit material's shader ----------
+// 1) Walls ignore the sun (see mat.wall above). The sun is the only directional light that casts shadows,
+//    so three.js puts it first: walls skip directional light 0 whenever a shadow-casting one is present.
+// Both rules use only fixed values (no camera-dependent uniforms), so they hold however the view moves.
+// 2) Each lamp lights only its own room, plus the hall its door opens onto. The walls' shadows already keep
+//    light in, but some phone GPUs (the Android app's WebView) get point-light shadows wrong and let it
+//    through walls; this holds everywhere. Rooms are boxes in plan feet (x0, x1, z0, z1), up to three each;
+//    exterior sides reach a foot past the outer walls.
+const HALL = [11.2, 34, 7.3, 12.5], NONE = [1, 0, 1, 0];
+const LAMP_ROOMS = {
+  office:  [[-1, 14.7, -1, 7.3], HALL, NONE],
+  bedroom: [[-1, 11.2, 7.3, 20.3], HALL, NONE],
+  living:  [[NOOK_W, 52.5, -1, 7.3], [11.2, 52.5, 7.3, 12.5], [34, 52.5, 12.5, 20.3]],
+};
+const lampRoomOf = { "Office Lamp": "office", "Mike's Light": "bedroom", "Aya's Light": "bedroom" };   // the rest: living
+const pointLights = [];
+scene.traverseVisible(o => { if (o.isPointLight) pointLights.push(o); });   // the renderer's own order for them
+const lampBoxes = [];
+pointLights.forEach(light => {
+  const alias = Object.keys(smartLamps).find(a => smartLamps[a].bulb === light);
+  (LAMP_ROOMS[lampRoomOf[alias]] || LAMP_ROOMS.living).forEach(([x0, x1, z0, z1]) =>
+    lampBoxes.push(new THREE.Vector4(x0 - CENTER.x, x1 - CENTER.x, z0 - CENTER.z, z1 - CENTER.z)));   // into scene coordinates
+});
+function patchLighting(m){
+  if (m.userData.lightingPatched || !(m.isMeshStandardMaterial || m.isMeshLambertMaterial || m.isMeshPhongMaterial)) return;
+  m.userData.lightingPatched = true;
+  const ignoreSun = !!m.userData.ignoreSun;
+  m.onBeforeCompile = shader => {
+    shader.uniforms.uLampBox = { value: lampBoxes };
+    // each surface point's scene position, passed from the vertex shader (no camera needed)
+    shader.vertexShader = "varying vec3 vLampWorld;\n" + shader.vertexShader.replace("#include <project_vertex>",
+      "#include <project_vertex>\nvLampWorld = ( modelMatrix * vec4( transformed, 1.0 ) ).xyz;");
+    let chunk = THREE.ShaderChunk.lights_fragment_begin;
+    if (ignoreSun) chunk = chunk.replace(
+      /(#if \( NUM_DIR_LIGHTS > 0 \) && defined\( RE_Direct \)[\s\S]*?)RE_Direct\( directLight, geometry, material, reflectedLight \);/,
+      "$1if ( UNROLLED_LOOP_INDEX >= NUM_DIR_LIGHT_SHADOWS ) RE_Direct( directLight, geometry, material, reflectedLight );");
+    // A lamp that's off, or a point outside its room, skips the lamp entirely, shadow lookups included (the
+    // costly part: every lamp casts shadows). The skip is the same across whole rooms, so the GPU takes it
+    // cheaply; without it a zoomed-in view, all lit floor, ran every lamp's shadow on every pixel.
+    chunk = chunk.replace(
+      /(#if \( NUM_POINT_LIGHTS > 0 \) && defined\( RE_Direct \)[\s\S]*?)(getPointDirectLightIrradiance\( pointLight, geometry, directLight \);[\s\S]*?RE_Direct\( directLight, geometry, material, reflectedLight \);)/,
+      // UNROLLED_LOOP_INDEX: three.js copies the loop out once per light and only rewrites "[ i ]" and this name
+      "$1if ( any( greaterThan( pointLight.color, vec3( 0.0 ) ) ) && ( inLampRoom( uLampBox[ UNROLLED_LOOP_INDEX * 3 ], vLampWorld.xz ) || inLampRoom( uLampBox[ UNROLLED_LOOP_INDEX * 3 + 1 ], vLampWorld.xz ) || inLampRoom( uLampBox[ UNROLLED_LOOP_INDEX * 3 + 2 ], vLampWorld.xz ) ) ) {\n$2\n}");
+    shader.fragmentShader = `varying vec3 vLampWorld;
+#if NUM_POINT_LIGHTS > 0
+uniform vec4 uLampBox[ NUM_POINT_LIGHTS * 3 ];
+#endif
+bool inLampRoom( vec4 b, vec2 p ) { return p.x >= b.x && p.x <= b.y && p.y >= b.z && p.y <= b.w; }
+` + shader.fragmentShader.replace("#include <lights_fragment_begin>", chunk);
+  };
+  m.customProgramCacheKey = () => ignoreSun ? "lit-rooms-nosun" : "lit-rooms";
+}
+scene.traverse(o => { if (o.isMesh) [].concat(o.material).forEach(patchLighting); });
+
+// ---------- Resize / loop ----------
+const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+// The dashboard loads this page in the background while its tab is hidden (zero size); the first real size
+// re-fits the current view, since each view's framing depends on the screen's shape.
+let sized = false;
+function resize(){
+  const w = app.clientWidth, h = app.clientHeight;
+  if (!w || !h) return;
+  renderer.setSize(w, h); camera.aspect = w / h; camera.updateProjectionMatrix();
+  if (!sized){ sized = true; goTo(Object.keys(viewBtns).find(k => viewBtns[k].getAttribute("aria-pressed") === "true") || "cutaway", true); }
+  invalidate();
+}
+window.addEventListener("resize", resize);
+// In the portfolio pop-out the page is an iframe the host resizes as it places it, which a window
+// resize event doesn't always follow, so watch the element itself.
+if (window.ResizeObserver) new ResizeObserver(resize).observe(app);
+resize(); setView(APP ? "top" : "cutaway", true);   // the page opens on the cutaway view (the app: top view)
+
+// In the app: dragging turns the model only if the app's setting allows it (a press on a lamp never does,
+// see the capture-phase pointerdown above); a tap on empty space, off the apartment, closes the overlay.
+if (APP){
+  controls.enabled = !!window.AndroidLamps.rotate();
+  controls.enablePan = false;
+  let down = null;
+  renderer.domElement.addEventListener("pointerdown", e => { down = { x:e.clientX, y:e.clientY }; });
+  renderer.domElement.addEventListener("pointerup", e => {
+    if (!down || Math.hypot(e.clientX - down.x, e.clientY - down.y) > 8) return;
+    if (!hitAt(e) && !lampAt(e)) window.AndroidLamps.close();
+  });
+}
+
+// window.snapshot(w, h): renders the top view at w x h on a transparent background and returns the PNG plus
+// where each smart lamp's tap target lands, as fractions of the picture ({alias: [x, y, radius]})
+if (SNAPSHOT) window.snapshot = (w, h) => {
+  renderer.setPixelRatio(1); renderer.setSize(w, h, false);
+  camera.aspect = w / h; camera.updateProjectionMatrix();
+  setView("top", true); applyWallHeight(wallH);
+  renderer.shadowMap.needsUpdate = true; renderer.render(scene, camera);
+  const spots = {};
+  Object.entries(smartLamps).forEach(([alias, L]) => {
+    const hit = L.meshes[0], p = hit.getWorldPosition(new THREE.Vector3()), q = p.clone().project(camera);
+    const edge = p.clone().add(new THREE.Vector3((hit.geometry.parameters || {}).radius || 1, 0, 0)).project(camera);
+    spots[alias] = [(q.x + 1) / 2, (1 - q.y) / 2, Math.abs(edge.x - q.x) / 2];
+  });
+  return { png: renderer.domElement.toDataURL("image/png"), spots };
+};
+
+const ease = t => t < .5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2;
+let last = performance.now(), lastMove = -1e9;
+const FULL_RATIO = Math.min(window.devicePixelRatio, 2), MOVING_RATIO = Math.max(1, FULL_RATIO * 0.6);
+function loop(now){
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  if (camTween){
+    camTween.t = reduce ? 1 : Math.min(1, camTween.t + dt / 0.9);
+    const k = ease(camTween.t);
+    camera.position.lerpVectors(camTween.p0, camTween.p1, k);
+    controls.target.lerpVectors(camTween.t0, camTween.t1, k);
+    if (camTween.t >= 1) camTween = null;
+  }
+  if (Math.abs(wallH - wallTarget) > 0.01){
+    wallH += (wallTarget - wallH) * (reduce ? 1 : Math.min(1, dt * 7));
+    applyWallHeight(wallH);
+  }
+  if (updateLamps(dt)) dirty = true;
+  const moving = controls.update() || !!camTween;   // update() reports camera movement, including damping
+  if (moving) dirty = true;
+  if (renderer.shadowMap.needsUpdate) dirty = true;   // walls moved or the sun changed
+  if (APP){   // phones: fewer pixels while the camera moves (pinch, turn), full sharpness once it settles
+    if (moving) lastMove = now;
+    const ratio = now - lastMove < 200 ? MOVING_RATIO : FULL_RATIO;
+    if (ratio !== renderer.getPixelRatio()){ renderer.setPixelRatio(ratio); dirty = true; }
+  }
+  if (dirty){ renderer.render(scene, camera); dirty = false; }
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

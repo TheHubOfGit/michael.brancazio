@@ -13,7 +13,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Interactive Particle Simulation</title>
+    <meta name="description" content="Explore particle motion, attraction, repulsion, and collisions in an interactive physics simulation.">
     <style>
+        * { box-sizing: border-box; }
+        :focus-visible { outline: 3px solid #1d4ed8; outline-offset: 4px; }
+        canvas { max-width: 100%; }
+        .instructions { color: #444; text-align: center; line-height: 1.5; }
+        @media (prefers-reduced-motion: reduce) { button { transition: none; } }
         body {
             margin: 0;
             padding: 20px;
@@ -29,6 +35,7 @@
         h1 {
             color: #333;
             margin-bottom: 20px;
+            text-align: center;
         }
         
         .container {
@@ -57,7 +64,8 @@
         }
         
         button {
-            padding: 8px 16px;
+            padding: 10px 16px;
+            min-height: 44px;
             border: none;
             border-radius: 4px;
             font-weight: 500;
@@ -79,14 +87,14 @@
             cursor: not-allowed;
         }
         
-        .btn-blue { background-color: #4299e1; }
-        .btn-green { background-color: #48bb78; }
-        .btn-red { background-color: #f56565; }
-        .btn-purple { background-color: #9f7aea; }
-        .btn-indigo { background-color: #667eea; }
-        .btn-amber { background-color: #d97706; }
-        .btn-teal { background-color: #38b2ac; }
-        .btn-gray { background-color: #718096; }
+        .btn-blue { background-color: #2563eb; }
+        .btn-green { background-color: #15803d; }
+        .btn-red { background-color: #dc2626; }
+        .btn-purple { background-color: #7c3aed; }
+        .btn-indigo { background-color: #4f46e5; }
+        .btn-amber { background-color: #b45309; }
+        .btn-teal { background-color: #0f766e; }
+        .btn-gray { background-color: #475569; }
         
         .sliders {
             width: 100%;
@@ -112,7 +120,8 @@
 <body>
     <div class="container">
         <h1>Interactive Particle Simulation</h1>
-        <canvas id="simulation-canvas"></canvas>
+        <p id="canvas-help" class="instructions">Move your pointer or touch the canvas to apply a force. With the canvas focused, use the arrow keys to move the force and Escape to clear it.</p>
+        <canvas id="simulation-canvas" tabindex="0" role="img" aria-label="Interactive particle field" aria-describedby="canvas-help">An interactive particle field. Use the controls below to adjust the simulation.</canvas>
         
         <div class="controls">
             <button id="btn-pause" class="btn-blue">Pause</button>
@@ -125,17 +134,17 @@
         
         <div class="sliders">
             <div class="slider-container">
-                <label class="slider-label">Particle Count: <span id="particle-count-value">1500</span></label>
+                <label class="slider-label" for="particle-count">Particle Count: <span id="particle-count-value">1500</span></label>
                 <input type="range" id="particle-count" min="100" max="3000" value="1500">
             </div>
             
             <div class="slider-container">
-                <label class="slider-label">Interaction Radius: <span id="mouse-radius-value">100</span></label>
+                <label class="slider-label" for="mouse-radius">Interaction Radius: <span id="mouse-radius-value">100</span></label>
                 <input type="range" id="mouse-radius" min="10" max="200" value="100">
             </div>
             
             <div class="slider-container">
-                <label class="slider-label">Force Strength: <span id="mouse-force-value">1.0</span></label>
+                <label class="slider-label" for="mouse-force">Force Strength: <span id="mouse-force-value">1.0</span></label>
                 <input type="range" id="mouse-force" min="0.1" max="2" value="1" step="0.1">
             </div>
         </div>
@@ -166,7 +175,8 @@
         
         // State variables
         let particles = [];
-        let isSimulationRunning = true;
+        const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+        let isSimulationRunning = !reducedMotion.matches;
         let mousePosition = { x: null, y: null };
         let mouseRadius = 100;
         let mouseForce = 1;
@@ -175,16 +185,24 @@
         let dualForceMode = "disabled"; // disabled, attract-center, repel-center
         let enableCollisions = true;
         let animationId = null;
+        let lastFrameTime = null;
+        let accumulatedTime = 0;
+        const physicsStep = 1000 / 60;
         
-        // Set canvas dimensions
+        // Keep a useful canvas size even in short landscape viewports.
         function setCanvasDimensions() {
-            const width = window.innerWidth > 800 ? 800 : window.innerWidth - 40;
-            const height = window.innerHeight > 600 ? 600 : window.innerHeight - 200;
-            
-            canvas.width = width;
-            canvas.height = height;
+            const oldWidth = canvas.width;
+            const oldHeight = canvas.height;
+            canvas.width = Math.max(1, Math.min(800, document.querySelector('.container').clientWidth));
+            canvas.height = Math.max(180, Math.min(600, window.innerHeight - 240));
+            particles.forEach(particle => {
+                particle.x = Math.max(particle.size, Math.min(canvas.width - particle.size, particle.x * canvas.width / oldWidth));
+                particle.y = Math.max(particle.size, Math.min(canvas.height - particle.size, particle.y * canvas.height / oldHeight));
+            });
+            mousePosition = { x: null, y: null };
+            draw();
         }
-        
+
         // Initialize particles
         function initializeParticles() {
             particles = [];
@@ -254,8 +272,8 @@
                                 // Check if particles are colliding
                                 if (distance < minDistance) {
                                     // Calculate collision normal
-                                    const nx = dx / distance;
-                                    const ny = dy / distance;
+                                    const nx = distance > 0 ? dx / distance : 1;
+                                    const ny = distance > 0 ? dy / distance : 0;
                                     
                                     // Calculate relative velocity
                                     const relVelX = p2.vx - p1.vx;
@@ -264,14 +282,14 @@
                                     // Calculate relative velocity in terms of the normal direction
                                     const velAlongNormal = relVelX * nx + relVelY * ny;
                                     
-                                    // Do not resolve if velocities are separating
-                                    if (velAlongNormal > 0) continue;
+                                    // Always separate overlapping particles, even when moving apart.
+                                    const approachingVelocity = Math.min(0, velAlongNormal);
                                     
                                     // Calculate restitution (bounciness)
                                     const restitution = 0.8;
                                     
                                     // Calculate impulse scalar
-                                    const impulseScalar = -(1 + restitution) * velAlongNormal;
+                                    const impulseScalar = -(1 + restitution) * approachingVelocity;
                                     const totalMass = p1.mass + p2.mass;
                                     const impulseScalar1 = impulseScalar * (p2.mass / totalMass);
                                     const impulseScalar2 = impulseScalar * (p1.mass / totalMass);
@@ -299,180 +317,127 @@
             }
         }
         
-        // Main animation loop
-        function animate() {
-            if (!isSimulationRunning) {
-                return;
-            }
-            
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            // Update and draw particles
-            particles.forEach(particle => {
-                // Apply mouse force if mouse is active
+        function updateParticles() {
+            for (const particle of particles) {
                 if (mousePosition.x !== null && mousePosition.y !== null) {
                     const dx = mousePosition.x - particle.x;
                     const dy = mousePosition.y - particle.y;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
-                    
-                    if (distance < mouseRadius) {
-                        let force;
-                        
-                        if (dualForceMode === "disabled") {
-                            // Regular single force mode
-                            force = (1 - distance / mouseRadius) * mouseForce;
-                        } else if (dualForceMode === "attract-center") {
-                            // Attract at center, repel at edge
-                            const normalizedDist = distance / mouseRadius;
-                            if (normalizedDist < 0.5) {
-                                // Center area: attract
-                                force = (1 - normalizedDist * 2) * Math.abs(mouseForce);
-                            } else {
-                                // Edge area: repel
-                                force = -((normalizedDist - 0.5) * 2) * Math.abs(mouseForce);
-                            }
-                        } else if (dualForceMode === "repel-center") {
-                            // Repel at center, attract at edge
-                            const normalizedDist = distance / mouseRadius;
-                            if (normalizedDist < 0.5) {
-                                // Center area: repel
-                                force = -(1 - normalizedDist * 2) * Math.abs(mouseForce);
-                            } else {
-                                // Edge area: attract
-                                force = ((normalizedDist - 0.5) * 2) * Math.abs(mouseForce);
-                            }
+                    const distance = Math.hypot(dx, dy);
+                    // At the force center there is no direction to normalize.
+                    if (distance > 0 && distance < mouseRadius) {
+                        const normalizedDistance = distance / mouseRadius;
+                        let force = (1 - normalizedDistance) * mouseForce;
+                        if (dualForceMode !== 'disabled') {
+                            force = (1 - normalizedDistance * 2) * Math.abs(mouseForce);
+                            if (dualForceMode === 'repel-center') force *= -1;
                         }
-                        
-                        particle.vx += (dx / distance) * force * particle.mass;
-                        particle.vy += (dy / distance) * force * particle.mass;
+                        particle.vx += dx / distance * force * particle.mass;
+                        particle.vy += dy / distance * force * particle.mass;
                     }
                 }
-                
-                // Apply velocity
                 particle.x += particle.vx;
                 particle.y += particle.vy;
-                
-                // Add some friction/damping
                 particle.vx *= 0.99;
                 particle.vy *= 0.99;
-                
-                // Contain particles within boundaries
-                if (particle.x < 0) {
-                    particle.x = 0;
-                    particle.vx *= -0.8;
-                } else if (particle.x > canvas.width) {
-                    particle.x = canvas.width;
-                    particle.vx *= -0.8;
+
+                if (particle.x < particle.size) {
+                    particle.x = particle.size;
+                    particle.vx = Math.abs(particle.vx) * 0.8;
+                } else if (particle.x > canvas.width - particle.size) {
+                    particle.x = canvas.width - particle.size;
+                    particle.vx = -Math.abs(particle.vx) * 0.8;
                 }
-                
-                if (particle.y < 0) {
-                    particle.y = 0;
-                    particle.vy *= -0.8;
-                } else if (particle.y > canvas.height) {
-                    particle.y = canvas.height;
-                    particle.vy *= -0.8;
+                if (particle.y < particle.size) {
+                    particle.y = particle.size;
+                    particle.vy = Math.abs(particle.vy) * 0.8;
+                } else if (particle.y > canvas.height - particle.size) {
+                    particle.y = canvas.height - particle.size;
+                    particle.vy = -Math.abs(particle.vy) * 0.8;
                 }
-                
-                // Set color based on mode
-                let particleColor;
-                if (colorMode === "velocity") {
-                    const speed = Math.sqrt(particle.vx * particle.vx + particle.vy * particle.vy);
-                    const hue = Math.min(360, speed * 30);
-                    particleColor = `hsl(${hue}, 100%, 50%)`;
-                } else if (colorMode === "position") {
-                    const hueX = (particle.x / canvas.width) * 180;
-                    const hueY = (particle.y / canvas.height) * 180;
-                    particleColor = `hsl(${hueX + hueY}, 100%, 50%)`;
-                } else {
-                    particleColor = particle.color;
+            }
+            if (enableCollisions) resolveCollisions(particles);
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            for (const particle of particles) {
+                let particleColor = particle.color;
+                if (colorMode === 'velocity') {
+                    particleColor = `hsl(${Math.min(360, Math.hypot(particle.vx, particle.vy) * 30)}, 100%, 50%)`;
+                } else if (colorMode === 'position') {
+                    particleColor = `hsl(${particle.x / canvas.width * 180 + particle.y / canvas.height * 180}, 100%, 50%)`;
                 }
-                
-                // Draw particle
                 ctx.beginPath();
                 ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
                 ctx.fillStyle = particleColor;
                 ctx.fill();
-            });
-            
-            // Handle collisions between particles
-            if (enableCollisions) {
-                resolveCollisions(particles);
             }
-            
-            // Draw mouse influence area
             if (mousePosition.x !== null && mousePosition.y !== null) {
-                // Outer circle
                 ctx.beginPath();
                 ctx.arc(mousePosition.x, mousePosition.y, mouseRadius, 0, Math.PI * 2);
-                
-                if (dualForceMode === "disabled") {
-                    ctx.strokeStyle = mouseForce > 0 ? 'rgba(255, 255, 255, 0.3)' : 'rgba(255, 0, 0, 0.3)';
-                } else if (dualForceMode === "attract-center") {
-                    ctx.strokeStyle = 'rgba(255, 0, 0, 0.3)'; // Repel at edge
-                } else if (dualForceMode === "repel-center") {
-                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)'; // Attract at edge
-                }
+                const outerAttracts = dualForceMode === 'disabled' ? mouseForce > 0 : dualForceMode === 'repel-center';
+                ctx.strokeStyle = outerAttracts ? 'rgba(255,255,255,0.5)' : 'rgba(255,80,80,0.7)';
                 ctx.stroke();
-                
-                // Inner circle for dual force mode
-                if (dualForceMode !== "disabled") {
+                if (dualForceMode !== 'disabled') {
                     ctx.beginPath();
                     ctx.arc(mousePosition.x, mousePosition.y, mouseRadius * 0.5, 0, Math.PI * 2);
-                    ctx.strokeStyle = dualForceMode === "attract-center" 
-                        ? 'rgba(255, 255, 255, 0.3)' // Attract at center
-                        : 'rgba(255, 0, 0, 0.3)';    // Repel at center
+                    ctx.strokeStyle = dualForceMode === 'attract-center' ? 'rgba(255,255,255,0.5)' : 'rgba(255,80,80,0.7)';
                     ctx.stroke();
                 }
             }
-            
+        }
+
+        // A fixed physics step makes motion consistent on high-refresh-rate displays.
+        function animate(timestamp) {
+            animationId = null;
+            if (!isSimulationRunning || document.hidden) return;
+            if (lastFrameTime !== null) accumulatedTime += Math.min(timestamp - lastFrameTime, 100);
+            lastFrameTime = timestamp;
+            while (accumulatedTime >= physicsStep) {
+                updateParticles();
+                accumulatedTime -= physicsStep;
+            }
+            draw();
             animationId = requestAnimationFrame(animate);
         }
-        
-        // Event handlers
-        function handleMouseMove(e) {
+
+        function syncAnimation() {
+            if (animationId !== null) cancelAnimationFrame(animationId);
+            animationId = null;
+            lastFrameTime = null;
+            accumulatedTime = 0;
+            btnPause.textContent = isSimulationRunning ? 'Pause' : 'Resume';
+            btnPause.setAttribute('aria-pressed', String(!isSimulationRunning));
+            draw();
+            if (isSimulationRunning && !document.hidden) animationId = requestAnimationFrame(animate);
+        }
+
+        function handlePointerMove(event) {
             const rect = canvas.getBoundingClientRect();
             mousePosition = {
-                x: e.clientX - rect.left,
-                y: e.clientY - rect.top
+                x: (event.clientX - rect.left) * canvas.width / rect.width,
+                y: (event.clientY - rect.top) * canvas.height / rect.height
             };
+            if (!isSimulationRunning) draw();
         }
-        
-        function handleMouseLeave() {
+
+        function clearForce() {
             mousePosition = { x: null, y: null };
+            if (!isSimulationRunning) draw();
         }
-        
-        function handleTouchMove(e) {
-            e.preventDefault();
-            if (e.touches.length > 0) {
-                const rect = canvas.getBoundingClientRect();
-                mousePosition = {
-                    x: e.touches[0].clientX - rect.left,
-                    y: e.touches[0].clientY - rect.top
-                };
-            }
-        }
-        
-        function handleTouchEnd() {
-            mousePosition = { x: null, y: null };
-        }
-        
+
         function toggleSimulation() {
             isSimulationRunning = !isSimulationRunning;
-            btnPause.textContent = isSimulationRunning ? 'Pause' : 'Resume';
-            
-            if (isSimulationRunning) {
-                animate();
-            } else if (animationId) {
-                cancelAnimationFrame(animationId);
-            }
+            syncAnimation();
         }
-        
+
         function toggleForce() {
             if (dualForceMode !== "disabled") return;
             
             mouseForce = -mouseForce;
             btnForce.textContent = mouseForce > 0 ? 'Attract' : 'Repel';
             btnForce.className = mouseForce > 0 ? 'btn-green' : 'btn-red';
+            draw();
         }
         
         function cycleDualForceMode() {
@@ -490,6 +455,7 @@
                                  'btn-amber';
                                  
             btnForce.disabled = dualForceMode !== "disabled";
+            draw();
         }
         
         function changeColorMode() {
@@ -499,33 +465,39 @@
             colorMode = modes[nextIndex];
             
             btnColorMode.textContent = `Color: ${colorMode}`;
+            draw();
         }
         
         function toggleCollisions() {
             enableCollisions = !enableCollisions;
             btnCollisions.textContent = `Collisions: ${enableCollisions ? 'On' : 'Off'}`;
             btnCollisions.className = enableCollisions ? 'btn-teal' : 'btn-gray';
+            btnCollisions.setAttribute('aria-pressed', String(enableCollisions));
         }
         
         function resetSimulation() {
             initializeParticles();
+            draw();
         }
         
         function updateParticleCount() {
             particleCount = parseInt(sliderParticleCount.value);
             particleCountValue.textContent = particleCount;
             initializeParticles();
+            draw();
         }
         
         function updateMouseRadius() {
             mouseRadius = parseInt(sliderMouseRadius.value);
             mouseRadiusValue.textContent = mouseRadius;
+            draw();
         }
         
         function updateMouseForce() {
             const absForce = parseFloat(sliderMouseForce.value);
             mouseForce = absForce * (mouseForce >= 0 ? 1 : -1);
             mouseForceValue.textContent = Math.abs(mouseForce).toFixed(1);
+            draw();
         }
         
         // Initialize everything
@@ -534,10 +506,27 @@
             initializeParticles();
             
             // Add event listeners
-            canvas.addEventListener('mousemove', handleMouseMove);
-            canvas.addEventListener('mouseleave', handleMouseLeave);
-            canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
-            canvas.addEventListener('touchend', handleTouchEnd);
+            canvas.addEventListener('pointermove', handlePointerMove);
+            canvas.addEventListener('pointerdown', handlePointerMove);
+            canvas.addEventListener('pointerleave', clearForce);
+            canvas.addEventListener('pointercancel', clearForce);
+            canvas.addEventListener('pointerup', event => { if (event.pointerType !== 'mouse') clearForce(); });
+            canvas.addEventListener('blur', clearForce);
+            canvas.addEventListener('keydown', event => {
+                if (event.key === 'Escape') { clearForce(); return; }
+                const directions = { ArrowLeft: [-20, 0], ArrowRight: [20, 0], ArrowUp: [0, -20], ArrowDown: [0, 20] };
+                if (!directions[event.key]) return;
+                event.preventDefault();
+                const [dx, dy] = directions[event.key];
+                mousePosition.x = Math.max(0, Math.min(canvas.width, (mousePosition.x ?? canvas.width / 2) + dx));
+                mousePosition.y = Math.max(0, Math.min(canvas.height, (mousePosition.y ?? canvas.height / 2) + dy));
+                if (!isSimulationRunning) draw();
+            });
+            btnCollisions.setAttribute('aria-pressed', String(enableCollisions));
+            document.addEventListener('visibilitychange', syncAnimation);
+            reducedMotion.addEventListener('change', event => {
+                if (event.matches) { isSimulationRunning = false; syncAnimation(); }
+            });
             
             btnPause.addEventListener('click', toggleSimulation);
             btnForce.addEventListener('click', toggleForce);
@@ -562,14 +551,14 @@
             sliderMouseForce.addEventListener('change', updateMouseForce);
             
             // Start animation
-            animate();
+            syncAnimation();
         }
         
         // Handle window resize
         window.addEventListener('resize', setCanvasDimensions);
         
         // Initialize when the page loads
-        window.addEventListener('load', init);
+        document.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
 </html>

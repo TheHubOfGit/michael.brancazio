@@ -1,5 +1,5 @@
 import { Env } from './types/worker';
-import { handleOptions } from './middleware/cors';
+import { handleOptions, isAllowedOrigin } from './middleware/cors';
 import { handleChat } from './routes/chat';
 import { handleLiveWebSocket } from './routes/liveWs';
 import { handleHealth } from './routes/health';
@@ -7,35 +7,36 @@ import { errorResponse } from './middleware/errorHandler';
 
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
-    const url = new URL(request.url);
-    const { pathname } = url;
+    try {
+      const { pathname } = new URL(request.url);
+      const isHealth = ['/api/health', '/health', '/status'].includes(pathname);
+      const isChat = pathname === '/api/chat' || pathname === '/';
+      const isLive = pathname === '/api/live';
+      const isUpgrade = request.headers.get('Upgrade')?.toLowerCase() === 'websocket';
+      if (!isHealth && !isChat && !isLive) return errorResponse('Not found', 404, request, undefined, env);
 
-    // 1. CORS Preflight
-    if (request.method === 'OPTIONS') {
-      return handleOptions(request);
+      if (request.method === 'OPTIONS') return handleOptions(request, env);
+      const origin = request.headers.get('Origin');
+      if (origin && !isAllowedOrigin(origin, env)) {
+        return errorResponse('Origin is not allowed', 403, request, undefined, env);
+      }
+
+      if (isHealth && !isUpgrade && (request.method === 'GET' || request.method === 'HEAD')) {
+        const response = handleHealth(request, env);
+        return request.method === 'HEAD' ? new Response(null, response) : response;
+      }
+      // Preserve the original root WebSocket URL for existing portfolio clients.
+      if (isLive || (pathname === '/' && isUpgrade)) {
+        if (request.method !== 'GET') return errorResponse('Method not allowed', 405, request, undefined, env, { Allow: 'GET, OPTIONS' });
+        if (!isUpgrade) return errorResponse('WebSocket upgrade required', 426, request, undefined, env, { Upgrade: 'websocket' });
+        return await handleLiveWebSocket(request, env);
+      }
+      if (isChat && request.method === 'POST' && !isUpgrade) return await handleChat(request, env, ctx);
+      if (pathname === '/' && request.method === 'GET' && !isUpgrade) return errorResponse('Not found', 404, request, undefined, env);
+      return errorResponse('Method not allowed', 405, request, undefined, env, { Allow: isHealth ? 'GET, HEAD, OPTIONS' : 'POST, OPTIONS' });
+    } catch {
+      console.error(JSON.stringify({ type: 'request_failure', method: request.method, path: new URL(request.url).pathname }));
+      return errorResponse('Internal server error', 500, request, undefined, env);
     }
-
-    // 2. WebSocket Upgrade (Gemini Live Voice)
-    const upgradeHeader = request.headers.get('Upgrade');
-    if (upgradeHeader === 'websocket' || pathname === '/api/live') {
-      return handleLiveWebSocket(request, env);
-    }
-
-    // 3. Health Check
-    if (pathname === '/api/health' || pathname === '/health' || pathname === '/status') {
-      return handleHealth(request, env);
-    }
-
-    // 4. Chat Endpoint (New /api/chat or legacy root /)
-    if ((pathname === '/api/chat' || pathname === '/') && request.method === 'POST') {
-      return handleChat(request, env, ctx);
-    }
-
-    // 5. Method / Path Not Found
-    if (request.method !== 'POST' && request.method !== 'GET') {
-      return errorResponse('Method not allowed', 405, request);
-    }
-
-    return errorResponse('Not found', 404, request);
   },
-};
+} satisfies ExportedHandler<Env>;

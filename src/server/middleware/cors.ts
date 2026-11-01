@@ -1,30 +1,31 @@
 import { CONFIG } from '../config';
+import { Env } from '../types/worker';
 
-export function isAllowedOrigin(origin: string | null): boolean {
-  if (!origin) return false;
-  if (CONFIG.ALLOWED_ORIGINS.includes(origin as any)) return true;
-  // Allow all Cloudflare Pages preview deployments
-  if (/^https:\/\/[a-z0-9-]+\.pages\.dev$/i.test(origin)) return true;
-  return false;
+export function isAllowedOrigin(origin: string | null, env?: Env): boolean {
+  if (!origin || origin === 'null') return false;
+  if (CONFIG.ALLOWED_ORIGINS.some((allowed) => allowed === origin)) return true;
+  if (env?.ALLOWED_ORIGINS?.split(',').some((allowed) => allowed.trim() === origin)) return true;
+  // Only previews belonging to these portfolio projects are trusted.
+  return /^https:\/\/[a-z0-9-]+\.(?:michaelbrancazio|michaelbrancazio-resume)\.pages\.dev$/i.test(origin);
 }
 
-export function getCorsHeaders(request: Request): Record<string, string> {
+export function getCorsHeaders(request: Request, env?: Env): Record<string, string> {
   const origin = request.headers.get('Origin');
-  const allowed = isAllowedOrigin(origin);
-  const matchedOrigin = allowed && origin ? origin : CONFIG.ALLOWED_ORIGINS[0];
-
-  return {
-    'Access-Control-Allow-Origin': matchedOrigin,
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Upgrade, Connection, Accept, Authorization, X-Requested-With',
-    'Access-Control-Max-Age': '86400',
-    'Vary': 'Origin'
-  };
+  const headers: Record<string, string> = { Vary: 'Origin' };
+  if (origin && isAllowedOrigin(origin, env)) {
+    headers['Access-Control-Allow-Origin'] = origin;
+    headers['Access-Control-Allow-Methods'] = 'GET, HEAD, POST, OPTIONS';
+    headers['Access-Control-Allow-Headers'] = 'Content-Type, Accept, Authorization, X-Requested-With';
+    headers['Access-Control-Expose-Headers'] = 'Retry-After, X-RateLimit-Remaining, X-RateLimit-Reset, X-Model-Used';
+    headers['Access-Control-Max-Age'] = '86400';
+  }
+  return headers;
 }
 
-export function handleOptions(request: Request): Response {
+export function handleOptions(request: Request, env?: Env): Response {
+  const origin = request.headers.get('Origin');
   return new Response(null, {
-    status: 204,
-    headers: getCorsHeaders(request)
+    status: origin && !isAllowedOrigin(origin, env) ? 403 : 204,
+    headers: getCorsHeaders(request, env),
   });
 }

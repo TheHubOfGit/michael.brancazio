@@ -3,18 +3,37 @@
   "version": "1.0.0",
   "description": "Michael Brancazio Portfolio & AI Chatbot Worker",
   "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
-    "dev": "wrangler dev",
-    "deploy": "wrangler deploy",
-    "types": "wrangler types",
+    "dev": "wrangler dev --config wrangler.jsonc --local",
+    "dev:site": "npm run build && node scripts/serve-site.mjs",
+    "build": "node scripts/build-site.mjs",
+    "deploy": "wrangler deploy --config wrangler.jsonc",
+    "deploy:check": "wrangler deploy --config wrangler.jsonc --dry-run --outdir .wrangler/build",
+    "types": "wrangler types --config wrangler.jsonc .wrangler/worker-configuration.d.ts --include-runtime false",
     "typecheck": "tsc --noEmit",
-    "test": "tsx tests/server.test.ts",
-    "logs": "wrangler d1 execute portfolio-chat-db --remote --command 'SELECT id, timestamp, input_mode, prompt_text, response_text, model_used, latency_ms FROM chat_logs ORDER BY id DESC LIMIT 25;'"
+    "test": "npm run test:server && npm run test:frontend && npm run test:voice",
+    "test:server": "tsx tests/server.test.ts",
+    "test:frontend": "tsx tests/frontend.test.ts",
+    "check:site": "node scripts/check-site.mjs",
+    "check": "npm run typecheck && npm test && npm run check:site && npm run build && npm run deploy:check",
+    "db:migrate": "wrangler d1 migrations apply portfolio-chat-db --config wrangler.jsonc --local",
+    "db:migrate:remote": "wrangler d1 migrations apply portfolio-chat-db --config wrangler.jsonc --remote",
+    "logs": "wrangler d1 execute portfolio-chat-db --config wrangler.jsonc --remote --command 'SELECT id, timestamp, input_mode, model_used, latency_ms, status FROM chat_logs ORDER BY id DESC LIMIT 25;'",
+    "logs:tail": "wrangler tail --config wrangler.jsonc",
+    "test:browser": "npm run build && node tests/browser.test.mjs",
+    "test:voice": "tsx tests/voice.test.ts"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20250224.0",
+    "@axe-core/playwright": "^4.13.0",
+    "@cloudflare/workers-types": "^5.20260905.1",
+    "parse5": "^8.0.1",
+    "playwright": "^1.63.0",
     "tsx": "^4.23.13",
     "typescript": "^5.7.3",
-    "wrangler": "^3.111.0"
+    "wrangler": "^4.129.0"
   }
 }

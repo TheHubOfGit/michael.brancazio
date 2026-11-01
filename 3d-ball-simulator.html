@@ -13,7 +13,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Interactive 3D Bouncing Balls - Physics Simulation</title>
+    <meta name="description" content="Explore gravity, collisions, and explosions in an interactive 3D physics sandbox.">
     <style>
+        * { box-sizing: border-box; }
+        :focus-visible { outline: 3px solid #87cefa; outline-offset: 3px; }
+        canvas { display: block; touch-action: none; }
+        #info { max-width: calc(100% - 20px); }
+        #controls { display: flex; flex-wrap: wrap; align-items: center; max-width: calc(100% - 20px); }
+        @media (max-width: 640px) {
+            #instructions { top: 52px !important; left: 10px; right: auto !important; font-size: 12px; max-width: calc(100% - 20px) !important; }
+            #instructions ul { margin: 6px 0; padding-left: 18px; }
+            #copyright { display: none; }
+            #controls { right: 10px; }
+            select, button { min-height: 44px; }
+        }
+        @media (max-height: 450px) { #instructions { display: none; } }
+
         body {
             margin: 0;
             overflow: hidden;
@@ -68,7 +83,7 @@
     </style>
 </head>
 <body>
-    <div id="info">Bouncing Balls Physics Simulation</div>
+    <div id="info" role="status">Bouncing Balls Physics Simulation</div>
     <div id="instructions">
         <strong>Controls:</strong>
         <ul>
@@ -76,22 +91,26 @@
             <li>Ctrl + Drag / Two-Finger Drag: Rotate view</li>
             <li>Shift + Click / Double Click/Tap: Explode ball</li>
             <li>Mouse wheel / Pinch: Zoom in/out</li>
+            <li>Focus canvas + Arrow keys: Rotate; + / −: Zoom</li>
         </ul>
     </div>
     <div id="controls">
-        <select id="gravity">
+        <select id="gravity" aria-label="Gravity">
             <option value="9.8">Earth (9.8 m/s²)</option>
             <option value="1.62">Moon (1.62 m/s²)</option>
             <option value="3.7">Mars (3.7 m/s²)</option>
             <option value="24.8">Jupiter (24.8 m/s²)</option>
         </select>
         <button id="add-ball">Add Ball</button>
+        <button id="explode-ball">Explode a Ball</button>
+        <button id="pause" aria-pressed="false">Pause</button>
         <button id="reset">Reset Simulation</button>
     </div>
     <div id="copyright">© 2022 Michael Brancazio. All rights reserved.</div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
+        function initializeSimulation() {
         // Physics constants and globals
         let gravityValue = 9.8;
         const elasticity = 0.8; // Energy retained after collision
@@ -107,8 +126,12 @@
         let previousMousePosition = { x: 0, y: 0 };
         let cameraRotation = { x: 0, y: 0 };
         let cameraDistance = 30;
-        let touch = new THREE.Vector2(); // For touch events
-        let isTouch = false; // Flag to check if it's a touch device
+        const pointers = new Map();
+        let previousPinchDistance = null;
+        let lastTap = null;
+        const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+        let isPaused = reducedMotion.matches;
+        let animationId = null;
 
         // Scene setup
         const scene = new THREE.Scene();
@@ -118,10 +141,27 @@
 
         // Renderer setup with anti-aliasing
         const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         document.body.appendChild(renderer.domElement);
+        renderer.domElement.tabIndex = 0;
+        renderer.domElement.setAttribute('role', 'img');
+        renderer.domElement.setAttribute('aria-label', 'Interactive 3D bouncing balls. Arrow keys rotate the view; plus and minus zoom.');
+
+        function removeMesh(mesh) {
+            scene.remove(mesh);
+            mesh.geometry.dispose();
+            mesh.material.dispose();
+        }
+
+        function render() { renderer.render(scene, camera); }
+
+        function updateBallControls() {
+            document.getElementById('add-ball').disabled = balls.length >= 100;
+            document.getElementById('explode-ball').disabled = balls.length === 0;
+        }
 
         // Lighting setup for realistic rendering
         function setupLighting() {
@@ -226,7 +266,7 @@
                     0,
                     (Math.random() - 0.5) * 10
                 );
-                this.color = color || this.getRandomColor();
+                this.color = color ?? this.getRandomColor();
 
                 // Create mesh with physically-based rendering materials
                 const geometry = new THREE.SphereGeometry(radius, 32, 32);
@@ -260,7 +300,7 @@
                 this.velocity.y -= gravityValue * deltaTime;
 
                 // Apply air friction
-                this.velocity.multiplyScalar(friction);
+                this.velocity.multiplyScalar(Math.pow(friction, deltaTime * 60));
 
                 // Update position
                 this.position.x += this.velocity.x * deltaTime;
@@ -297,8 +337,9 @@
             }
 
             explode() {
+                if (!balls.includes(this)) return;
                 // Create explosion particles
-                const particleCount = 50 + Math.floor(this.radius * 20);
+                const particleCount = Math.max(0, Math.min(50 + Math.floor(this.radius * 20), 1500 - particles.length));
                 const particleSize = this.radius / 10;
 
                 for (let i = 0; i < particleCount; i++) {
@@ -332,11 +373,15 @@
                 // Remove flash after a short delay
                 setTimeout(() => {
                     scene.remove(flash);
+                    render();
                 }, 100);
 
                 // Remove the ball
-                scene.remove(this.mesh);
+                removeMesh(this.mesh);
                 balls = balls.filter(b => b !== this);
+                if (selectedBall === this) selectedBall = null;
+                updateBallControls();
+                render();
             }
         }
 
@@ -372,7 +417,7 @@
                 // Update age and check if particle should be removed
                 this.age += deltaTime;
                 if (this.age >= this.lifetime) {
-                    scene.remove(this.mesh);
+                    removeMesh(this.mesh);
                     return true; // Particle should be removed
                 }
 
@@ -421,7 +466,7 @@
                         }
 
                         // Normalize collision vector
-                        const collisionNormal = diff.clone().normalize();
+                        const collisionNormal = distance > 0 ? diff.clone().divideScalar(distance) : new THREE.Vector3(1, 0, 0);
 
                         // Calculate relative velocity
                         const relativeVelocity = new THREE.Vector3().subVectors(
@@ -431,7 +476,13 @@
                         // Calculate relative velocity along collision normal
                         const velocityAlongNormal = relativeVelocity.dot(collisionNormal);
 
-                        // Don't resolve if balls are moving away from each other
+                        // Separate overlaps even when the balls are already moving apart.
+                        const penetrationDepth = minDistance - distance;
+                        const inverseMassTotal = 1 / ball1.mass + 1 / ball2.mass;
+                        ball1.position.addScaledVector(collisionNormal, -penetrationDepth / ball1.mass / inverseMassTotal);
+                        ball2.position.addScaledVector(collisionNormal, penetrationDepth / ball2.mass / inverseMassTotal);
+                        ball1.mesh.position.copy(ball1.position);
+                        ball2.mesh.position.copy(ball2.position);
                         if (velocityAlongNormal > 0) continue;
 
                         // Calculate impulse scalar
@@ -444,11 +495,7 @@
                         ball1.velocity.sub(impulse.clone().divideScalar(ball1.mass));
                         ball2.velocity.add(impulse.clone().divideScalar(ball2.mass));
 
-                        // Resolve penetration
-                        const penetrationDepth = minDistance - distance;
-                        const penetrationResolution = collisionNormal.clone().multiplyScalar(penetrationDepth * 0.5);
-                        ball1.position.sub(penetrationResolution);
-                        ball2.position.add(penetrationResolution);
+
                     }
                 }
             }
@@ -456,6 +503,7 @@
 
         // Add random ball
         function addRandomBall() {
+            if (balls.length >= 100) return;
             const radius = 1 + Math.random() * 2;
             const x = (Math.random() - 0.5) * 30;
             const y = 10 + Math.random() * 10;
@@ -473,93 +521,91 @@
             );
 
             balls.push(ball);
+            updateBallControls();
+            render();
         }
 
-        // Mouse interaction functions
-        function onMouseDown(event) {
+        function pointerCenter() {
+            const positions = [...pointers.values()];
+            return positions.reduce((center, point) => ({ x: center.x + point.x / positions.length, y: center.y + point.y / positions.length }), { x: 0, y: 0 });
+        }
+
+        function pinchDistance() {
+            const points = [...pointers.values()];
+            return points.length < 2 ? null : Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y);
+        }
+
+        function onPointerDown(event) {
+            if (event.button !== 0) return;
+            event.preventDefault();
+            renderer.domElement.focus({ preventScroll: true });
+            renderer.domElement.setPointerCapture(event.pointerId);
+            pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
             isMouseDown = true;
-
-            let clientX, clientY;
-            if (event.type === 'touchstart') {
-                isTouch = true;
-                clientX = event.touches[0].clientX;
-                clientY = event.touches[0].clientY;
-            } else {
-                clientX = event.clientX;
-                clientY = event.clientY;
-            }
-
-            // Try to select a ball
-            const intersects = getIntersects({ clientX: clientX, clientY: clientY });
-            for (const intersect of intersects) {
-                if (intersect.object.userData.object instanceof Ball) {
-                    selectedBall = intersect.object.userData.object;
-
-                    // If shift is pressed, explode the ball immediately
-                    if (shiftPressed) {
-                        selectedBall.explode();
-                        selectedBall = null;
-                        return;
-                    }
-
-                    // Stop the ball's motion when grabbed
-                    if (!ctrlPressed && !shiftPressed) {
-                        selectedBall.velocity.set(0, 0, 0);
-                    }
-                    break;
-                }
-            }
-
-            previousMousePosition.x = clientX;
-            previousMousePosition.y = clientY;
-        }
-
-        function onMouseUp(event) {
-            isMouseDown = false;
+            ctrlPressed = event.ctrlKey;
+            shiftPressed = event.shiftKey;
+            previousMousePosition = pointerCenter();
+            previousPinchDistance = pinchDistance();
             selectedBall = null;
+            if (pointers.size > 1) { lastTap = null; return; }
+
+            const hit = getIntersects(event).find(intersection => intersection.object.userData.object instanceof Ball);
+            if (!hit) return;
+            selectedBall = hit.object.userData.object;
+            const isDoubleTap = event.pointerType !== 'mouse' && lastTap &&
+                performance.now() - lastTap.time < 350 && Math.hypot(event.clientX - lastTap.x, event.clientY - lastTap.y) < 25;
+            if (shiftPressed || isDoubleTap) {
+                selectedBall.explode();
+                selectedBall = null;
+                lastTap = null;
+                return;
+            }
+            if (event.pointerType !== 'mouse') lastTap = { x: event.clientX, y: event.clientY, time: performance.now() };
+            if (!ctrlPressed) selectedBall.velocity.set(0, 0, 0);
         }
 
-        function onMouseMove(event) {
-            let clientX, clientY;
-            if (event.type === 'touchmove') {
-                clientX = event.touches[0].clientX;
-                clientY = event.touches[0].clientY;
-            } else {
-                clientX = event.clientX;
-                clientY = event.clientY;
+        function onPointerMove(event) {
+            if (!pointers.has(event.pointerId)) return;
+            pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+            const center = pointerCenter();
+            const distance = pinchDistance();
+            if (pointers.size > 1 || ctrlPressed || (!selectedBall && event.pointerType !== 'mouse')) {
+                cameraRotation.y += (center.x - previousMousePosition.x) * 0.01;
+                cameraRotation.x = Math.max(-Math.PI / 2 + 0.05, Math.min(Math.PI / 2 - 0.05,
+                    cameraRotation.x + (center.y - previousMousePosition.y) * 0.01));
+                if (distance > 0 && previousPinchDistance > 0) cameraDistance = Math.max(10, Math.min(100, cameraDistance * previousPinchDistance / distance));
+                updateCameraPosition();
+            } else if (selectedBall && !shiftPressed) {
+                getIntersects(event);
+                moveBallWithMouse();
+                render();
             }
+            if (lastTap && Math.hypot(event.clientX - lastTap.x, event.clientY - lastTap.y) > 25) lastTap = null;
+            previousMousePosition = center;
+            previousPinchDistance = distance;
+        }
 
-            // Update normalized mouse coordinates for raycaster
-            mouse.x = (clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(clientY / window.innerHeight) * 2 + 1;
+        function onPointerUp(event) {
+            pointers.delete(event.pointerId);
+            selectedBall = null;
+            isMouseDown = pointers.size > 0;
+            previousMousePosition = pointerCenter();
+            previousPinchDistance = pinchDistance();
+        }
 
-            if (isMouseDown) {
-                const deltaX = clientX - previousMousePosition.x;
-                const deltaY = clientY - previousMousePosition.y;
-
-                if (ctrlPressed || (isTouch && event.touches.length > 1)) { // Two-finger touch for rotation on mobile
-                    // Rotate camera
-                    cameraRotation.y += deltaX * 0.01;
-                    cameraRotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, cameraRotation.x + deltaY * 0.01));
-                    updateCameraPosition();
-                } else if (selectedBall && !shiftPressed) {
-                    // Move the selected ball
-                    moveBallWithMouse({ clientX: clientX, clientY: clientY });
-                } else if (!selectedBall && isTouch) { // Rotate view if no ball selected on touch drag
-                    cameraRotation.y += deltaX * 0.01;
-                    cameraRotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, cameraRotation.x + deltaY * 0.01));
-                    updateCameraPosition();
-                }
-
-                previousMousePosition.x = clientX;
-                previousMousePosition.y = clientY;
-            }
+        function clearInteraction() {
+            pointers.clear();
+            selectedBall = null;
+            isMouseDown = false;
+            ctrlPressed = false;
+            shiftPressed = false;
+            previousPinchDistance = null;
+            lastTap = null;
         }
 
         function onWheel(event) {
-            // Zoom in/out
-            cameraDistance += event.deltaY * 0.05;
-            cameraDistance = Math.max(10, Math.min(100, cameraDistance));
+            event.preventDefault();
+            cameraDistance = Math.max(10, Math.min(100, cameraDistance + event.deltaY * 0.05));
             updateCameraPosition();
         }
 
@@ -569,23 +615,14 @@
             camera.position.y = Math.sin(cameraRotation.x) * cameraDistance + 5; // Add a slight offset to look a bit from above
             camera.position.z = Math.cos(cameraRotation.y) * Math.cos(cameraRotation.x) * cameraDistance;
             camera.lookAt(0, 5, 0); // Look at the center of the scene
+            render();
         }
 
         function getIntersects(event) {
             // Calculate mouse/touch position in normalized device coordinates
             const rect = renderer.domElement.getBoundingClientRect();
-            let x, y;
-            if (event.type === 'touchstart' || event.type === 'touchmove' || event.type === 'dblclick') { // Include dblclick for touch
-                x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-                y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-            } else {
-                x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-                y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-            }
-
-
-            mouse.x = x;
-            mouse.y = y;
+            mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+            mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
             // Update raycaster
             raycaster.setFromCamera(mouse, camera);
@@ -609,7 +646,7 @@
 
             // Find intersection point with the plane
             const intersection = new THREE.Vector3();
-            raycaster.ray.intersectPlane(plane, intersection);
+            if (!raycaster.ray.intersectPlane(plane, intersection)) return;
 
             // Update ball position
             const newPos = intersection.clone();
@@ -627,6 +664,19 @@
 
         // Keyboard event handlers
         function onKeyDown(event) {
+            if (event.target === renderer.domElement) {
+                const movement = { ArrowLeft: [0, -0.1], ArrowRight: [0, 0.1], ArrowUp: [-0.1, 0], ArrowDown: [0.1, 0] }[event.key];
+                if (movement) {
+                    event.preventDefault();
+                    cameraRotation.x = Math.max(-Math.PI / 2 + 0.05, Math.min(Math.PI / 2 - 0.05, cameraRotation.x + movement[0]));
+                    cameraRotation.y += movement[1];
+                    updateCameraPosition();
+                } else if (['+', '=', '-', '_'].includes(event.key)) {
+                    event.preventDefault();
+                    cameraDistance = Math.max(10, Math.min(100, cameraDistance + (['+', '='].includes(event.key) ? -2 : 2)));
+                    updateCameraPosition();
+                }
+            }
             if (event.key === 'Control') {
                 ctrlPressed = true;
             } else if (event.key === 'Shift') {
@@ -639,21 +689,6 @@
                 ctrlPressed = false;
             } else if (event.key === 'Shift') {
                 shiftPressed = false;
-            }
-        }
-
-        // Click handler with Shift+Click support
-        function onClick(event) {
-            if (!shiftPressed) return;
-
-            // Try to select a ball to explode
-            const intersects = getIntersects(event);
-            for (const intersect of intersects) {
-                if (intersect.object.userData.object instanceof Ball) {
-                    const ball = intersect.object.userData.object;
-                    ball.explode();
-                    break;
-                }
             }
         }
 
@@ -682,22 +717,24 @@
             // Add event listeners
             document.getElementById('add-ball').addEventListener('click', addRandomBall);
             document.getElementById('reset').addEventListener('click', resetSimulation);
+            document.getElementById('explode-ball').addEventListener('click', () => balls[balls.length - 1]?.explode());
+            document.getElementById('pause').addEventListener('click', () => { isPaused = !isPaused; syncAnimation(); });
             document.getElementById('gravity').addEventListener('change', function() {
                 gravityValue = parseFloat(this.value);
             });
 
-            // Add mouse and touch event listeners
-            renderer.domElement.addEventListener('mousedown', onMouseDown, false);
-            renderer.domElement.addEventListener('mouseup', onMouseUp, false);
-            renderer.domElement.addEventListener('mousemove', onMouseMove, false);
-            renderer.domElement.addEventListener('click', onClick, false);
-            renderer.domElement.addEventListener('dblclick', onDoubleClick, false); // Double click explode
-            renderer.domElement.addEventListener('wheel', onWheel, false);
-
-            renderer.domElement.addEventListener('touchstart', onMouseDown, false);
-            renderer.domElement.addEventListener('touchend', onMouseUp, false);
-            renderer.domElement.addEventListener('touchmove', onMouseMove, false);
-            renderer.domElement.addEventListener('dblclick', onDoubleClick, false); // Double tap explode - dblclick works on touch too
+            renderer.domElement.addEventListener('pointerdown', onPointerDown);
+            renderer.domElement.addEventListener('pointermove', onPointerMove);
+            renderer.domElement.addEventListener('pointerup', onPointerUp);
+            renderer.domElement.addEventListener('pointercancel', onPointerUp);
+            renderer.domElement.addEventListener('lostpointercapture', onPointerUp);
+            renderer.domElement.addEventListener('dblclick', onDoubleClick);
+            renderer.domElement.addEventListener('wheel', onWheel, { passive: false });
+            window.addEventListener('blur', clearInteraction);
+            document.addEventListener('visibilitychange', () => { clearInteraction(); syncAnimation(); });
+            reducedMotion.addEventListener('change', event => {
+                if (event.matches) { isPaused = true; syncAnimation(); }
+            });
 
             window.addEventListener('keydown', onKeyDown, false); // Changed from document to window
             window.addEventListener('keyup', onKeyUp, false);   // Changed from document to window
@@ -708,17 +745,17 @@
         function resetSimulation() {
             // Remove all balls
             for (const ball of balls) {
-                scene.remove(ball.mesh);
+                removeMesh(ball.mesh);
             }
 
             // Remove all particles
             for (const particle of particles) {
-                scene.remove(particle.mesh);
+                removeMesh(particle.mesh);
             }
 
             balls = [];
             particles = [];
-            selectedBall = null;
+            clearInteraction();
 
             // Add new balls
             for (let i = 0; i < 10; i++) {
@@ -730,38 +767,51 @@
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
+            render();
         }
 
-        // Animation loop
-        let lastTime = 0;
+        // Pause background work and use a fixed step for consistent collisions.
+        let lastTime = null;
+        let accumulatedTime = 0;
+        const physicsStep = 1 / 60;
         function animate(currentTime) {
-            requestAnimationFrame(animate);
-
-            // Calculate delta time in seconds
-            const deltaTime = Math.min((currentTime - lastTime) / 1000, 0.05); // Cap at 50ms to avoid large jumps
+            animationId = null;
+            if (isPaused || document.hidden) return;
+            if (lastTime !== null) accumulatedTime += Math.min((currentTime - lastTime) / 1000, 0.1);
             lastTime = currentTime;
-
-            // Skip first frame
-            if (deltaTime === 0) return;
-
-            // Update physics for balls
-            for (const ball of balls) {
-                ball.update(deltaTime);
+            while (accumulatedTime >= physicsStep) {
+                for (const ball of balls) ball.update(physicsStep);
+                particles = particles.filter(particle => !particle.update(physicsStep));
+                checkBallCollisions();
+                accumulatedTime -= physicsStep;
             }
-
-            // Update particles and remove dead ones
-            particles = particles.filter(particle => !particle.update(deltaTime));
-
-            // Check for collisions
-            checkBallCollisions(deltaTime);
-
-            // Render scene
-            renderer.render(scene, camera);
+            render();
+            animationId = requestAnimationFrame(animate);
         }
 
-        // Start everything
+        function syncAnimation() {
+            if (animationId !== null) cancelAnimationFrame(animationId);
+            animationId = null;
+            lastTime = null;
+            accumulatedTime = 0;
+            const pauseButton = document.getElementById('pause');
+            pauseButton.textContent = isPaused ? 'Resume' : 'Pause';
+            pauseButton.setAttribute('aria-pressed', String(isPaused));
+            render();
+            if (!isPaused && !document.hidden) animationId = requestAnimationFrame(animate);
+        }
+
         init();
-        animate(0);
+        syncAnimation();
+        }
+
+        try {
+            initializeSimulation();
+        } catch (error) {
+            document.getElementById('info').textContent = 'The 3D simulation could not start. Please check your connection and that WebGL is enabled, then reload.';
+            document.querySelectorAll('#controls button, #controls select').forEach(control => { control.disabled = true; });
+            console.error('Unable to initialize the 3D simulation:', error);
+        }
     </script>
 </body>
 </html>

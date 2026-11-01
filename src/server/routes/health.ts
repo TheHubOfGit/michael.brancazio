@@ -3,7 +3,7 @@ import { CONFIG } from '../config';
 import { jsonResponse } from '../middleware/errorHandler';
 
 export function handleHealth(request: Request, env: Env): Response {
-  const hasKey = Boolean(env.GEMINI_API_KEY && env.GEMINI_API_KEY.length > 0);
+  const hasKey = Boolean(env.GEMINI_API_KEY?.trim());
 
   return jsonResponse(
     {
@@ -17,6 +17,8 @@ export function handleHealth(request: Request, env: Env): Response {
       configured: hasKey,
     },
     200,
-    request
+    request,
+    {},
+    env
   );
 }

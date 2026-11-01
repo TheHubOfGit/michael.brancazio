@@ -1,0 +1,5 @@
+# Copy to .dev.vars and set your own local development key.
+GEMINI_API_KEY=replace-with-your-gemini-api-key
+ENVIRONMENT=development
+# Optional: additional comma-separated exact origins (scheme + host + port).
+# ALLOWED_ORIGINS=http://localhost:8080

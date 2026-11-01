@@ -1,10 +1,12 @@
 import { CONFIG } from '../config';
+import { readBoundedText } from '../middleware/body';
 import { buildSystemPrompt } from './contextEngine';
 
 export interface GeminiCallOptions {
   message: string;
   context?: string;
   apiKey: string;
+  signal?: AbortSignal;
 }
 
 export interface GeminiResult {
@@ -13,133 +15,198 @@ export interface GeminiResult {
   latencyMs: number;
 }
 
-async function wait(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+export class GeminiServiceError extends Error {
+  constructor(public readonly status = 502, public readonly upstreamStatus?: number) {
+    super(status === 504 ? 'AI service timed out. Please try again.' : status === 499 ? 'Request cancelled' : 'Failed to get response from AI service');
+    this.name = 'GeminiServiceError';
+  }
 }
 
 function buildPayload(message: string, context?: string) {
-  const fullPrompt = context
-    ? `Context: ${context}\n\nUser: ${message}\n\nPlease respond as a helpful AI assistant with the given context.`
-    : `${buildSystemPrompt()}\n\nUser: ${message}\n\nPlease respond as a helpful AI assistant.`;
-
   return {
-    contents: [
-      {
-        parts: [{ text: fullPrompt }],
-      },
-    ],
-    generationConfig: {
-      temperature: 0.7,
-      maxOutputTokens: 1000,
+    systemInstruction: { parts: [{ text: buildSystemPrompt() }] },
+    contents: [{ role: 'user', parts: [{ text: context ? `Portfolio context and conversation history:\n${context}\n\nCurrent question: ${message}` : message }] }],
+    generationConfig: { temperature: 0.7, maxOutputTokens: 1000 },
+  };
+}
+
+function createRequestScope(parentSignal?: AbortSignal) {
+  const controller = new AbortController();
+  let timeout: ReturnType<typeof setTimeout>;
+  let timedOut = false;
+  const onAbort = () => controller.abort();
+  parentSignal?.addEventListener('abort', onAbort, { once: true });
+  if (parentSignal?.aborted) onAbort();
+  const resetTimeout = (duration: number) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+    }, duration);
+  };
+  resetTimeout(CONFIG.LIMITS.PROVIDER_TIMEOUT_MS);
+  return {
+    signal: controller.signal,
+    resetTimeout,
+    abort: () => controller.abort(),
+    error: () => new GeminiServiceError(parentSignal?.aborted ? 499 : timedOut ? 504 : 502),
+    dispose: () => {
+      clearTimeout(timeout);
+      parentSignal?.removeEventListener('abort', onAbort);
     },
   };
 }
 
-async function callModelWithRetry(
-  modelName: string,
-  apiKey: string,
-  payload: unknown,
-  maxRetries = 2
-): Promise<Response> {
-  const url = `${CONFIG.GEMINI_API_BASE}/${modelName}:generateContent?key=${apiKey}`;
+type RequestScope = ReturnType<typeof createRequestScope>;
 
-  let lastResponse: Response | null = null;
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+function waitForRetry(signal: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal.aborted) { reject(new GeminiServiceError(504)); return; }
+    const onAbort = () => {
+      clearTimeout(timer);
+      reject(new GeminiServiceError(504));
+    };
+    const timer = setTimeout(() => {
+      signal.removeEventListener('abort', onAbort);
+      resolve();
+    }, 250);
+    signal.addEventListener('abort', onAbort, { once: true });
+  });
+}
+
+async function requestModel(model: string, options: GeminiCallOptions, scope: RequestScope, streaming: boolean): Promise<Response> {
+  const operation = streaming ? 'streamGenerateContent?alt=sse' : 'generateContent';
+  const url = `${CONFIG.GEMINI_API_BASE}/${model}:${operation}`;
+  for (let attempt = 0; attempt < 2; attempt++) {
     try {
+      if (scope.signal.aborted) throw scope.error();
       const response = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': options.apiKey },
+        body: JSON.stringify(buildPayload(options.message, options.context)),
+        signal: scope.signal,
       });
-
-      // If successful or client error (not rate-limited/overloaded), return immediately
-      if (response.ok || (response.status !== 429 && response.status !== 503)) {
-        return response;
-      }
-
-      lastResponse = response;
-      if (attempt < maxRetries) {
-        const delay = Math.pow(2, attempt) * 500 + Math.random() * 200;
-        await wait(delay);
-      }
-    } catch (err) {
-      if (attempt === maxRetries) throw err;
-      await wait(500);
+      if (response.ok) return response;
+      await response.body?.cancel().catch(() => undefined);
+      const retryable = response.status === 429 || response.status >= 500;
+      if (!retryable || attempt === 1) throw new GeminiServiceError(502, response.status);
+    } catch (error) {
+      if (scope.signal.aborted) throw scope.error();
+      if (error instanceof GeminiServiceError || attempt === 1) throw error instanceof GeminiServiceError ? error : scope.error();
     }
+    await waitForRetry(scope.signal);
   }
+  throw scope.error();
+}
 
-  return lastResponse!;
+function extractText(data: unknown): string {
+  if (!data || typeof data !== 'object') throw new GeminiServiceError();
+  const candidates = (data as { candidates?: unknown }).candidates;
+  if (!Array.isArray(candidates)) throw new GeminiServiceError();
+  const parts: unknown = candidates[0]?.content?.parts;
+  if (!Array.isArray(parts)) throw new GeminiServiceError();
+  const text = parts
+    .filter((part): part is { text: string } => Boolean(part && typeof part === 'object' && typeof part.text === 'string' && part.thought !== true))
+    .map((part) => part.text)
+    .join('')
+    .trim();
+  if (!text) throw new GeminiServiceError();
+  return text;
+}
+
+function normalizeError(error: unknown, scope: RequestScope): GeminiServiceError {
+  return scope.signal.aborted ? scope.error() : error instanceof GeminiServiceError ? error : new GeminiServiceError();
+}
+
+function shouldStop(error: GeminiServiceError): boolean {
+  return error.status === 499 || error.upstreamStatus === 401 || error.upstreamStatus === 403;
 }
 
 export async function callGemini(options: GeminiCallOptions): Promise<GeminiResult> {
-  const startTime = Date.now();
-  const payload = buildPayload(options.message, options.context);
-
-  // 1. Try Primary Model (gemini-3.5-flash-lite)
-  let response = await callModelWithRetry(CONFIG.MODELS.PRIMARY, options.apiKey, payload);
-  let modelUsed: string = CONFIG.MODELS.PRIMARY;
-
-  // 2. If Primary fails, fallback to Secondary (gemini-2.5-flash-lite)
-  if (!response.ok) {
-    const primaryError = await response.text();
-    console.warn(`Primary model (${CONFIG.MODELS.PRIMARY}) failed, trying fallback (${CONFIG.MODELS.FALLBACK}). Error: ${primaryError}`);
-
-    response = await callModelWithRetry(CONFIG.MODELS.FALLBACK, options.apiKey, payload);
-    modelUsed = CONFIG.MODELS.FALLBACK;
-
-    if (!response.ok) {
-      const fallbackError = await response.text();
-      console.error(`Fallback model (${CONFIG.MODELS.FALLBACK}) also failed. Error: ${fallbackError}`);
-      throw new Error(`Gemini API error: ${fallbackError || response.statusText}`);
+  const startedAt = Date.now();
+  let lastError = new GeminiServiceError();
+  for (const model of [CONFIG.MODELS.PRIMARY, CONFIG.MODELS.FALLBACK]) {
+    const scope = createRequestScope(options.signal);
+    try {
+      const response = await requestModel(model, options, scope, false);
+      const text = extractText(JSON.parse(await readBoundedText(response.body, CONFIG.LIMITS.PROVIDER_RESPONSE_BYTES)));
+      return { text, modelUsed: model, latencyMs: Date.now() - startedAt };
+    } catch (error) {
+      lastError = normalizeError(error, scope);
+      console.warn(JSON.stringify({ type: 'ai_provider_failure', model, status: lastError.status, upstreamStatus: lastError.upstreamStatus }));
+      if (shouldStop(lastError)) throw lastError;
+    } finally {
+      scope.dispose();
     }
   }
-
-  const data = (await response.json()) as any;
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "Sorry, I couldn't generate a response.";
-  const latencyMs = Date.now() - startTime;
-
-  return {
-    text,
-    modelUsed,
-    latencyMs,
-  };
+  throw lastError;
 }
 
-export async function callGeminiStream(
-  options: GeminiCallOptions
-): Promise<{ stream: ReadableStream; modelUsed: string }> {
-  const payload = buildPayload(options.message, options.context);
-  let modelUsed: string = CONFIG.MODELS.PRIMARY;
-  let url = `${CONFIG.GEMINI_API_BASE}/${CONFIG.MODELS.PRIMARY}:streamGenerateContent?alt=sse&key=${options.apiKey}`;
-
-  let response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+function forwardStream(body: ReadableStream<Uint8Array>, scope: RequestScope): ReadableStream<Uint8Array> {
+  const reader = body.getReader();
+  let finished = false;
+  let onAbort: () => void;
+  const cleanup = () => {
+    finished = true;
+    scope.signal.removeEventListener('abort', onAbort);
+    scope.dispose();
+  };
+  const cancelReader = async (reason?: unknown) => {
+    await reader.cancel(reason).catch(() => undefined);
+    reader.releaseLock();
+  };
+  return new ReadableStream<Uint8Array>({
+    start(controller) {
+      onAbort = () => {
+        if (finished) return;
+        const error = scope.error();
+        cleanup();
+        controller.error(error);
+        void cancelReader(error);
+      };
+      scope.signal.addEventListener('abort', onAbort, { once: true });
+      if (scope.signal.aborted) onAbort();
+    },
+    async pull(controller) {
+      try {
+        const { done, value } = await reader.read();
+        if (finished) return;
+        if (done) { cleanup(); reader.releaseLock(); controller.close(); }
+        else controller.enqueue(value);
+      } catch {
+        if (finished) return;
+        const error = scope.error();
+        cleanup();
+        reader.releaseLock();
+        controller.error(error);
+      }
+    },
+    async cancel(reason) {
+      cleanup();
+      scope.abort();
+      await cancelReader(reason);
+    },
   });
+}
 
-  if (!response.ok) {
-    console.warn(`Streaming primary model failed (${response.status}), falling back to ${CONFIG.MODELS.FALLBACK}`);
-    modelUsed = CONFIG.MODELS.FALLBACK;
-    url = `${CONFIG.GEMINI_API_BASE}/${CONFIG.MODELS.FALLBACK}:streamGenerateContent?alt=sse&key=${options.apiKey}`;
-    response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-
-    if (!response.ok) {
-      const err = await response.text();
-      throw new Error(`Streaming error: ${err}`);
+export async function callGeminiStream(options: GeminiCallOptions): Promise<{ stream: ReadableStream<Uint8Array>; modelUsed: string }> {
+  let lastError = new GeminiServiceError();
+  for (const model of [CONFIG.MODELS.PRIMARY, CONFIG.MODELS.FALLBACK]) {
+    const scope = createRequestScope(options.signal);
+    try {
+      const response = await requestModel(model, options, scope, true);
+      if (!response.body || !response.headers.get('Content-Type')?.toLowerCase().startsWith('text/event-stream')) {
+        await response.body?.cancel().catch(() => undefined);
+        throw new GeminiServiceError();
+      }
+      scope.resetTimeout(CONFIG.LIMITS.STREAM_TIMEOUT_MS);
+      return { stream: forwardStream(response.body, scope), modelUsed: model };
+    } catch (error) {
+      lastError = normalizeError(error, scope);
+      scope.dispose();
+      console.warn(JSON.stringify({ type: 'ai_provider_failure', streaming: true, model, status: lastError.status, upstreamStatus: lastError.upstreamStatus }));
+      if (shouldStop(lastError)) throw lastError;
     }
   }
-
-  if (!response.body) {
-    throw new Error('Response body is null');
-  }
-
-  return {
-    stream: response.body,
-    modelUsed,
-  };
+  throw lastError;
 }

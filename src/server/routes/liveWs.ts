@@ -1,118 +1,121 @@
 import { Env } from '../types/worker';
 import { CONFIG } from '../config';
 import { logAuditEntry } from '../middleware/logger';
+import { errorResponse } from '../middleware/errorHandler';
+import { checkRateLimit, getClientIp, getRateLimitHeaders } from '../middleware/rateLimit';
+import { getCorsHeaders } from '../middleware/cors';
+
+function safeClose(socket: WebSocket, code: number, reason: string) {
+  if (socket.readyState === WebSocket.CLOSED) return;
+  try { socket.close(code, reason); } catch {
+    // A peer may finish closing between checking readyState and calling close.
+    try { socket.close(); } catch { /* Already disconnected. */ }
+  }
+}
+
+function normalizeCloseCode(code: number): number {
+  if ([1000, 1001, 1002, 1003, 1007, 1008, 1009, 1010, 1011, 1012, 1013, 1014].includes(code) || (code >= 3000 && code <= 4999)) return code;
+  // 1005 and 1006 describe local state and cannot be sent in a Close frame.
+  return 1011;
+}
+
+/** Owns both sockets and all timers for a single voice session. */
+export function bridgeWebSockets(server: WebSocket, upstream: WebSocket, onClose: (code: number) => void): () => void {
+  const buffer: (string | ArrayBuffer)[] = [];
+  const encoder = new TextEncoder();
+  let bufferedBytes = 0;
+  let ended = false;
+  const connectTimer = setTimeout(() => close(1013, 'Voice service connection timed out'), CONFIG.LIMITS.LIVE_CONNECT_TIMEOUT_MS);
+  const sessionTimer = setTimeout(() => close(1000, 'Voice session ended. Reconnect to continue.'), CONFIG.LIMITS.LIVE_SESSION_TIMEOUT_MS);
+
+  function close(code: number, reason: string) {
+    if (ended) return;
+    ended = true;
+    clearTimeout(connectTimer);
+    clearTimeout(sessionTimer);
+    buffer.length = 0;
+    bufferedBytes = 0;
+    safeClose(server, normalizeCloseCode(code), reason);
+    safeClose(upstream, normalizeCloseCode(code), reason);
+    onClose(code);
+  }
+
+  function send(socket: WebSocket, data: string | ArrayBuffer) {
+    try { socket.send(data); } catch { close(1011, 'Voice connection interrupted'); }
+  }
+
+  upstream.addEventListener('open', () => {
+    clearTimeout(connectTimer);
+    if (ended) { safeClose(upstream, 1000, 'Session ended'); return; }
+    for (const message of buffer) {
+      if (ended) break;
+      send(upstream, message);
+    }
+    buffer.length = 0;
+    bufferedBytes = 0;
+  });
+  upstream.addEventListener('message', (event) => {
+    if (!ended && server.readyState === WebSocket.OPEN) send(server, event.data);
+  });
+  upstream.addEventListener('close', (event) => close(event.code, event.code === 1000 ? 'Voice session ended' : 'Voice service disconnected'));
+  upstream.addEventListener('error', () => close(1011, 'Voice service connection error'));
+  server.addEventListener('error', () => close(1011, 'Voice client connection error'));
+  server.addEventListener('close', (event) => close(event.code, 'Voice session ended'));
+  server.addEventListener('message', (event) => {
+    if (ended) return;
+    const data = event.data;
+    const bytes = typeof data === 'string' ? encoder.encode(data).byteLength : data.byteLength;
+    if (bytes > CONFIG.LIMITS.LIVE_MESSAGE_BYTES) { close(1009, 'Voice message is too large'); return; }
+    if (upstream.readyState === WebSocket.OPEN) {
+      send(upstream, data);
+    } else if (upstream.readyState === WebSocket.CONNECTING) {
+      if (buffer.length >= CONFIG.LIMITS.LIVE_BUFFER_MESSAGES || bufferedBytes + bytes > CONFIG.LIMITS.LIVE_BUFFER_BYTES) {
+        close(1009, 'Voice connection buffer is full');
+        return;
+      }
+      buffer.push(data);
+      bufferedBytes += bytes;
+    } else {
+      close(1011, 'Voice service disconnected');
+    }
+  });
+  return () => close(1000, 'Voice session ended');
+}
 
 export async function handleLiveWebSocket(request: Request, env: Env): Promise<Response> {
   const startTime = Date.now();
-  const clientIp = request.headers.get('CF-Connecting-IP') || 'unknown';
-  const origin = request.headers.get('Origin') || 'unknown';
-
-  const webSocketPair = new WebSocketPair();
-  const [client, server] = Object.values(webSocketPair);
-
-  server.accept();
-
-  const apiKey = env.GEMINI_API_KEY;
-  if (!apiKey) {
-    server.close(1011, 'API Key missing');
-    logAuditEntry({
-      timestamp: new Date().toISOString(),
-      clientIp,
-      origin,
-      endpoint: '/api/live',
-      inputMode: 'voice',
-      status: 500,
-      latencyMs: Date.now() - startTime,
-      error: 'GEMINI_API_KEY is not set',
-    });
-    return new Response(null, { status: 101, webSocket: client });
+  const audit = {
+    timestamp: new Date().toISOString(), clientIp: getClientIp(request),
+    origin: request.headers.get('Origin') || 'unknown', endpoint: '/api/live', inputMode: 'voice' as const,
+  };
+  const rateLimit = checkRateLimit(request);
+  const rateHeaders = getRateLimitHeaders(rateLimit);
+  if (!rateLimit.allowed) {
+    return errorResponse(`Too many requests. Please retry in ${rateLimit.reset} seconds.`, 429, request, undefined, env, rateHeaders);
   }
+  const apiKey = env.GEMINI_API_KEY?.trim();
+  if (!apiKey) return errorResponse('API key not configured', 500, request, undefined, env, rateHeaders);
 
-  const geminiUrl = `${CONFIG.GEMINI_LIVE_WS_BASE}?key=${apiKey}`;
-
+  let server: WebSocket | undefined;
+  let upstream: WebSocket | undefined;
+  let stopBridge: (() => void) | undefined;
   try {
-    const geminiWs = new WebSocket(geminiUrl);
-    const messageBuffer: (string | ArrayBuffer)[] = [];
-    let isGeminiOpen = false;
-
-    geminiWs.addEventListener('open', () => {
-      isGeminiOpen = true;
-      while (messageBuffer.length > 0) {
-        const msg = messageBuffer.shift();
-        if (msg) geminiWs.send(msg);
-      }
+    const [client, workerSocket] = Object.values(new WebSocketPair());
+    server = workerSocket;
+    server.binaryType = 'arraybuffer';
+    server.accept();
+    upstream = new WebSocket(`${CONFIG.GEMINI_LIVE_WS_BASE}?key=${encodeURIComponent(apiKey)}`);
+    upstream.binaryType = 'arraybuffer';
+    stopBridge = bridgeWebSockets(server, upstream, (code) => {
+      logAuditEntry({ ...audit, status: code === 1000 || code === 1001 ? 200 : 502, latencyMs: Date.now() - startTime });
     });
-
-    geminiWs.addEventListener('message', (event) => {
-      if (server.readyState === WebSocket.OPEN) {
-        server.send(event.data);
-      }
-    });
-
-    geminiWs.addEventListener('close', (event) => {
-      if (server.readyState === WebSocket.OPEN) {
-        server.close(event.code, event.reason);
-      }
-    });
-
-    geminiWs.addEventListener('error', (error) => {
-      console.error('Gemini WebSocket error:', error);
-      if (server.readyState === WebSocket.OPEN) {
-        server.close(1011, 'Gemini connection error');
-      }
-    });
-
-    // Forward messages from Client to Gemini
-    server.addEventListener('message', (event) => {
-      if (isGeminiOpen && geminiWs.readyState === WebSocket.OPEN) {
-        geminiWs.send(event.data);
-      } else if (messageBuffer.length < 50) {
-        messageBuffer.push(event.data);
-      }
-    });
-
-    server.addEventListener('close', (event) => {
-      logAuditEntry({
-        timestamp: new Date().toISOString(),
-        clientIp,
-        origin,
-        endpoint: '/api/live',
-        inputMode: 'voice',
-        status: 200,
-        latencyMs: Date.now() - startTime,
-      });
-
-      if (geminiWs.readyState === WebSocket.OPEN || geminiWs.readyState === WebSocket.CONNECTING) {
-        geminiWs.close(event.code, event.reason);
-      }
-    });
-
-    logAuditEntry({
-      timestamp: new Date().toISOString(),
-      clientIp,
-      origin,
-      endpoint: '/api/live',
-      inputMode: 'voice',
-      status: 101,
-      latencyMs: Date.now() - startTime,
-    });
-
-    return new Response(null, {
-      status: 101,
-      webSocket: client,
-    });
-  } catch (err: any) {
-    console.error('Failed to establish WebSocket to Gemini:', err);
-    logAuditEntry({
-      timestamp: new Date().toISOString(),
-      clientIp,
-      origin,
-      endpoint: '/api/live',
-      inputMode: 'voice',
-      status: 502,
-      latencyMs: Date.now() - startTime,
-      error: err?.message,
-    });
-    return new Response('WebSocket Proxy Error', { status: 502 });
+    logAuditEntry({ ...audit, status: 101, latencyMs: Date.now() - startTime });
+    return new Response(null, { status: 101, webSocket: client, headers: { ...getCorsHeaders(request, env), ...rateHeaders } });
+  } catch {
+    stopBridge?.();
+    if (server) safeClose(server, 1011, 'Voice connection failed');
+    if (upstream) safeClose(upstream, 1011, 'Voice connection failed');
+    logAuditEntry({ ...audit, status: 502, latencyMs: Date.now() - startTime, error: 'Voice connection failed' });
+    return errorResponse('Voice service is unavailable. Please try again.', 502, request, undefined, env, rateHeaders);
   }
 }

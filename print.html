@@ -14,6 +14,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Terminal-Style Typing Animation</title>
   <style>
+    body.standalone { background-color: #0b100d; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+    .terminal-content.static-mode { height: auto; max-height: 90vh; overflow-y: auto; justify-content: flex-start; }
+    @media (prefers-reduced-motion: reduce) { .cursor { animation: none; } .line { transition: none; } }
     body, html {
       margin: 0;
       padding: 0;
@@ -49,6 +53,8 @@
     }
     
     .line {
+      flex: 0 0 auto;
+      overflow-wrap: anywhere;
       font-family: monospace;
       color: #4ade80; /* green-400 */
       width: 100%;
@@ -60,11 +66,11 @@
     }
     
     .command {
-      font-size: 28px;
+      font-size: clamp(20px, 4vw, 28px);
     }
     
     .output {
-      font-size: 22px;
+      font-size: clamp(16px, 3.5vw, 22px);
     }
     
     .cursor {
@@ -84,8 +90,9 @@
   </style>
 </head>
 <body>
+  <noscript>Portfolio: Data Science, Dashboards, UI, LLMs, Python, Machine Learning, AI, Engineering, Business Intelligence, Tableau, D3.js, SQL, HTML &amp; CSS, JS, Cloud Computing, AI Strategy.</noscript>
   <div class="terminal">
-    <div class="terminal-content" id="terminal-content">
+    <div class="terminal-content" id="terminal-content" aria-hidden="true">
       <!-- Lines will be added here -->
     </div>
   </div>
@@ -114,118 +121,111 @@
         "AI Strategy"
       ];
       
-      // Create the command line
-      const commandLine = document.createElement('div');
-      commandLine.className = 'line command';
-      terminalContent.appendChild(commandLine);
-      
-      // Add cursor to command line
-      const cursor = document.createElement('span');
-      cursor.className = 'cursor';
-      commandLine.appendChild(cursor);
-      
-      let charIndex = 0;
-      let currentText = '';
-      
-      // Type out "print(portfolio)"
-      function typeCommand() {
-        if (charIndex < fullText.length) {
-          currentText += fullText.charAt(charIndex);
-          // Remove cursor, update text, add cursor again
-          cursor.remove();
-          commandLine.textContent = currentText;
-          commandLine.appendChild(cursor);
-          
-          charIndex++;
-          setTimeout(typeCommand, 300);
-        } else {
-          // Command is complete, remove cursor
-          cursor.remove();
-          
-          // Wait before showing output
-          setTimeout(showOutput, 800);
-        }
+      const accessibleSummary = document.createElement('p');
+      accessibleSummary.className = 'sr-only';
+      accessibleSummary.textContent = `Portfolio: ${portfolioItems.join(', ')}.`;
+      document.body.appendChild(accessibleSummary);
+
+      const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+      const parentOrigin = window.location.origin === 'null' ? '*' : window.location.origin;
+      let started = false;
+      let finished = false;
+      let timerId = null;
+      let pendingAction = null;
+      let remainingDelay = 0;
+      let timerStarted = 0;
+
+      function pauseTimer() {
+        if (timerId === null) return;
+        clearTimeout(timerId);
+        timerId = null;
+        remainingDelay = Math.max(0, remainingDelay - (performance.now() - timerStarted));
       }
-      
-      // Start showing portfolio items
-      function showOutput() {
-        // Add each portfolio item with typing animation
-        addPortfolioItems(0);
+
+      function resumeTimer() {
+        if (document.hidden || !pendingAction || timerId !== null) return;
+        timerStarted = performance.now();
+        timerId = setTimeout(() => {
+          timerId = null;
+          const action = pendingAction;
+          pendingAction = null;
+          action();
+        }, remainingDelay);
       }
-      
-      // Add portfolio items one by one
-      function addPortfolioItems(index) {
-        if (index < portfolioItems.length) {
-          // Create a new line for this item
-          const itemLine = document.createElement('div');
-          itemLine.className = 'line output';
-          terminalContent.appendChild(itemLine);
-          
-          // Add cursor to this line
-          const itemCursor = document.createElement('span');
-          itemCursor.className = 'cursor';
-          itemLine.appendChild(itemCursor);
-          
-          // Move all previous lines up
-          moveLines();
-          
-          // Type out this item
-          typeItem(itemLine, itemCursor, portfolioItems[index], 0, index);
-        }
+
+      function schedule(action, delay) {
+        pauseTimer();
+        pendingAction = action;
+        remainingDelay = delay;
+        resumeTimer();
       }
-      
-      // Type out a portfolio item
-      function typeItem(line, cursor, text, charIdx, itemIndex) {
-        if (charIdx < text.length) {
-          let currentItemText = text.substring(0, charIdx + 1);
-          
-          // Remove cursor, update text, add cursor again
-          cursor.remove();
-          line.textContent = currentItemText;
-          line.appendChild(cursor);
-          
-          charIdx++;
-          setTimeout(() => typeItem(line, cursor, text, charIdx, itemIndex), 300);
-        } else {
-          // Item is complete, remove cursor
-          cursor.remove();
-          
-          // Check if this was the last item
-          if (itemIndex === portfolioItems.length - 1) {
-            // Send message to parent that animation is finished
-            window.parent.postMessage('animationFinished', '*');
-          } else {
-            // Wait before showing next item
-            setTimeout(() => addPortfolioItems(itemIndex + 1), 800);
-          }
-        }
+
+      function finish() {
+        if (finished) return;
+        finished = true;
+        if (window.parent !== window) window.parent.postMessage('animationFinished', parentOrigin);
       }
-      
-      // Move all lines up
-      function moveLines() {
-        const lines = document.querySelectorAll('.line');
-        const lineHeight = 40; // Approximate height of a line
-        
-        lines.forEach((line, index) => {
-          const offset = (lines.length - 1 - index) * lineHeight;
-          line.style.transform = `translateY(-${offset}px)`;
+
+      function showStaticPortfolio() {
+        pauseTimer();
+        pendingAction = null;
+        terminalContent.replaceChildren();
+        terminalContent.classList.add('static-mode');
+        [fullText, ...portfolioItems].forEach((text, index) => {
+          const line = document.createElement('div');
+          line.className = `line ${index === 0 ? 'command' : 'output'}`;
+          line.textContent = text;
+          terminalContent.appendChild(line);
         });
+        finish();
       }
-      
+
+      function typeLine(text, className, onComplete) {
+        const line = document.createElement('div');
+        line.className = `line ${className}`;
+        const textNode = document.createTextNode('');
+        const cursor = document.createElement('span');
+        cursor.className = 'cursor';
+        line.append(textNode, cursor);
+        terminalContent.appendChild(line);
+        let index = 0;
+        const typeNext = () => {
+          textNode.textContent = text.slice(0, ++index);
+          if (index < text.length) {
+            schedule(typeNext, className === 'command' ? 100 : 65);
+          } else {
+            cursor.remove();
+            schedule(onComplete, 450);
+          }
+        };
+        typeNext();
+      }
+
+      function addPortfolioItem(index) {
+        if (index >= portfolioItems.length) { finish(); return; }
+        typeLine(portfolioItems[index], 'output', () => addPortfolioItem(index + 1));
+      }
+
       function startAnimation() {
-        // Start typing the command after a short delay
-        setTimeout(typeCommand, 500);
+        // Repeated parent messages must not create competing typing timers.
+        if (started) return;
+        started = true;
+        if (reducedMotion.matches) { showStaticPortfolio(); return; }
+        schedule(() => typeLine(fullText, 'command', () => addPortfolioItem(0)), 300);
       }
 
-      // Listen for a message from the parent window to start the animation
-      window.addEventListener('message', function(event) {
-        // Optional: Check event.origin for security
-        // if (event.origin !== 'YOUR_EXPECTED_ORIGIN') return;
-
-        if (event.data === 'startAnimation') {
-          startAnimation();
-        }
+      window.addEventListener('message', event => {
+        if (event.source !== window.parent || event.origin !== window.location.origin) return;
+        if (event.data === 'startAnimation') startAnimation();
       });
+      document.addEventListener('visibilitychange', () => document.hidden ? pauseTimer() : resumeTimer());
+      window.addEventListener('pagehide', pauseTimer);
+      window.addEventListener('pageshow', resumeTimer);
+      reducedMotion.addEventListener('change', event => {
+        if (event.matches && started) showStaticPortfolio();
+      });
+      if (window.parent === window) { document.body.classList.add('standalone'); startAnimation(); }
+
     });
   </script>
 </body>

@@ -1,88 +1,53 @@
-# Gemini Live Technical Implementation Guide
+# Gemini Live implementation
 
-## Overview
-This application utilizes Google's **Gemini Multimodal Live API** to provide real-time, bidirectional voice interaction. The architecture consists of a client-side frontend that captures/plays audio and a server-side Cloudflare Worker that acts as a secure proxy to the Gemini API.
+The voice assistant connects the browser's microphone and speakers to Gemini through a Cloudflare Worker. The browser never receives the Gemini API key.
 
-## 1. Technical Architecture
+## Request flow
 
-### Model & API
-- **API Endpoint:** `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent`
-- **Model Used:** `models/gemini-2.5-flash-native-audio-preview-09-2025`
-- **Voice Setting:** "Enceladus"
-- **Format:** WebSocket (BidiGenerateContent)
+1. `MichaelsChatbot` in `assets/js/chatbot.js` requests microphone access after the user starts voice mode.
+2. The client opens a WebSocket to the configured `CHATBOT_WORKER_URL` using `ws:` for local HTTP or `wss:` for HTTPS.
+3. `src/server/index.ts` validates routing, origin, and rate limits, then `src/server/routes/liveWs.ts` connects to Gemini with the server-side `GEMINI_API_KEY` secret.
+4. The browser sends Gemini's setup message. After setup completes, microphone audio is converted to PCM and sent through the socket.
+5. Gemini audio messages return through the proxy. The browser queues playback and displays connection status.
 
-### Security (Server-Side)
-Directly exposing the API key on the client is insecure. This implementation uses a **Cloudflare Worker** as a middleman.
-- **File:** `worker.js`
-- **Mechanism:** The worker accepts a WebSocket connection from the browser, validates the origin, appends the server-side `GEMINI_API_KEY`, and establishes a corresponding WebSocket connection to Google. It then pipes messages back and forth.
+`worker.js` is only a compatibility re-export. The active implementation is under `src/server/`, selected by `wrangler.jsonc`.
 
-## 2. Implementation Logic
+## Configuration sources
 
-### Server-Side (`worker.js`)
-The worker handles the WebSocket upgrade and streaming:
-```javascript
-// Accepts client connection
-const [client, server] = Object.values(new WebSocketPair());
+Keep these values in sync with the code instead of copying a model name or API version from an old guide:
 
-// Connects to Gemini with hidden Key
-const geminiWs = new WebSocket(`wss://.../BidiGenerateContent?key=${env.GEMINI_API_KEY}`);
+| Setting | Source |
+| --- | --- |
+| Worker origin | `CHATBOT_WORKER_URL` in `main.html`, optionally overridden at build time |
+| Live upstream WebSocket endpoint | `CONFIG.GEMINI_LIVE_WS_BASE` in `src/server/config.ts` |
+| Live model, voice, and setup options | Voice setup message in `assets/js/chatbot.js` |
+| Allowed browser origins | `src/server/config.ts` plus `ALLOWED_ORIGINS` |
+| Gemini credential | `.dev.vars` locally; Worker secret in production |
 
-// Pipes messages
-server.addEventListener('message', event => geminiWs.send(event.data));
-geminiWs.addEventListener('message', event => server.send(event.data));
+The Live API is independent of the text-chat model fallback. Verify current availability and message shapes in [Google's Live API documentation](https://ai.google.dev/gemini-api/docs/live) before changing a model or protocol version.
+
+## Audio lifecycle
+
+The frontend uses an inline AudioWorklet to capture audio, converts float samples to signed 16-bit PCM, and base64-encodes chunks for Gemini. Playback uses Web Audio scheduling. User interruption cancels queued playback; ending the session releases microphone tracks, audio nodes, the worklet URL, and the socket.
+
+Keep the PCM sample-rate declaration aligned with the samples actually sent. Browsers may capture at a device's native sample rate even when another rate is requested. Upstream PCM output must likewise be played at its declared sample rate. Handle malformed or missing audio payloads without ending the rest of the portfolio UI.
+
+The Worker bounds the pending connection buffer and closes paired sockets when either side fails or disconnects. Its operational logs record connection status and duration; it does not persist voice audio in the `chat_logs` table.
+
+## Local verification
+
+```bash
+cp .dev.vars.example .dev.vars
+# Set your Gemini key in .dev.vars, then start the Worker:
+npm run dev
 ```
 
-### Client-Side (`main.html`)
-The frontend manages the "Live" experience using the Web Audio API.
+In another terminal:
 
-#### Audio Capture
-1.  **GetUserMedia:** Captures microphone input at 16kHz (required by Gemini).
-2.  **AudioWorklet:** A custom `AudioProcessor` collects raw Float32 audio samples.
-3.  **PCM Conversion:** Converts Float32 to Int16 PCM logic.
-4.  **Encoding:** Base64 encodes the PCM data.
-5.  **Sending:** Sends JSON chunks to the WebSocket:
-    ```json
-    {
-      "realtimeInput": {
-        "mediaChunks": [{
-          "mimeType": "audio/pcm;rate=16000",
-          "data": "<base64_encoded_pcm>"
-        }]
-      }
-    }
-    ```
+```bash
+CHATBOT_WORKER_URL=http://localhost:8787 npm run dev:site
+```
 
-#### Audio Playback
-1.  **Receiving:** Listens for WebSocket messages containing `audio/pcm` data.
-2.  **Decoding:** Base64 decodes the response audio.
-3.  **Queueing:** Pushes audio chunks into a queue to ensure smooth playback without gaps.
-4.  **Playing:** An `AudioContext` schedules and plays the chunks.
+Open `http://127.0.0.1:8080` in a browser with microphone support. Start voice, speak a short question, interrupt playback, stop, and start again. Confirm the microphone indicator turns off after stopping or closing the assistant. Test denied microphone access and a disconnected network as well.
 
-#### Interruption Handling
-- The client calculates the **RMS (Root Mean Square)** amplitude of the microphone input.
-- If the volume exceeds a threshold (`VOICE_THRESHOLD`), it assumes the user is speaking and:
-    - Stops current audio playback.
-    - Sends current audio to Gemini (effectively "interrupting" the bot).
-
-## 3. How to Implement in Another Site
-
-### Step 1: Deploy Proxy (Cloudflare Worker)
-You cannot use this API purely client-side securely.
-1.  Copy `worker.js` to a new Cloudflare Worker.
-2.  Set `GEMINI_API_KEY` in the Worker's secrets.
-3.  Update the `allowedOrigins` array in `worker.js` to include your new site's domain.
-
-### Step 2: Client Integration
-1.  **Context**: Copy the `MichaelsChatbot` class structure from `main.html`.
-2.  **AudioWorklet**: You must serve or inline the `AudioRecorderProcessor`. The current implementation inlines it as a Blob URI, which is easiest.
-3.  **WebSocket**: Initialize the connection to your Worker URL (not Google directly).
-4.  **Protocol**:
-    *   **Setup**: Send the initial configuration message (system instructions, voice config) immediately upon connection.
-    *   **Loop**: Record -> PCM -> Base64 -> Send.
-    *   **Loop**: Receive -> Decode -> Play.
-
-## 4. Key Configuration Parameters
-When sending the `setup` message (see `main.html` around line 6120), you can customize:
-- `systemInstruction`: The persona and rules for the bot.
-- `voiceName`: Options include "Puck", "Charon", "Kore", "Fenrir", "Aoede".
-- `responseModalities`: Set to `["AUDIO"]` for voice-only, or `["AUDIO", "TEXT"]` if you want text transcripts too.
+`npm run check` validates local code and regressions; it does not exercise Google's live service. A real voice smoke test requires a valid key, an available Live model, network access, and microphone permission.

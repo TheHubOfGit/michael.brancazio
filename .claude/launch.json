@@ -1,0 +1,38 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "port": 3000
+    },
+    {
+      "name": "gh-latest",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8123",
+        "--directory",
+        "/private/tmp/claude-501/-Users-michaelbrancazio-Documents-Projects-michael-brancazio/8c8f4c71-7fb5-4fa2-bd1f-94cc58fd993a/scratchpad/gh-latest"
+      ],
+      "port": 8123
+    },
+    {
+      "name": "worktree",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8124",
+        "--directory",
+        "/Users/michaelbrancazio/Documents/Projects/michael.brancazio"
+      ],
+      "port": 8124
+    }
+  ]
+}

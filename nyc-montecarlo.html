@@ -15,7 +15,15 @@
     <title>NYC Walking Routes Visualization</title>
     <!-- Include Tailwind CSS via CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <meta name="description" content="Compare five simulated Manhattan walking routes using travel times and an interactive route map.">
     <style>
+        :focus-visible { outline: 3px solid #2563eb; outline-offset: 3px; }
+        .chart-bar { cursor: pointer; }
+        #route-chart { min-width: 640px; }
+        .chart-bar:focus-visible { stroke: #111; stroke-width: 2px; outline: none; }
+        #routeSelector { min-height: 44px; }
+        @media (prefers-reduced-motion: reduce) { .chart-bar, .animated-highlight { transition: none; } }
+
         /* Basic styling for SVG chart elements (can be customized) */
         .chart-bar { transition: opacity 0.2s ease-in-out; }
         .chart-bar:hover { opacity: 0.8; }
@@ -25,13 +33,14 @@
         .axis-line { stroke: #999; }
         .chart-title { font-size: 14px; font-weight: bold; text-anchor: middle; }
         .tooltip { /* Basic tooltip styling - requires JS for dynamic content */
-            position: absolute;
+            position: fixed;
             background-color: rgba(0, 0, 0, 0.7);
             color: white;
             padding: 5px 10px;
             border-radius: 4px;
             font-size: 12px;
-            white-space: nowrap;
+            max-width: min(300px, calc(100vw - 20px));
+            white-space: normal;
             pointer-events: none; /* Important */
             display: none; /* Hidden by default */
             z-index: 10; /* Ensure tooltip is on top */
@@ -41,8 +50,7 @@
             transition: x 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
         /* Ensure SVG paths are visible when 'block' */
-        svg path { display: none; } /* Hide all by default */
-        svg path[style*="display: block"] { display: block !important; } /* Make sure style overrides */
+        #mapSvg path[id^="path-"] { display: none; }
 
     </style>
 </head>
@@ -56,8 +64,8 @@
         <!-- Static SVG Bar Chart Section -->
         <div class="mb-6">
             <h3 class="text-lg font-medium mb-3 text-center">Routes Compared by Time</h3>
-            <div class="w-full overflow-x-auto">
-                 <svg viewBox="0 0 700 350" width="100%" height="350" aria-labelledby="chartTitle" role="img">
+            <div class="w-full overflow-x-auto" tabindex="0" aria-label="Walking time chart; scroll horizontally to compare every route">
+                 <svg id="route-chart" viewBox="0 0 700 350" width="100%" height="350" aria-labelledby="chartTitle" role="group">
                     <title id="chartTitle">Comparison of Walking Route Times</title>
 
                     <!-- Gradient for highlight background -->
@@ -73,7 +81,7 @@
                     <!-- Chart Data (Pre-calculated from React component) -->
                     <script type="application/json" id="chartData">
                     [
-                        { "name": "Adaptive: Broadway to 49th, then East (8 turns)", "Average Time": 51.0, "Minimum Time": 42.1, "Maximum Time": 68.8 },
+                        { "name": "Adaptive: Broadway to 48th, then East (8 turns)", "Average Time": 51.0, "Minimum Time": 42.1, "Maximum Time": 68.8 },
                         { "name": "Adaptive: Grid Only Zigzag (10 turns)", "Average Time": 52.7, "Minimum Time": 43.8, "Maximum Time": 69.9 },
                         { "name": "Broadway: 57th→Broadway→45th→Lex (1 turn)", "Average Time": 54.3, "Minimum Time": 43.4, "Maximum Time": 72.0 },
                         { "name": "East-South: 57th→Lex→45th (1 turn)", "Average Time": 56.5, "Minimum Time": 45.0, "Maximum Time": 76.2 },
@@ -113,33 +121,33 @@
                             <!-- Single animated highlight background -->
                             <rect id="animated-highlight" x="5" y="0" width="120" height="280" fill="url(#highlight-gradient)" opacity="1" class="animated-highlight" rx="10"/>
                             <!-- Route 1: Adaptive Broadway -->
-                            <rect x="25" y="73" width="25" height="207" fill="#82ca9d" class="chart-bar" data-tooltip="Min: 42.1"/>
-                            <rect x="51" y="63" width="25" height="217" fill="#8884d8" class="chart-bar" data-tooltip="Avg: 51.0"/>
-                            <rect x="77" y="78" width="25" height="202" fill="#ff7300" class="chart-bar" data-tooltip="Max: 68.8"/>
+                            <rect x="25" y="265.23" width="25" height="14.77" fill="#82ca9d" class="chart-bar" data-tooltip="Min: 42.11 minutes"/>
+                            <rect x="51" y="202.79" width="25" height="77.21" fill="#8884d8" class="chart-bar" data-tooltip="Avg: 51.03 minutes"/>
+                            <rect x="77" y="78.54" width="25" height="201.46" fill="#ff7300" class="chart-bar" data-tooltip="Max: 68.78 minutes"/>
                             <text x="63.5" y="295" text-anchor="middle" class="axis-label">Adaptive B'way</text>
 
                             <!-- Route 2: Adaptive Grid -->
-                            <rect x="151" y="69" width="25" height="211" fill="#82ca9d" class="chart-bar" data-tooltip="Min: 43.8"/>
-                            <rect x="177" y="51" width="25" height="229" fill="#8884d8" class="chart-bar" data-tooltip="Avg: 52.7"/>
-                            <rect x="203" y="71" width="25" height="209" fill="#ff7300" class="chart-bar" data-tooltip="Max: 69.9"/>
+                            <rect x="151" y="253.12" width="25" height="26.88" fill="#82ca9d" class="chart-bar" data-tooltip="Min: 43.84 minutes"/>
+                            <rect x="177" y="191.31" width="25" height="88.69" fill="#8884d8" class="chart-bar" data-tooltip="Avg: 52.67 minutes"/>
+                            <rect x="203" y="71.05" width="25" height="208.95" fill="#ff7300" class="chart-bar" data-tooltip="Max: 69.85 minutes"/>
                             <text x="189.5" y="295" text-anchor="middle" class="axis-label">Adaptive Grid</text>
 
                             <!-- Route 3: Broadway Full -->
-                            <rect x="277" y="72" width="25" height="208" fill="#82ca9d" class="chart-bar" data-tooltip="Min: 43.4"/>
-                            <rect x="303" y="40" width="25" height="240" fill="#8884d8" class="chart-bar" data-tooltip="Avg: 54.3"/>
-                            <rect x="329" y="56" width="25" height="224" fill="#ff7300" class="chart-bar" data-tooltip="Max: 72.0"/>
+                            <rect x="277" y="256.06" width="25" height="23.94" fill="#82ca9d" class="chart-bar" data-tooltip="Min: 43.42 minutes"/>
+                            <rect x="303" y="180.04" width="25" height="99.96" fill="#8884d8" class="chart-bar" data-tooltip="Avg: 54.28 minutes"/>
+                            <rect x="329" y="55.72" width="25" height="224.28" fill="#ff7300" class="chart-bar" data-tooltip="Max: 72.04 minutes"/>
                             <text x="315.5" y="295" text-anchor="middle" class="axis-label">Broadway Full</text>
 
                             <!-- Route 4: East-South -->
-                            <rect x="403" y="65" width="25" height="215" fill="#82ca9d" class="chart-bar" data-tooltip="Min: 45.0"/>
-                            <rect x="429" y="25" width="25" height="255" fill="#8884d8" class="chart-bar" data-tooltip="Avg: 56.5"/>
-                            <rect x="455" y="27" width="25" height="253" fill="#ff7300" class="chart-bar" data-tooltip="Max: 76.2"/>
+                            <rect x="403" y="244.79" width="25" height="35.21" fill="#82ca9d" class="chart-bar" data-tooltip="Min: 45.03 minutes"/>
+                            <rect x="429" y="164.43" width="25" height="115.57" fill="#8884d8" class="chart-bar" data-tooltip="Avg: 56.51 minutes"/>
+                            <rect x="455" y="26.46" width="25" height="253.54" fill="#ff7300" class="chart-bar" data-tooltip="Max: 76.22 minutes"/>
                             <text x="441.5" y="295" text-anchor="middle" class="axis-label">East-South</text>
 
                             <!-- Route 5: South-East -->
-                            <rect x="529" y="61" width="25" height="219" fill="#82ca9d" class="chart-bar" data-tooltip="Min: 45.8"/>
-                            <rect x="555" y="11" width="25" height="269" fill="#8884d8" class="chart-bar" data-tooltip="Avg: 58.4"/>
-                            <rect x="581" y="20" width="25" height="260" fill="#ff7300" class="chart-bar" data-tooltip="Max: 77.1"/>
+                            <rect x="529" y="239.12" width="25" height="40.88" fill="#82ca9d" class="chart-bar" data-tooltip="Min: 45.84 minutes"/>
+                            <rect x="555" y="151.06" width="25" height="128.94" fill="#8884d8" class="chart-bar" data-tooltip="Avg: 58.42 minutes"/>
+                            <rect x="581" y="20.58" width="25" height="259.42" fill="#ff7300" class="chart-bar" data-tooltip="Max: 77.06 minutes"/>
                             <text x="567.5" y="295" text-anchor="middle" class="axis-label">South-East</text>
                         </g>
                     </g>
@@ -155,7 +163,7 @@
                     </g>
                 </svg>
                 <!-- Basic Tooltip Element (requires JS to function) -->
-                <div id="chart-tooltip" class="tooltip"></div>
+                <div id="chart-tooltip" class="tooltip" role="tooltip"></div>
             </div>
         </div>
 
@@ -168,20 +176,19 @@
                     <select
                         id="routeSelector"
                         class="w-full p-2 border border-gray-300 rounded-md"
-                        <!-- Removed 'disabled' attribute -->
                     >
                         <!-- Options populated based on routeData, sorted by avgTime -->
                         <option value="adaptiveWithBroadway" selected>Adaptive with Broadway (51.03 min, 8 turns)</option>
                         <option value="adaptive">Adaptive - Grid Only (52.67 min, 10 turns)</option>
-                        <option value="broadwayRoute">Fixed - Broadway Full Path (54.28 min, 1 turns)</option>
-                        <option value="eastSouth">Fixed - East then South (56.51 min, 1 turns)</option>
-                        <option value="southEast">Fixed - South then East (58.42 min, 1 turns)</option>
+                        <option value="broadwayRoute">Fixed - Broadway Full Path (54.28 min, 1 turn)</option>
+                        <option value="eastSouth">Fixed - East then South (56.51 min, 1 turn)</option>
+                        <option value="southEast">Fixed - South then East (58.42 min, 1 turn)</option>
                     </select>
                     <!-- Removed the warning paragraph -->
                 </div>
 
                 <!-- Details section - content will be updated by JavaScript -->
-                <div class="text-sm mt-4" id="routeDetails">
+                <div class="text-sm mt-4" id="routeDetails" aria-live="polite" aria-atomic="true">
                     <!-- Initial content (will be replaced on load/change) -->
                     <h4 class="font-semibold mb-2">Adaptive with Broadway</h4>
                     <p class="mb-2">Dynamic route that follows green lights and uses Broadway when advantageous</p>
@@ -198,7 +205,9 @@
             <div class="bg-gray-50 rounded-lg overflow-hidden">
                 <div class="relative w-full h-full">
                     <!-- Manhattan grid map with selected route -->
-                    <svg id="mapSvg" viewBox="0 0 560 750" width="100%" height="100%">
+                    <svg id="mapSvg" viewBox="0 0 560 750" width="100%" height="100%" role="img" aria-labelledby="map-title map-description">
+                        <title id="map-title">Selected walking route through Manhattan</title>
+                        <desc id="map-description">Adaptive with Broadway, from 57th Street and 12th Avenue to 45th Street and Lexington Avenue.</desc>
                         <!-- Background -->
                         <rect x="0" y="0" width="560" height="750" fill="#f8f9fa" />
 
@@ -233,7 +242,7 @@
                             stroke-width="8"
                             stroke-dasharray="5,3"
                             fill="none"
-                            style="display: block;" /* Always visible */
+                            style="display: block;"
                         />
 
                         <!-- Grid - Streets -->
@@ -269,26 +278,26 @@
                         <!-- NOTE: Corrected path 'd' attribute based on original data -->
                         <path
                             id="path-adaptiveWithBroadway"
-                            d="M60,100 L110,100 L160,100 L210,100 L260,100 L265,100 L270,150 L275,200 L280,250 L285,300 L290,350 L295,400 L300,450 L307,500 L312,500 L360,500 L410,500 L410,550 L445,550 L480,550 L480,600 L515,600 L515,650 L515,700"
+                            d="M60,100 L110,100 L160,100 L210,100 L260,100 L265,100 L270,150 L275,200 L280,250 L285,300 L290,350 L295,400 L300,450 L307,500 L312,550 L360,550 L410,550 L410,600 L445,600 L480,600 L515,600 L515,650 L515,700"
                             fill="none"
                             stroke="#00BCD4"
                             stroke-width="5"
                             stroke-linecap="round"
                             stroke-linejoin="round"
-                            style="display: block;" /* Default visible */
+                            style="display: block;"
                         />
 
                         <!-- Adaptive Grid-Only path -->
                         <!-- NOTE: Corrected path 'd' attribute based on original data -->
                          <path
                             id="path-adaptive"
-                            d="M60,100 L60,150 L110,150 L160,150 L210,150 L210,200 L260,200 L260,250 L260,300 L260,350 L310,350 L310,400 L360,400 L410,400 L410,450 L445,450 L480,450 L480,500 L480,550 L515,550 L515,600 L515,650 L515,700"
+                            d="M60,100 L60,150 L110,150 L160,150 L210,150 L210,200 L260,200 L260,250 L260,300 L260,350 L260,400 L310,400 L310,450 L360,450 L410,450 L480,450 L480,500 L445,500 L515,500 L515,550 L515,600 L515,650 L515,700"
                             fill="none"
                             stroke="#4CAF50"
                             stroke-width="5"
                             stroke-linecap="round"
                             stroke-linejoin="round"
-                            style="display: none;" /* Hidden */
+                            style="display: none;"
                         />
 
                         <!-- East then South path -->
@@ -300,7 +309,7 @@
                             stroke-width="5"
                             stroke-linecap="round"
                             stroke-linejoin="round"
-                            style="display: none;" /* Hidden */
+                            style="display: none;"
                         />
 
                         <!-- South then East path -->
@@ -312,7 +321,7 @@
                             stroke-width="5"
                             stroke-linecap="round"
                             stroke-linejoin="round"
-                            style="display: none;" /* Hidden */
+                            style="display: none;"
                         />
 
                         <!-- Broadway Full Path -->
@@ -324,7 +333,7 @@
                             stroke-width="5"
                             stroke-linecap="round"
                             stroke-linejoin="round"
-                            style="display: none;" /* Hidden */
+                            style="display: none;"
                         />
 
                         <!-- Starting point -->
@@ -401,7 +410,7 @@
     <script>
         // --- Data Store (Copied from original React component) ---
         const routeData = {
-            adaptiveWithBroadway: { name: "Adaptive with Broadway", description: "Dynamic route that follows green lights and uses Broadway when advantageous", shortLabel: "Adaptive: Broadway to 49th, then East (8 turns)", avgTime: 51.03, medianTime: 50.84, minTime: 42.11, maxTime: 68.78, p25: 48.32, p75: 54.01, turns: 8, intersections: 22, path: [["57","12"],["57","11"],["57","10"],["57","9"],["57","8"],["57","Broadway"],["56","Broadway"],["55","Broadway"],["54","Broadway"],["53","Broadway"],["52","Broadway"],["51","Broadway"],["50","Broadway"],["49","Broadway"],["48","Broadway"],["48","6"],["48","5"],["47","5"],["47","Madison"],["47","Park"],["47","Lexington"],["46","Lexington"],["45","Lexington"]] },
+            adaptiveWithBroadway: { name: "Adaptive with Broadway", description: "Dynamic route that follows green lights and uses Broadway when advantageous", shortLabel: "Adaptive: Broadway to 48th, then East (8 turns)", avgTime: 51.03, medianTime: 50.84, minTime: 42.11, maxTime: 68.78, p25: 48.32, p75: 54.01, turns: 8, intersections: 22, path: [["57","12"],["57","11"],["57","10"],["57","9"],["57","8"],["57","Broadway"],["56","Broadway"],["55","Broadway"],["54","Broadway"],["53","Broadway"],["52","Broadway"],["51","Broadway"],["50","Broadway"],["49","Broadway"],["48","Broadway"],["48","6"],["48","5"],["47","5"],["47","Madison"],["47","Park"],["47","Lexington"],["46","Lexington"],["45","Lexington"]] },
             adaptive: { name: "Adaptive - Grid Only", description: "Dynamic route that follows green lights, staying on the grid", shortLabel: "Adaptive: Grid Only Zigzag (10 turns)", avgTime: 52.67, medianTime: 52.49, minTime: 43.84, maxTime: 69.85, p25: 49.71, p75: 55.22, turns: 10, intersections: 22, path: [["57","12"],["56","12"],["56","11"],["56","10"],["56","9"],["55","9"],["55","8"],["54","8"],["53","8"],["52","8"],["51","8"],["51","7"],["50","7"],["50","6"],["50","5"],["50","Park"],["49","Park"],["49","Madison"],["49","Lexington"],["48","Lexington"],["47","Lexington"],["46","Lexington"],["45","Lexington"]] },
             broadwayRoute: { name: "Fixed - Broadway Full Path", description: "Follows Broadway all the way from Columbus Circle to 45th St, then east to Lexington", shortLabel: "Broadway: 57th→Broadway→45th→Lex (1 turn)", avgTime: 54.28, medianTime: 54.11, minTime: 43.42, maxTime: 72.04, p25: 51.46, p75: 57.38, turns: 1, intersections: 22, path: [["57","12"],["57","11"],["57","10"],["57","9"],["57","8"],["57","Broadway"],["56","Broadway"],["55","Broadway"],["54","Broadway"],["53","Broadway"],["52","Broadway"],["51","Broadway"],["50","Broadway"],["49","Broadway"],["48","Broadway"],["47","Broadway"],["46","Broadway"],["45","Broadway"],["45","6"],["45","5"],["45","Madison"],["45","Park"],["45","Lexington"]] },
             eastSouth: { name: "Fixed - East then South", description: "East on 57th St to Lexington Ave, then south to 45th St", shortLabel: "East-South: 57th→Lex→45th (1 turn)", avgTime: 56.51, medianTime: 56.32, minTime: 45.03, maxTime: 76.22, p25: 53.79, p75: 59.11, turns: 1, intersections: 22, path: [["57","12"],["57","11"],["57","10"],["57","9"],["57","8"],["57","7"],["57","6"],["57","5"],["57","Madison"],["57","Park"],["57","Lexington"],["56","Lexington"],["55","Lexington"],["54","Lexington"],["53","Lexington"],["52","Lexington"],["51","Lexington"],["50","Lexington"],["49","Lexington"],["48","Lexington"],["47","Lexington"],["46","Lexington"],["45","Lexington"]] },
@@ -443,12 +452,19 @@
                 return;
             }
 
+            routeSelector.value = selectedRouteKey;
+            document.getElementById('map-description').textContent = `${routeInfo.name}: ${routeInfo.description}. From 57th Street and 12th Avenue to 45th Street and Lexington Avenue.`;
+            document.querySelectorAll('.chart-bar').forEach(bar => {
+                bar.setAttribute('aria-pressed', String(bar.dataset.routeKey === selectedRouteKey));
+            });
+
             // 1. Update Route Details Section
             routeDetailsDiv.innerHTML = `
                 <h4 class="font-semibold mb-2">${routeInfo.name}</h4>
                 <p class="mb-2">${routeInfo.description}</p>
                 <div class="mt-3">
                     <p><span class="font-semibold">Average time:</span> ${routeInfo.avgTime.toFixed(2)} minutes</p>
+                    <p><span class="font-semibold">Median time:</span> ${routeInfo.medianTime.toFixed(2)} minutes</p>
                     <p><span class="font-semibold">Range:</span> ${routeInfo.minTime.toFixed(2)} - ${routeInfo.maxTime.toFixed(2)} minutes</p>
                     <p><span class="font-semibold">25th-75th percentile:</span> ${routeInfo.p25?.toFixed(2) || "N/A"} - ${routeInfo.p75?.toFixed(2) || "N/A"} minutes</p>
                     <p><span class="font-semibold">Turns:</span> ${routeInfo.turns}</p>
@@ -490,26 +506,50 @@
             const initialSelectedKey = routeSelector.value;
             updateRouteDisplay(initialSelectedKey); // Update display on page load
 
-            // Tooltip logic (from previous version)
             const bars = document.querySelectorAll('.chart-bar');
             const tooltip = document.getElementById('chart-tooltip');
-
-            bars.forEach(bar => {
-                bar.addEventListener('mousemove', (e) => {
-                    const tooltipText = bar.getAttribute('data-tooltip');
-                    if (tooltipText && tooltip) {
-                        tooltip.textContent = tooltipText;
-                        tooltip.style.display = 'block';
-                        tooltip.style.left = `${e.pageX + 10}px`;
-                        tooltip.style.top = `${e.pageY - 20}px`;
-                    }
-                });
-                bar.addEventListener('mouseleave', () => {
-                    if (tooltip) {
-                        tooltip.style.display = 'none';
+            const routeKeys = Object.keys(routeData);
+            const metrics = [['minTime', 'Minimum'], ['avgTime', 'Average'], ['maxTime', 'Maximum']];
+            const hideTooltip = () => { tooltip.style.display = 'none'; };
+            bars.forEach((bar, index) => {
+                const routeKey = routeKeys[Math.floor(index / 3)];
+                const route = routeData[routeKey];
+                const [metric, label] = metrics[index % 3];
+                const value = route[metric];
+                // Derive chart height and labels from the same data as the details.
+                bar.setAttribute('height', (value - 40) * 7);
+                bar.setAttribute('y', 280 - (value - 40) * 7);
+                bar.dataset.routeKey = routeKey;
+                bar.dataset.tooltip = `${route.name}: ${label.toLowerCase()} ${value.toFixed(2)} minutes`;
+                bar.setAttribute('tabindex', '0');
+                bar.setAttribute('role', 'button');
+                bar.setAttribute('aria-label', `${bar.dataset.tooltip}. Show this route.`);
+                bar.setAttribute('aria-pressed', String(routeSelector.value === routeKey));
+                const showTooltip = event => {
+                    tooltip.textContent = bar.dataset.tooltip;
+                    tooltip.style.display = 'block';
+                    const rect = bar.getBoundingClientRect();
+                    const x = event.clientX ?? rect.left + rect.width / 2;
+                    const y = event.clientY ?? rect.top;
+                    tooltip.style.left = `${Math.max(10, Math.min(x + 10, window.innerWidth - tooltip.offsetWidth - 10))}px`;
+                    tooltip.style.top = `${Math.max(10, Math.min(y - tooltip.offsetHeight - 10, window.innerHeight - tooltip.offsetHeight - 10))}px`;
+                };
+                bar.addEventListener('pointermove', showTooltip);
+                bar.addEventListener('focus', showTooltip);
+                bar.addEventListener('pointerleave', hideTooltip);
+                bar.addEventListener('blur', hideTooltip);
+                bar.addEventListener('click', () => updateRouteDisplay(routeKey));
+                bar.addEventListener('keydown', event => {
+                    if (event.key === 'Escape') hideTooltip();
+                    if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        updateRouteDisplay(routeKey);
                     }
                 });
             });
+            window.addEventListener('scroll', hideTooltip, { passive: true });
+            window.addEventListener('resize', hideTooltip);
+
         });
 
     </script>

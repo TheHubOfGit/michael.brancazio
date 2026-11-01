@@ -1,8 +1,8 @@
 export const CONFIG = {
   // Preserved models as required
   MODELS: {
-    PRIMARY: 'gemini-3.5-flash-lite',
-    FALLBACK: 'gemini-2.5-flash-lite',
+    PRIMARY: 'gemini-2.5-flash-lite',
+    FALLBACK: 'gemini-3.5-flash-lite',
   },
   GEMINI_API_BASE: 'https://generativelanguage.googleapis.com/v1beta/models',
   GEMINI_LIVE_WS_BASE: 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent',
@@ -22,6 +22,21 @@ export const CONFIG = {
   ],
   RATE_LIMIT: {
     MAX_REQUESTS_PER_MINUTE: 40,
-    BURST_CAPACITY: 10
-  }
+    BURST_CAPACITY: 10,
+    MAX_TRACKED_CLIENTS: 10_000,
+  },
+  LIMITS: {
+    REQUEST_BYTES: 65_536,
+    MESSAGE_CHARACTERS: 5_000,
+    CONTEXT_CHARACTERS: 40_000,
+    SESSION_ID_CHARACTERS: 128,
+    PROVIDER_RESPONSE_BYTES: 1_048_576,
+    PROVIDER_TIMEOUT_MS: 15_000,
+    STREAM_TIMEOUT_MS: 60_000,
+    LIVE_CONNECT_TIMEOUT_MS: 10_000,
+    LIVE_SESSION_TIMEOUT_MS: 10 * 60_000,
+    LIVE_MESSAGE_BYTES: 262_144,
+    LIVE_BUFFER_BYTES: 1_048_576,
+    LIVE_BUFFER_MESSAGES: 50,
+  },
 } as const;

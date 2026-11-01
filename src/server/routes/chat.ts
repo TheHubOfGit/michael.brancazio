@@ -1,188 +1,74 @@
-import { Env, ChatRequestPayload } from '../types/worker';
-import { callGemini, callGeminiStream } from '../services/gemini';
+import { Env } from '../types/worker';
+import { callGemini, callGeminiStream, GeminiServiceError } from '../services/gemini';
 import { getCorsHeaders } from '../middleware/cors';
-import { checkRateLimit } from '../middleware/rateLimit';
+import { checkRateLimit, getClientIp, getRateLimitHeaders } from '../middleware/rateLimit';
+import { parseChatPayload } from '../middleware/body';
 import { logAuditEntry } from '../middleware/logger';
-import { jsonResponse, errorResponse } from '../middleware/errorHandler';
+import { jsonResponse, errorResponse, HttpError } from '../middleware/errorHandler';
 
 export async function handleChat(request: Request, env: Env, ctx?: ExecutionContext): Promise<Response> {
   const startTime = Date.now();
-  const clientIp = request.headers.get('CF-Connecting-IP') || 'unknown';
+  const clientIp = getClientIp(request);
   const origin = request.headers.get('Origin') || 'unknown';
-
-  // 1. Rate Limiting
   const rateLimit = checkRateLimit(request);
+  const rateHeaders = getRateLimitHeaders(rateLimit);
+  const audit = { timestamp: new Date().toISOString(), clientIp, origin, endpoint: '/api/chat' };
   if (!rateLimit.allowed) {
-    logAuditEntry({
-      timestamp: new Date().toISOString(),
-      clientIp,
-      origin,
-      endpoint: '/api/chat',
-      inputMode: 'unknown',
-      status: 429,
-      latencyMs: Date.now() - startTime,
-      error: 'Rate limit exceeded',
-    });
-    return errorResponse(`Too many requests. Please retry in ${rateLimit.reset} seconds.`, 429, request);
+    logAuditEntry({ ...audit, inputMode: 'unknown', status: 429, error: 'Rate limit exceeded' });
+    return errorResponse(`Too many requests. Please retry in ${rateLimit.reset} seconds.`, 429, request, undefined, env, rateHeaders);
   }
 
-  // 2. Parse & Validate Payload
-  let payload: ChatRequestPayload;
+  let payload;
   try {
-    payload = await request.json();
-  } catch {
-    return errorResponse('Invalid JSON body', 400, request);
+    payload = await parseChatPayload(request);
+  } catch (error) {
+    const status = error instanceof HttpError ? error.status : 400;
+    return errorResponse(error instanceof HttpError ? error.message : 'Invalid request body', status, request, undefined, env, rateHeaders);
   }
-
   const { message, context, stream, sessionId, inputMode = 'text', promptIndex } = payload;
-
-  if (!message || typeof message !== 'string' || message.trim().length === 0) {
-    return errorResponse('Message is required', 400, request);
-  }
-
-  if (message.length > 5000) {
-    return errorResponse('Message exceeds maximum allowed length of 5000 characters', 400, request);
-  }
-
-  // 3. Check Gemini API Key
-  const apiKey = env.GEMINI_API_KEY;
+  const details = { ...audit, sessionId, inputMode, promptIndex };
+  const apiKey = env.GEMINI_API_KEY?.trim();
   if (!apiKey) {
-    logAuditEntry({
-      timestamp: new Date().toISOString(),
-      sessionId,
-      clientIp,
-      origin,
-      endpoint: '/api/chat',
-      inputMode,
-      promptIndex,
-      promptText: message.slice(0, 200),
-      status: 500,
-      latencyMs: Date.now() - startTime,
-      error: 'API key not configured',
-    });
-    return errorResponse('API key not configured', 500, request);
+    logAuditEntry({ ...details, status: 500, error: 'API key not configured', latencyMs: Date.now() - startTime });
+    return errorResponse('API key not configured', 500, request, undefined, env, rateHeaders);
   }
 
-  // 4. Handle Streaming Request
-  if (stream) {
-    try {
-      const { stream: geminiStream, modelUsed } = await callGeminiStream({
-        message,
-        context,
-        apiKey,
-      });
-
-      logAuditEntry({
-        timestamp: new Date().toISOString(),
-        sessionId,
-        clientIp,
-        origin,
-        endpoint: '/api/chat',
-        inputMode,
-        promptIndex,
-        promptText: message.slice(0, 200),
-        modelUsed,
-        status: 200,
-        latencyMs: Date.now() - startTime,
-      });
-
-      const cors = getCorsHeaders(request);
+  try {
+    const options = { message, context, apiKey, signal: request.signal };
+    if (stream) {
+      const { stream: geminiStream, modelUsed } = await callGeminiStream(options);
+      logAuditEntry({ ...details, modelUsed, status: 200, latencyMs: Date.now() - startTime });
       return new Response(geminiStream, {
         headers: {
           'Content-Type': 'text/event-stream; charset=utf-8',
-          'Cache-Control': 'no-cache',
-          'Connection': 'keep-alive',
-          ...cors,
+          'Cache-Control': 'no-store',
+          'X-Content-Type-Options': 'nosniff',
+          'X-Model-Used': modelUsed,
+          ...getCorsHeaders(request, env),
+          ...rateHeaders,
         },
       });
-    } catch (err: any) {
-      logAuditEntry({
-        timestamp: new Date().toISOString(),
-        sessionId,
-        clientIp,
-        origin,
-        endpoint: '/api/chat',
-        inputMode,
-        promptIndex,
-        promptText: message.slice(0, 200),
-        status: 500,
-        latencyMs: Date.now() - startTime,
-        error: err?.message || 'Streaming failed',
-      });
-      return errorResponse(err?.message || 'Streaming failed', 500, request);
-    }
-  }
-
-  // 5. Standard JSON Request
-  try {
-    const result = await callGemini({
-      message,
-      context,
-      apiKey,
-    });
-
-    logAuditEntry({
-      timestamp: new Date().toISOString(),
-      sessionId,
-      clientIp,
-      origin,
-      endpoint: '/api/chat',
-      inputMode,
-      promptIndex,
-      promptText: message.slice(0, 200),
-      modelUsed: result.modelUsed,
-      status: 200,
-      latencyMs: result.latencyMs,
-    });
-
-    // Asynchronously log to Cloudflare D1 database if configured
-    if (env.DB && ctx) {
-      ctx.waitUntil(
-        env.DB.prepare(
-          `INSERT INTO chat_logs (timestamp, session_id, client_ip, input_mode, prompt_index, prompt_text, response_text, model_used, latency_ms, status)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-        )
-        .bind(
-          new Date().toISOString(),
-          sessionId || null,
-          clientIp,
-          inputMode,
-          promptIndex || null,
-          message,
-          result.text,
-          result.modelUsed,
-          result.latencyMs,
-          200
-        )
-        .run()
-        .catch((err) => console.error('Failed to log to D1:', err))
-      );
     }
 
-    return jsonResponse(
-      {
-        response: result.text,
-        modelUsed: result.modelUsed,
-        latencyMs: result.latencyMs,
-      },
-      200,
-      request
-    );
-  } catch (err: any) {
-    logAuditEntry({
-      timestamp: new Date().toISOString(),
-      sessionId,
-      clientIp,
-      origin,
-      endpoint: '/api/chat',
-      inputMode,
-      promptIndex,
-      promptText: message.slice(0, 200),
-      status: 500,
-      latencyMs: Date.now() - startTime,
-      error: err?.message || 'Generation failed',
-    });
+    const result = await callGemini(options);
+    logAuditEntry({ ...details, modelUsed: result.modelUsed, status: 200, latencyMs: result.latencyMs });
 
-    return errorResponse('Failed to get response from AI service', 500, request, err?.message);
+    // Both synchronous binding errors and rejected writes must not fail a good answer.
+    if (env.DB && ctx?.waitUntil) {
+      const database = env.DB;
+      ctx.waitUntil(Promise.resolve().then(() => database.prepare(
+        `INSERT INTO chat_logs (timestamp, session_id, client_ip, input_mode, prompt_index, prompt_text, response_text, model_used, latency_ms, status)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      ).bind(
+        new Date().toISOString(), sessionId || null, clientIp, inputMode,
+        promptIndex ?? null, message, result.text, result.modelUsed, result.latencyMs, 200
+      ).run()).catch(() => console.error(JSON.stringify({ type: 'chat_log_failure', storage: 'D1' }))));
+    }
+
+    return jsonResponse({ response: result.text, modelUsed: result.modelUsed, latencyMs: result.latencyMs }, 200, request, rateHeaders, env);
+  } catch (error) {
+    const serviceError = error instanceof GeminiServiceError ? error : new GeminiServiceError();
+    logAuditEntry({ ...details, status: serviceError.status, error: serviceError.message, latencyMs: Date.now() - startTime });
+    return errorResponse(serviceError.message, serviceError.status, request, undefined, env, rateHeaders);
   }
 }
