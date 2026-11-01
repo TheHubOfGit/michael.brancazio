@@ -15,8 +15,7 @@ h1, h2, h3 { text-wrap: balance; }
 .profile-tools { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 14px; }
 .profile-tools a, .profile-tools button { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 8px 14px; background: var(--card-bg); color: var(--text-color); border: 1px solid var(--border-color); border-radius: 8px; font: inherit; font-size: 14px; cursor: pointer; text-decoration: none; }
 .profile-tools a:hover, .profile-tools button:hover { background: var(--bg-color); }
-a.project-link { display: block; color: inherit; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; }
-.filter-keyword[aria-pressed="true"] { outline: 3px solid var(--text-color); outline-offset: 3px; }
+a.project-link { display: block; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; }
 .scroll-arrow.hidden { visibility: hidden; }
 .modal, #mobile-chatbot-modal { z-index: var(--layer-dialog); }
 .modal .close-button { font: inherit; font-size: 28px; display: grid; place-items: center; min-width: 44px; min-height: 44px; padding: 0; border: 0; border-radius: 8px; color: var(--text-color); background: var(--bg-color); cursor: pointer; }
@@ -57,21 +56,13 @@ button:disabled { opacity: 0.55; cursor: wait; }
 }
 
 /* Keep labels readable in both themes, including inactive filters. */
-:root { --accent-blue: #285ca9; }
-body.dark-mode { --accent-blue: #77b0ff; }
-#filter-box, #filter-box.visible { opacity: 0.5; filter: grayscale(1); }
-#filter-box.visible:hover, #filter-box.visible.filter-active { opacity: 1; filter: grayscale(0); }
-.filter-keyword { min-height: 28px; }
-.filter-keyword[data-keyword="SQL"], .filter-keyword[data-keyword="Tableau"],
-.filter-keyword[data-keyword="Machine Learning"], .filter-keyword[data-keyword="Data Science"],
-.filter-keyword[data-keyword="Healthcare"], .filter-keyword[data-keyword="AI"],
 .highlight-sql, .highlight-tableau, .highlight-machinelearning, .highlight-datascience,
 .highlight-healthcare, .highlight-ai { color: #111 !important; }
 @media screen and (max-width: 768px) {
     .scroll-wrapper { margin: 0; width: 100%; }
     .scrollable-content { min-width: 0; }
 }
-.filter-keyword[data-keyword="Visualization"], .highlight-visualization { color: #000 !important; }
+.highlight-visualization { color: #000 !important; }
 
 /* Smart home widget pop-out: the 3D apartment floats over the page on a transparent
    background, pinned above the link that opened it, as it does on an Android home screen. */
