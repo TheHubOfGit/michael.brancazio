@@ -7,6 +7,9 @@
 }
 
 :focus-visible { outline: 3px solid var(--accent-blue, #3771c8); outline-offset: 4px; }
+/* The chat fields sit inside a pill that already rings itself on :focus-within;
+   a second offset outline on the field draws a box inside the box. */
+.chat-input:focus-visible, #chatbot-input:focus-visible { outline: none; }
 .skip-link { position: fixed; left: 16px; top: 12px; z-index: var(--layer-skip-link); padding: 12px 18px; background: var(--bg-color); color: var(--text-color); transform: translateY(-150%); border-radius: 8px; }
 .skip-link:focus { transform: translateY(0); }
 h1.profile-name, h2.section-label { margin: 0; }
