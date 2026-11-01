@@ -54,7 +54,7 @@ For browser checks, first install Chromium with `npx playwright install chromium
 ## Project layout
 
 - `index.html`: portfolio entry page.
-- `main.html`, `assets/`: portfolio UI, chatbot, and shared frontend helpers/styles; the **Print portfolio** button uses a dedicated print stylesheet.
+- `main.html`, `assets/`: portfolio UI, chatbot, and shared frontend helpers/styles.
 - `print.html`: terminal typing demo.
 - `3d-ball-simulator.html`, `flowfield-simulation.html`, `nyc-montecarlo.html`, `static_dashboard.html`: interactive demos.
 - `src/server/`: Worker routing, validation, Gemini integration, and logging.

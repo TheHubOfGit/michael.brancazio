@@ -136,22 +136,6 @@
         }
     });
     root.document.addEventListener('DOMContentLoaded', () => {
-        root.document.getElementById('print-portfolio')?.addEventListener('click', () => root.print());
-        const themeButton = root.document.getElementById('theme-toggle');
-        if (themeButton) {
-            const update = () => {
-                const dark = root.document.body.classList.contains('dark-mode');
-                themeButton.textContent = dark ? 'Light theme' : 'Dark theme';
-                themeButton.setAttribute('aria-label', `Switch to ${dark ? 'light' : 'dark'} theme`);
-            };
-            themeButton.addEventListener('click', () => {
-                const dark = root.document.body.classList.toggle('dark-mode');
-                storage.set('theme', dark ? 'dark' : 'light');
-                root.document.dispatchEvent(new Event('themechange'));
-            });
-            new MutationObserver(update).observe(root.document.body, { attributes: true, attributeFilter: ['class'] });
-            update();
-        }
         root.document.querySelectorAll('.card-scrollable-content').forEach(element => {
             element.tabIndex = 0;
             element.setAttribute('role', 'region');

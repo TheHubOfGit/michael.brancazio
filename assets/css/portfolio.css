@@ -12,9 +12,6 @@
 h1.profile-name, h2.section-label { margin: 0; }
 h1, h2, h3 { text-wrap: balance; }
 .profile-description, .experience-description { text-wrap: pretty; }
-.profile-tools { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 14px; }
-.profile-tools a, .profile-tools button { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 8px 14px; background: var(--card-bg); color: var(--text-color); border: 1px solid var(--border-color); border-radius: 8px; font: inherit; font-size: 14px; cursor: pointer; text-decoration: none; }
-.profile-tools a:hover, .profile-tools button:hover { background: var(--bg-color); }
 a.project-link { display: block; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; }
 /* Keyboard affordance + touch target on the filter chips; colors stay as the live site. */
 .filter-keyword { min-height: 28px; }
@@ -34,7 +31,6 @@ button:disabled { opacity: 0.55; cursor: wait; }
 .profile-info { min-width: 0; }
 
 @media screen and (max-width: 768px) {
-    .profile-tools { justify-content: center; }
     .mobile-chatbot-content { max-height: calc(100dvh - 24px); }
     .mobile-response-area { min-height: 0; overscroll-behavior: contain; }
     .chatbot-input-area { padding-bottom: max(16px, env(safe-area-inset-bottom)); }
@@ -55,7 +51,7 @@ button:disabled { opacity: 0.55; cursor: wait; }
     .card-scrollable-content { overflow: visible; }
     .profile-card { max-width: none; box-shadow: none; }
     .profile-titles { position: static; text-align: left; }
-    #filter-box, #clear-filter-btn, #chain-container, .cursor-halo, .integrated-chatbot, #chatbot-fab, .modal, #mobile-chatbot-modal, .scroll-arrow, .profile-tools, .timeline-container, #sticky-mobile-header, #iqvia-toggle-container, .skip-link, .zoom-easter-egg { display: none !important; }
+    #filter-box, #clear-filter-btn, #chain-container, .cursor-halo, .integrated-chatbot, #chatbot-fab, .modal, #mobile-chatbot-modal, .scroll-arrow, .timeline-container, #sticky-mobile-header, #iqvia-toggle-container, .skip-link, .zoom-easter-egg { display: none !important; }
 }
 
 /* Keep labels readable in both themes, including inactive filters. */
