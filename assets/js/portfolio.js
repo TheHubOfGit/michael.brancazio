@@ -69,14 +69,22 @@
     }
 
     function createChatBody(details, profile, history) {
-        let portfolio = profile.slice(0, 18000);
-        const recent = history.slice(-10);
+        let portfolio = profile;
+        const recent = history.slice();
         const encoder = new TextEncoder();
+        // The context string is assembled exactly as the pre-refactor page built it.
         // Leave room below the server's 64 KiB ceiling for non-ASCII text and
         // JSON escaping. Discard older turns first, always preserving the question.
         while (true) {
-            const conversation = recent.map(message => `${message.role}: ${message.content}`).join('\n').slice(-16000);
-            const body = JSON.stringify({ ...details, context: `${portfolio}\n\nCONVERSATION HISTORY:\n${conversation}` });
+            let context = portfolio;
+            if (recent.length) {
+                context += '\n\nCONVERSATION HISTORY:\n';
+                recent.forEach((message, index) => {
+                    context += `${index + 1}. ${message.role === 'user' ? 'User' : 'Assistant'}: ${message.content}\n`;
+                });
+            }
+            context += `\n\nCurrent user question: ${details.message}\n\nProvide a professional, concise response:`;
+            const body = JSON.stringify({ ...details, context });
             if (encoder.encode(body).byteLength <= 60000) return body;
             if (recent.length) recent.shift();
             else if (portfolio.length) portfolio = portfolio.slice(0, Math.floor(portfolio.length * 0.8));

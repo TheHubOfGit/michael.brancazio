@@ -101,7 +101,10 @@ test('Chat requests cap context and reject empty provider results', async () => 
     } }));
     instance.conversationHistory = [{ role: 'assistant', content: 'x'.repeat(50000) }];
     await assert.rejects(instance.callGeminiAPI('Question'), /empty response/);
-    assert.ok(sent && sent.context.length < 35000);
+    // The context carries the whole history, as the pre-refactor page sent it; the
+    // only cap is the server's body ceiling, enforced in createChatBody.
+    assert.ok(sent && new TextEncoder().encode(JSON.stringify(sent)).byteLength <= 60000);
+    assert.ok(sent.context.endsWith('Provide a professional, concise response:'));
     assert.equal(sent.message, 'Question');
 });
 
