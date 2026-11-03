@@ -1,0 +1,40 @@
+export const CONFIG = {
+  // Preserved models as required
+  MODELS: {
+    PRIMARY: 'gemini-2.5-flash-lite',
+    FALLBACK: 'gemini-3.5-flash-lite',
+    // Voice mode; the server always sets this, whatever the client asks for.
+    LIVE: 'models/gemini-3.8-live',
+  },
+  LIVE_VOICE: 'Algenib',
+  GEMINI_API_BASE: 'https://generativelanguage.googleapis.com/v1beta/models',
+  GEMINI_LIVE_WS_BASE: 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent',
+  // The chat API is served from the same Pages project, so browsers on the site itself
+  // send a same-origin Origin header; these are the only cross-origin callers allowed.
+  ALLOWED_ORIGINS: [
+    'https://michaelbrancazio-os.pages.dev',
+    'http://localhost:8788',
+    'http://127.0.0.1:8788',
+    'http://localhost:8765',
+    'http://127.0.0.1:8765'
+  ],
+  RATE_LIMIT: {
+    MAX_REQUESTS_PER_MINUTE: 40,
+    BURST_CAPACITY: 10,
+    MAX_TRACKED_CLIENTS: 10_000,
+  },
+  LIMITS: {
+    REQUEST_BYTES: 65_536,
+    MESSAGE_CHARACTERS: 5_000,
+    CONTEXT_CHARACTERS: 40_000,
+    SESSION_ID_CHARACTERS: 128,
+    PROVIDER_RESPONSE_BYTES: 1_048_576,
+    PROVIDER_TIMEOUT_MS: 15_000,
+    STREAM_TIMEOUT_MS: 60_000,
+    LIVE_CONNECT_TIMEOUT_MS: 10_000,
+    LIVE_SESSION_TIMEOUT_MS: 10 * 60_000,
+    LIVE_MESSAGE_BYTES: 262_144,
+    LIVE_BUFFER_BYTES: 1_048_576,
+    LIVE_BUFFER_MESSAGES: 50,
+  },
+} as const;

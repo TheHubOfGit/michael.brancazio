@@ -1,0 +1,12 @@
+{
+  "name": "portfolio-emulator",
+  "version": "1.0.0",
+  "description": "Michael Brancazio's macOS / iOS portfolio emulator with a Gemini-backed chat API",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "dev": "npm run build && wrangler pages dev",
+    "deploy": "npm run build && wrangler pages deploy --branch main"
+  }
+}
