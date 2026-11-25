@@ -710,9 +710,15 @@ body {
 }
 
 .link-row {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 16px;
+    width: 100%;
+}
+
+.link-row .link-card {
+    width: 100%;
+    min-width: 0;
 }
 
 .link-card {
@@ -1043,8 +1049,14 @@ body {
         max-width: 100%;
     }
 
-    .link-card {
-        width: calc(50% - 8px);
+    .link-row {
+        gap: 12px;
+    }
+
+    .link-row .link-card {
+        width: 100%;
+        padding: 12px;
+        font-size: 13px;
     }
 
     .link-email {
