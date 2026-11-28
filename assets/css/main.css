@@ -830,6 +830,13 @@ body {
     opacity: 1;
 }
 
+.tooltip-text.tooltip-up-left {
+    top: auto;
+    bottom: calc(100% + 8px);
+    left: auto;
+    right: 0;
+}
+
 .certifications-list {
     display: flex;
     flex-direction: column;
